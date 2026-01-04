@@ -47,7 +47,7 @@ public abstract class BaseBot extends RobotSE {
      */
     public void turnDirection(Direction dir) {
         //check for robot's Direction then does the proper turn based on the desired Direction
-        if (this.getDirection()==Direction.NORTH) {
+        if (this.isFacingNorth()) {
             if (dir==Direction.SOUTH) {
                 this.turnAround();
             } else if (dir==Direction.EAST) {
@@ -55,7 +55,7 @@ public abstract class BaseBot extends RobotSE {
             } else if (dir==Direction.WEST) {
                 this.turnLeft();
             }
-        } else if (this.getDirection()==Direction.SOUTH) {
+        } else if (this.isFacingSouth()) {
             if (dir==Direction.NORTH) {
                 this.turnAround();
             } else if (dir==Direction.EAST) {
@@ -63,7 +63,7 @@ public abstract class BaseBot extends RobotSE {
             } else if (dir==Direction.WEST) {
                 this.turnRight();
             }
-        } else if (this.getDirection()==Direction.EAST) {
+        } else if (this.isFacingEast()) {
             if (dir==Direction.WEST) {
                 this.turnAround();
             } else if (dir==Direction.NORTH) {
