@@ -2,7 +2,7 @@ package ICS4U_Summative;
 
 import becker.robots.*;
 
-public abstract class BaseBot extends Robot {
+public abstract class BaseBot extends RobotSE {
 
     public final String role; // GUARD, VIP, CHASER
     public final int id;
@@ -41,4 +41,44 @@ public abstract class BaseBot extends Robot {
      */
     public abstract void takeTurn();
 
+    /**
+     * Turns the robot left until it is facing the specified Direction
+     * @param dir the Direction the robot must face
+     */
+    public void turnDirection(Direction dir) {
+        //check for robot's Direction then does the proper turn based on the desired Direction
+        if (this.getDirection()==Direction.NORTH) {
+            if (dir==Direction.SOUTH) {
+                this.turnAround();
+            } else if (dir==Direction.EAST) {
+                this.turnRight();
+            } else if (dir==Direction.WEST) {
+                this.turnLeft();
+            }
+        } else if (this.getDirection()==Direction.SOUTH) {
+            if (dir==Direction.NORTH) {
+                this.turnAround();
+            } else if (dir==Direction.EAST) {
+                this.turnLeft();
+            } else if (dir==Direction.WEST) {
+                this.turnRight();
+            }
+        } else if (this.getDirection()==Direction.EAST) {
+            if (dir==Direction.WEST) {
+                this.turnAround();
+            } else if (dir==Direction.NORTH) {
+                this.turnLeft();
+            } else if (dir==Direction.SOUTH) {
+                this.turnRight();
+            }
+        } else {
+            if (dir==Direction.EAST) {
+                this.turnAround();
+            } else if (dir==Direction.NORTH) {
+                this.turnRight();
+            } else if (dir==Direction.SOUTH) {
+                this.turnLeft();
+            }
+        }
+    }
 }
