@@ -6,7 +6,6 @@ public abstract class BaseBot extends RobotSE {
 
     public final int role; // GUARD = 2, VIP = 1, CHASER = 3
     public final int id;
-    public final int hp;
 
     /**
      * Constructor for BaseBot
@@ -16,14 +15,12 @@ public abstract class BaseBot extends RobotSE {
      * @param dir direction the robot is facing
      * @param role role of the bot
      * @param id identifier of the bot
-     * @param hp health points of the bot
      */
-    public BaseBot(City city, int str, int ave, Direction dir, int role, int id, int hp)
+    public BaseBot(City city, int str, int ave, Direction dir, int role, int id)
     {
         super(city, str, ave, dir);
         this.role = role;
         this.id = id;
-        this.hp = hp;
     }
 
     /**
@@ -102,4 +99,5 @@ public abstract class BaseBot extends RobotSE {
             }
         }
     }
+
 }
