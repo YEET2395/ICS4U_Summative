@@ -17,11 +17,12 @@ public abstract class BaseBot extends RobotSE {
      * @param role role of the bot
      * @param id identifier of the bot
      */
-    public BaseBot(City city, int str, int ave, Direction dir, int role, int id)
+    public BaseBot(City city, int str, int ave, Direction dir, int role, int id, int hp)
     {
         super(city, str, ave, dir);
         this.role = role;
         this.id = id;
+        this.hp = hp;
     }
 
     /**
