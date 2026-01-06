@@ -4,9 +4,9 @@ import becker.robots.*;
 
 public abstract class BaseBot extends RobotSE {
 
-    public final int role; // GUARD = 2, VIP = 1, CHASER = 3
-    public final int id;
-    public final int hp;
+    private final int role; // GUARD = 2, VIP = 1, CHASER = 3
+    private final int id;
+    private final int hp;
 
     /**
      * Constructor for BaseBot
@@ -102,14 +102,14 @@ public abstract class BaseBot extends RobotSE {
      */
     private void moveHorizontal(int loc) {
         // We turn accordingly to if point X is left or right of us
-        if (this.getX()>loc){
+        if (this.getX()> loc){
             this.turnDirection(Direction.WEST);
         }
-        else if (this.getX()<loc){
+        else if (this.getX()< loc){
             this.turnDirection(Direction.EAST);
         }
         // Move while X value not equal
-        while(this.getX()!=loc){
+        while(this.getX() != loc){
             this.move();
         }
     }
@@ -125,40 +125,16 @@ public abstract class BaseBot extends RobotSE {
      * Turns the robot left until it is facing the specified Direction
      * @param dir the Direction the robot must face
      */
-    public void turnDirection(Direction dir) {
+    public void turnDirection(Direction dir)
+    {
         //check for robot's Direction then does the proper turn based on the desired Direction
-        if (this.isFacingNorth()) {
-            if (dir==Direction.SOUTH) {
-                this.turnAround();
-            } else if (dir==Direction.EAST) {
-                this.turnRight();
-            } else if (dir==Direction.WEST) {
-                this.turnLeft();
+        for(int i = 0; i < 4; i++)
+        {
+            if(this.getDirection() == dir)
+            {
+                break;
             }
-        } else if (this.isFacingSouth()) {
-            if (dir==Direction.NORTH) {
-                this.turnAround();
-            } else if (dir==Direction.EAST) {
-                this.turnLeft();
-            } else if (dir==Direction.WEST) {
-                this.turnRight();
-            }
-        } else if (this.isFacingEast()) {
-            if (dir==Direction.WEST) {
-                this.turnAround();
-            } else if (dir==Direction.NORTH) {
-                this.turnLeft();
-            } else if (dir==Direction.SOUTH) {
-                this.turnRight();
-            }
-        } else {
-            if (dir==Direction.EAST) {
-                this.turnAround();
-            } else if (dir==Direction.NORTH) {
-                this.turnRight();
-            } else if (dir==Direction.SOUTH) {
-                this.turnLeft();
-            }
+            this.turnLeft();
         }
     }
 
