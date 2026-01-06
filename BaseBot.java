@@ -6,8 +6,7 @@ public abstract class BaseBot extends RobotSE {
 
     private final int role; // GUARD = 2, VIP = 1, CHASER = 3
     private final int id;
-
-    private playerInfo[] records;
+    private int hp;
 
     /**
      * Constructor for BaseBot
@@ -17,12 +16,14 @@ public abstract class BaseBot extends RobotSE {
      * @param dir direction the robot is facing
      * @param role role of the bot
      * @param id identifier of the bot
+     * @param hp health points of the bot
      */
-    public BaseBot(City city, int str, int ave, Direction dir, int role, int id)
+    public BaseBot(City city, int str, int ave, Direction dir, int role, int id, int hp)
     {
         super(city, str, ave, dir);
         this.role = role;
         this.id = id;
+        this.hp = hp;
     }
 
     /**
@@ -45,27 +46,11 @@ public abstract class BaseBot extends RobotSE {
     }
 
     /**
-     * Gets the BaseBot's list of records
-     * @return the personal records of the BaseBot
-     */
-    public playerInfo[] getRecords() {
-        return records;
-    }
-
-    /**
-     * Updates the BaseBot's personal records
-     * @param newRecords the new records to be implemented
-     */
-    public void updateRecords(playerInfo[] newRecords) {
-        this.records = newRecords;
-    }
-
-    /**
      * Calculates the grid distance between the robot invoking the method and all other robots (including the invoker)
      * @param records the array of other players
      * @return the distances to each other robot
      */
-    public int[] getDistances(playerInfo [] records) {
+    private int[] getDistances(playerInfo [] records) {
         int [] gridDistance = new int[records.length-1];
         int[] myCoords = this.getMyPosition();
         int[] otherCoords;
@@ -85,7 +70,7 @@ public abstract class BaseBot extends RobotSE {
      * Moves robot to the target position
      * @param pos Array of position required to move, format is x,y
      */
-    public void moveToPos(int[] pos){
+    private void moveToPos(int[] pos){
         int x = pos[0];
         int y = pos[1];
         this.moveHorizontal(x);
