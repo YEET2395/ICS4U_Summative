@@ -26,24 +26,22 @@ public class XinranBot extends BaseBot {
 
     /**
      * Application class will send the position of VIP to XinranBot
-     * @param str street number of VIP
-     * @param ave Avenue number of VIP
+     * @param pos array containing street and avenue number of VIP
      */
-    public void getVIPPosition(int str, int ave)
+    public void sendVIPPosition(int[] pos)
     {
-        this.vipPos[0] = str;
-        this.vipPos[1] = ave;
+        this.vipPos[0] = pos[0];
+        this.vipPos[1] = pos[1];
     }
 
     /**
      * XinranBot should know the position of the chaser only if the chaser is within 5 intersections to the VIP
-     * @param str street number of chaser
-     * @param ave avenue number of chaser
+     * @param pos array containing street and avenue number of chaser
      */
-    public void getChaserPosition(int str, int ave)
+    public void sendChaserPosition(int[] pos)
     {
-        chaserPos[0] = str;
-        chaserPos[1] = ave;
+        chaserPos[0] = pos[0];
+        chaserPos[1] = pos[1];
     }
 
 
