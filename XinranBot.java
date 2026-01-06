@@ -8,11 +8,6 @@ import becker.robots.*;
  * @version 2025 12 30
  */
 public class XinranBot extends BaseBot {
-
-    public final int role; // GUARD, VIP, CHASER
-    public final int id;
-    private int hp;
-
     private int[] vipPos = {0, 0};
     private int[] chaserPos = {0, 0};
 
@@ -22,30 +17,33 @@ public class XinranBot extends BaseBot {
      * @param str Street number
      * @param ave Avenue number
      * @param dir direction the robot is facing
+     * @param id the robot's numerical id
+     * @param role the robot's role
      */
-    public XinranBot(City city, int str, int ave, Direction dir, int role, int id, int hp) {
-        super(city, str, ave, dir, role, id, hp);
-        this.hp = hp;
-        this.id = id;
-        this.role = role;
+    public XinranBot(City city, int str, int ave, Direction dir, int id, int role) {
+        super(city, str, ave, dir, role, id);
     }
 
     /**
      * Application class will send the position of VIP to XinranBot
-     * @param coord array of x,y of VIP
+     * @param str street number of VIP
+     * @param ave Avenue number of VIP
      */
-    public void getVIPPosition(int[] coord) {
-        this.vipPos[0] = coord[0];
-        this.vipPos[1] = coord[1];
+    public void getVIPPosition(int str, int ave)
+    {
+        this.vipPos[0] = str;
+        this.vipPos[1] = ave;
     }
 
     /**
      * XinranBot should know the position of the chaser only if the chaser is within 5 intersections to the VIP
-     * @param coord array of x,y of chaser
+     * @param str street number of chaser
+     * @param ave avenue number of chaser
      */
-    public void getChaserPosition(int[] coord){
-        this.chaserPos[0]=coord[0];
-        this.chaserPos[1]=coord[1];
+    public void getChaserPosition(int str, int ave)
+    {
+        chaserPos[0] = str;
+        chaserPos[1] = ave;
     }
 
 
