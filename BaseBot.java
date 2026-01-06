@@ -4,8 +4,9 @@ import becker.robots.*;
 
 public abstract class BaseBot extends RobotSE {
 
-    public final int role; // GUARD = 2, VIP = 1, CHASER = 3
-    public final int id;
+    private final int role; // GUARD = 2, VIP = 1, CHASER = 3
+    private final int id;
+    private final int hp;
 
     /**
      * Constructor for BaseBot
@@ -15,12 +16,14 @@ public abstract class BaseBot extends RobotSE {
      * @param dir direction the robot is facing
      * @param role role of the bot
      * @param id identifier of the bot
+     * @param hp health points of the bot
      */
-    public BaseBot(City city, int str, int ave, Direction dir, int role, int id)
+    public BaseBot(City city, int str, int ave, Direction dir, int role, int id, int hp)
     {
         super(city, str, ave, dir);
         this.role = role;
         this.id = id;
+        this.hp = hp;
     }
 
     /**
@@ -29,7 +32,17 @@ public abstract class BaseBot extends RobotSE {
      */
     public int[] getMyPosition()
     {
-        return new int[] {this.getStreet(), this.getAvenue()};
+        return new int[] {this.getX(), this.getY()};
+    }
+
+    /** @return current X coordinate*/
+    public int getX(){
+        return this.getAvenue();
+    }
+
+    /** @return current Y coordinate*/
+    public int getY(){
+        return this.getStreet();
     }
 
     /**
@@ -54,6 +67,55 @@ public abstract class BaseBot extends RobotSE {
     }
 
     /**
+     * Moves robot to the target position
+     * @param pos Array of position required to move, format is x,y
+     */
+    public void moveToPos(int[] pos){
+        int x = pos[0];
+        int y = pos[1];
+        this.moveHorizontal(x);
+        this.moveVertical(y);
+    }
+
+    /**
+     * Moves robot vertically to the target Y
+     * @param loc Y location of the place required to move
+     */
+    private void moveVertical(int loc) {
+        // Move north if above target
+        if (this.getY()>loc){
+            this.turnDirection(Direction.NORTH);
+        }
+        // Move south if below target
+        else if (this.getY()<loc){
+            this.turnDirection(Direction.SOUTH);
+        }
+        // Move while Y value not equal
+        while(this.getY()!=loc){
+            this.move();
+        }
+    }
+
+    /**
+     * Moves robot vertically to the target X
+     * @param loc X location of the place required to move
+     */
+    private void moveHorizontal(int loc) {
+        // We turn accordingly to if point X is left or right of us
+        if (this.getX()> loc){
+            this.turnDirection(Direction.WEST);
+        }
+        else if (this.getX()< loc){
+            this.turnDirection(Direction.EAST);
+        }
+        // Move while X value not equal
+        while(this.getX() != loc){
+            this.move();
+        }
+    }
+
+
+    /**
      * Every bot's own turn logic.
      * Application will call this once per turn.
      */
@@ -63,41 +125,18 @@ public abstract class BaseBot extends RobotSE {
      * Turns the robot left until it is facing the specified Direction
      * @param dir the Direction the robot must face
      */
-    public void turnDirection(Direction dir) {
+    public void turnDirection(Direction dir)
+    {
         //check for robot's Direction then does the proper turn based on the desired Direction
-        if (this.isFacingNorth()) {
-            if (dir==Direction.SOUTH) {
-                this.turnAround();
-            } else if (dir==Direction.EAST) {
-                this.turnRight();
-            } else if (dir==Direction.WEST) {
-                this.turnLeft();
+        for(int i = 0; i < 4; i++)
+        {
+            if(this.getDirection() == dir)
+            {
+                break;
             }
-        } else if (this.isFacingSouth()) {
-            if (dir==Direction.NORTH) {
-                this.turnAround();
-            } else if (dir==Direction.EAST) {
-                this.turnLeft();
-            } else if (dir==Direction.WEST) {
-                this.turnRight();
-            }
-        } else if (this.isFacingEast()) {
-            if (dir==Direction.WEST) {
-                this.turnAround();
-            } else if (dir==Direction.NORTH) {
-                this.turnLeft();
-            } else if (dir==Direction.SOUTH) {
-                this.turnRight();
-            }
-        } else {
-            if (dir==Direction.EAST) {
-                this.turnAround();
-            } else if (dir==Direction.NORTH) {
-                this.turnRight();
-            } else if (dir==Direction.SOUTH) {
-                this.turnLeft();
-            }
+            this.turnLeft();
         }
     }
+
 
 }

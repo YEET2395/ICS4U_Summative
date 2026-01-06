@@ -7,7 +7,7 @@ The project demonstrates **object-oriented programming, records, sorting (non-bu
 
 ## Team & Responsibilities
 - **Xinran Li** — Guard AI (defensive positioning + threat scoring), shared BaseBot / OOP structure, testing for Guard
-- **[Member 2 Name]** — VIP AI (escape / survival strategy), testing for VIP
+- **Austin Xiong** — VIP AI (escape / survival strategy), testing for VIP
 - **[Member 3 Name]** — Chaser AI (pursuit / catch strategy), testing for Chaser
 
 > The summative is completed in groups of three, with individual robot AI work by each member. :contentReference[oaicite:4]{index=4}
