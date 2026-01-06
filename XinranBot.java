@@ -11,7 +11,7 @@ public class XinranBot extends BaseBot {
 
     public final int role; // GUARD, VIP, CHASER
     public final int id;
-    public final int hp;
+    private int hp;
 
     private int[] vipPos = {0, 0};
     private int[] chaserPos = {0, 0};
@@ -32,24 +32,20 @@ public class XinranBot extends BaseBot {
 
     /**
      * Application class will send the position of VIP to XinranBot
-     * @param str street number of VIP
-     * @param ave Avenue number of VIP
+     * @param coord array of x,y of VIP
      */
-    public void getVIPPosition(int str, int ave)
-    {
-        this.vipPos[0] = str;
-        this.vipPos[1] = ave;
+    public void getVIPPosition(int[] coord) {
+        this.vipPos[0] = coord[0];
+        this.vipPos[1] = coord[1];
     }
 
     /**
      * XinranBot should know the position of the chaser only if the chaser is within 5 intersections to the VIP
-     * @param str street number of chaser
-     * @param ave avenue number of chaser
+     * @param coord array of x,y of chaser
      */
-    public void getChaserPosition(int str, int ave)
-    {
-        chaserPos[0] = str;
-        chaserPos[1] = ave;
+    public void getChaserPosition(int[] coord){
+        this.chaserPos[0]=coord[0];
+        this.chaserPos[1]=coord[1];
     }
 
 
