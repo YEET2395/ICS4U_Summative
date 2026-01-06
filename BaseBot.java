@@ -6,7 +6,7 @@ public abstract class BaseBot extends RobotSE {
 
     private final int role; // GUARD = 2, VIP = 1, CHASER = 3
     private final int id;
-    private int hp;
+    private final int hp;
 
     /**
      * Constructor for BaseBot
@@ -50,7 +50,7 @@ public abstract class BaseBot extends RobotSE {
      * @param records the array of other players
      * @return the distances to each other robot
      */
-    private int[] getDistances(playerInfo [] records) {
+    public int[] getDistances(playerInfo [] records) {
         int [] gridDistance = new int[records.length-1];
         int[] myCoords = this.getMyPosition();
         int[] otherCoords;
@@ -70,7 +70,7 @@ public abstract class BaseBot extends RobotSE {
      * Moves robot to the target position
      * @param pos Array of position required to move, format is x,y
      */
-    private void moveToPos(int[] pos){
+    public void moveToPos(int[] pos){
         int x = pos[0];
         int y = pos[1];
         this.moveHorizontal(x);

@@ -11,7 +11,6 @@ public class XinranBot extends BaseBot {
 
     public final int role; // GUARD, VIP, CHASER
     public final int id;
-    public final int hp;
 
     private int[] vipPos = {0, 0};
     private int[] chaserPos = {0, 0};
@@ -22,10 +21,11 @@ public class XinranBot extends BaseBot {
      * @param str Street number
      * @param ave Avenue number
      * @param dir direction the robot is facing
+     * @param id the robot's numerical id
+     * @param role the robot's role
      */
-    public XinranBot(City city, int str, int ave, Direction dir, int role, int id, int hp) {
-        super(city, str, ave, dir, role, id, hp);
-        this.hp = hp;
+    public XinranBot(City city, int str, int ave, Direction dir, int id, int role) {
+        super(city, str, ave, dir, role, id);
         this.id = id;
         this.role = role;
     }
