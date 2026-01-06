@@ -61,12 +61,10 @@ public class playerInfo {
     }
 
     /**
-     * Reduces the health of the robot by 1
+     * Sets the new health of the robot
      */
-    public void reduceHP() {
-        if (this.hp>0) {
-            this.hp--;
-        }
+    public void setHP(int newHP) {
+        this.hp = newHP;
     }
 
     /**
