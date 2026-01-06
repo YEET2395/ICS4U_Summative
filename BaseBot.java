@@ -125,7 +125,7 @@ public abstract class BaseBot extends RobotSE {
      * Turns the robot left until it is facing the specified Direction
      * @param dir the Direction the robot must face
      */
-    public void turnDirection(Direction dir)
+    private void turnDirection(Direction dir)
     {
         //check for robot's Direction then does the proper turn based on the desired Direction
         for(int i = 0; i < 4; i++)
