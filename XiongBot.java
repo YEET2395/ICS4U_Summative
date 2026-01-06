@@ -3,10 +3,6 @@ package ICS4U_Summative;
 import becker.robots.*;
 
 public class XiongBot extends BaseBot{
-    public final int role; // GUARD, VIP, CHASER
-    public final int id;
-    private int hp;
-
     private int[] guardPos = {0, 0};
     private int[] chaserPos = {0, 0};
 
@@ -23,9 +19,6 @@ public class XiongBot extends BaseBot{
      */
     public XiongBot(City city, int str, int ave, Direction dir, int role, int id, int hp) {
         super(city, str, ave, dir, role, id, hp);
-        this.hp = hp;
-        this.id = id;
-        this.role = role;
     }
 
     public void getGuardPosition(int[] coord){

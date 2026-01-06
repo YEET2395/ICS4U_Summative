@@ -137,5 +137,14 @@ public abstract class BaseBot extends RobotSE {
         }
     }
 
+    /**
+     * Reduces this bot's hp by the specified amount
+     * @param amount the amount of hp to reduce
+     */
+    public void takeDamage(int amount)
+    {
+        this.hp -= amount;
+    }
+
 
 }
