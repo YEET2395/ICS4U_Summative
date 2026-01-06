@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="becker">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/../ICS4UJAVA/becker.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
