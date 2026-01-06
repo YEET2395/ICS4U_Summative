@@ -32,7 +32,17 @@ public abstract class BaseBot extends RobotSE {
      */
     public int[] getMyPosition()
     {
-        return new int[] {this.getStreet(), this.getAvenue()};
+        return new int[] {this.getX(), this.getY()};
+    }
+
+    /** @return current X coordinate*/
+    public int getX(){
+        return this.getAvenue();
+    }
+
+    /** @return current Y coordinate*/
+    public int getY(){
+        return this.getStreet();
     }
 
     /**
@@ -55,6 +65,55 @@ public abstract class BaseBot extends RobotSE {
         }
         return gridDistance;
     }
+
+    /**
+     * Moves robot to the target position
+     * @param pos Array of position required to move, format is x,y
+     */
+    public void moveToPos(int[] pos){
+        int x = pos[0];
+        int y = pos[1];
+        this.moveHorizontal(x);
+        this.moveVertical(y);
+    }
+
+    /**
+     * Moves robot vertically to the target Y
+     * @param loc Y location of the place required to move
+     */
+    private void moveVertical(int loc) {
+        // Move north if above target
+        if (this.getY()>loc){
+            this.turnDirection(Direction.NORTH);
+        }
+        // Move south if below target
+        else if (this.getY()<loc){
+            this.turnDirection(Direction.SOUTH);
+        }
+        // Move while Y value not equal
+        while(this.getY()!=loc){
+            this.move();
+        }
+    }
+
+    /**
+     * Moves robot vertically to the target X
+     * @param loc X location of the place required to move
+     */
+    private void moveHorizontal(int loc) {
+        // We turn accordingly to if point X is left or right of us
+        if (this.getX()>loc){
+            this.turnDirection(Direction.WEST);
+        }
+        else if (this.getX()<loc){
+            this.turnDirection(Direction.EAST);
+        }
+        // Move while X value not equal
+        while(this.getX()!=loc){
+            this.move();
+        }
+    }
+
 
     /**
      * Every bot's own turn logic.
@@ -102,4 +161,6 @@ public abstract class BaseBot extends RobotSE {
             }
         }
     }
+
+
 }
