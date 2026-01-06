@@ -23,7 +23,7 @@ public class XinranBot extends BaseBot {
      * @param ave Avenue number
      * @param dir direction the robot is facing
      */
-    public XinranBot(City city, int str, int ave, Direction dir, int id, int hp, int role) {
+    public XinranBot(City city, int str, int ave, Direction dir, int role, int id, int hp) {
         super(city, str, ave, dir, role, id, hp);
         this.hp = hp;
         this.id = id;
