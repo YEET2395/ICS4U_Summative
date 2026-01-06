@@ -6,7 +6,8 @@ public abstract class BaseBot extends RobotSE {
 
     private final int role; // GUARD = 2, VIP = 1, CHASER = 3
     private final int id;
-    private final int hp;
+
+    private playerInfo[] records;
 
     /**
      * Constructor for BaseBot
@@ -16,14 +17,12 @@ public abstract class BaseBot extends RobotSE {
      * @param dir direction the robot is facing
      * @param role role of the bot
      * @param id identifier of the bot
-     * @param hp health points of the bot
      */
-    public BaseBot(City city, int str, int ave, Direction dir, int role, int id, int hp)
+    public BaseBot(City city, int str, int ave, Direction dir, int role, int id)
     {
         super(city, str, ave, dir);
         this.role = role;
         this.id = id;
-        this.hp = hp;
     }
 
     /**
@@ -43,6 +42,22 @@ public abstract class BaseBot extends RobotSE {
     /** @return current Y coordinate*/
     public int getY(){
         return this.getStreet();
+    }
+
+    /**
+     * Gets the BaseBot's list of records
+     * @return the personal records of the BaseBot
+     */
+    public playerInfo[] getRecords() {
+        return records;
+    }
+
+    /**
+     * Updates the BaseBot's personal records
+     * @param newRecords the new records to be implemented
+     */
+    public void updateRecords(playerInfo[] newRecords) {
+        this.records = newRecords;
     }
 
     /**
