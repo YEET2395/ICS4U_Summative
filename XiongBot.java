@@ -17,8 +17,8 @@ public class XiongBot extends BaseBot{
      * @param id   identifier of the bot
      * @param hp   health points of the bot
      */
-    public XiongBot(City city, int str, int ave, Direction dir, int role, int id, int hp) {
-        super(city, str, ave, dir, role, id, hp);
+    public XiongBot(City city, int str, int ave, Direction dir, int role, int id, int hp, int movesPerTurn, int dodgeDiff) {
+        super(city, str, ave, dir, role, id, hp, movesPerTurn, dodgeDiff);
     }
 
     public void getGuardPosition(int[] coord){

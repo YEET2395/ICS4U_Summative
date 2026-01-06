@@ -4,9 +4,13 @@ import becker.robots.*;
 
 public abstract class BaseBot extends RobotSE {
 
-    private final int role; // GUARD = 2, VIP = 1, CHASER = 3
-    private final int id;
+    private final int ROLE; // GUARD = 2, VIP = 1, CHASER = 3
+    private final int ID;
+    private final int MOVES_PER_TURN;
+    private final int DODGE_DIFFICULTY;
     private int hp;
+    private boolean isCaught;
+    playerInfo[] myRecords;
 
     /**
      * Constructor for BaseBot
@@ -17,12 +21,15 @@ public abstract class BaseBot extends RobotSE {
      * @param role role of the bot
      * @param id identifier of the bot
      */
-    public BaseBot(City city, int str, int ave, Direction dir, int role, int id, int hp)
+    public BaseBot(City city, int str, int ave, Direction dir, int role, int id, int hp, int movesPerTurn, int dodgeDiff)
     {
         super(city, str, ave, dir);
-        this.role = role;
-        this.id = id;
+        this.ROLE = role;
+        this.ID = id;
         this.hp = hp;
+        this.DODGE_DIFFICULTY = dodgeDiff;
+        this.MOVES_PER_TURN = movesPerTurn;
+        this.isCaught = false;
     }
 
     /**
@@ -32,6 +39,38 @@ public abstract class BaseBot extends RobotSE {
     public int[] getMyPosition()
     {
         return new int[] {this.getX(), this.getY()};
+    }
+
+    /**
+     * Gets the role of this robot
+     * @return the role of the robot
+     */
+    public int getMyRole() {
+        return this.ROLE;
+    }
+
+    /**
+     * Gets the health of this robot
+     * @return the health of the robot
+     */
+    public int getMyHP() {
+        return this.hp;
+    }
+
+    /**
+     * Gets the dodging/catching capability of this robot
+     * @return the dodging/catching capability of this robot
+     */
+    public int getDodgeDifficulty() {
+        return this.DODGE_DIFFICULTY;
+    }
+
+    /**
+     * Gets the state of this robot
+     * @return whether the robot has been caught or not
+     */
+    public boolean getMyState() {
+        return this.isCaught;
     }
 
     /** @return current X coordinate*/
@@ -58,7 +97,7 @@ public abstract class BaseBot extends RobotSE {
         for (int i=0; i<records.length; i++) {
             otherCoords = records[i].getPosition();
             //check that the robot's position being compared is not the BaseBot invoking the method
-            if (this.id != records[i].getID()) {
+            if (this.ID != records[i].getID()) {
                 gridDistance[i] = Math.abs(myCoords[0] - otherCoords[0]) + Math.abs(myCoords[1] - otherCoords[1]);
             }
         }
@@ -144,7 +183,18 @@ public abstract class BaseBot extends RobotSE {
     public void takeDamage(int amount)
     {
         this.hp -= amount;
+        //change state if its lost all hp
+        if (this.hp<=0) {
+            this.isCaught = true;
+        }
     }
 
+    /**
+     * Updates the personal records of this robot
+     * @param records the new records
+     */
+    public void setRecords(playerInfo[] records) {
+        this.myRecords = records;
+    }
 
 }

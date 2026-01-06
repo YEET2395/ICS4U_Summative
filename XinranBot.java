@@ -20,8 +20,8 @@ public class XinranBot extends BaseBot {
      * @param id the robot's numerical id
      * @param role the robot's role
      */
-    public XinranBot(City city, int str, int ave, Direction dir, int id, int role, int hp) {
-        super(city, str, ave, dir, role, id, hp);
+    public XinranBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, int dodgeDiff) {
+        super(city, str, ave, dir, role, id, hp, movesPerTurn, dodgeDiff);
     }
 
     /**

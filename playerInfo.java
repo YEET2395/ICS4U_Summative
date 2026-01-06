@@ -7,10 +7,11 @@ package ICS4U_Summative;
  */
 public class playerInfo {
     private final int ID;
-    private int role;
+    private final int ROLE;
     private int hp;
-    private final int dodgeDifficulty;
+    private final int DODGE_DIFFICULTY;
     private int[] position;
+    private boolean isCaught;
 
     /**
      * Constructor for playerInfo
@@ -18,14 +19,16 @@ public class playerInfo {
      * @param role the role of the robot
      * @param hp the health of the robot
      * @param dodgeDifficulty the dodge/catch capability of the robot (higher is better)
-     * @param pos the coordinates of the robot
+     * @param pos the x,y coordinates of the robot
+     * @param isCaught the state of the robot
      */
-    public playerInfo (int ID, int role, int hp, int dodgeDifficulty, int[] pos) {
+    public playerInfo (int ID, int role, int hp, int dodgeDifficulty, int[] pos, boolean isCaught) {
         this.ID = ID;
-        this.role = role;
+        this.ROLE = role;
         this.hp = hp;
-        this.dodgeDifficulty = dodgeDifficulty;
+        this.DODGE_DIFFICULTY = dodgeDifficulty;
         this.position = pos;
+        this.isCaught = isCaught;
     }
 
     /**
@@ -33,7 +36,7 @@ public class playerInfo {
      * @return the ID number of the robot
      */
     public int getID() {
-        return ID;
+        return this.ID;
     }
 
     /**
@@ -41,15 +44,7 @@ public class playerInfo {
      * @return the role of the robot
      */
     public int getRole() {
-        return role;
-    }
-
-    /**
-     * Changes the role after the robot runs out of HP
-     * @param role the role of the robot
-     */
-    public void setRole(int role) {
-        this.role = role;
+        return this.ROLE;
     }
 
     /**
@@ -57,14 +52,19 @@ public class playerInfo {
      * @return the health of the robot
      */
     public int getHP() {
-        return hp;
+        return this.hp;
     }
 
     /**
-     * Sets the new health of the robot
+     * REDUNDANT METHOD BECAUSE OF updateRecords()
+     * Sets the new health of the robot and updates the state of the robot
      */
     public void setHP(int newHP) {
         this.hp = newHP;
+        //for redundancy
+        if (this.hp == 0) {
+            this.isCaught = true;
+        }
     }
 
     /**
@@ -72,14 +72,44 @@ public class playerInfo {
      * @return the dodge capability of the robot
      */
     public int getDodgeDifficulty() {
-        return dodgeDifficulty;
+        return this.DODGE_DIFFICULTY;
     }
 
     /**
      * Get the position of the robot
-     * @return the coordinates of the robot
+     * @return the x,y coordinates of the robot
      */
     public int[] getPosition() {
-        return position;
+        return this.position;
+    }
+
+    /**
+     * Gets the state of the robot
+     * @return whether the robot has been caught or not
+     */
+    public boolean getState() {
+        return this.isCaught;
+    }
+
+    /**
+     * Updates the position, health, and state of the robot
+     * @param hp the health of the robot
+     * @param pos the x,y coordinates of the robot
+     * @param isCaught the state of the robot
+     */
+    public void updateRecords(int hp, int[] pos, boolean isCaught) {
+        this.hp = hp;
+        this.position = pos;
+        this.isCaught = isCaught;
+    }
+
+    /**
+     * Updates only the position and state of the robot
+     * @param pos the x,y coordinates of the robot
+     * @param isCaught the state of the robot
+     */
+    public void updateRecords(int[] pos, boolean isCaught) {
+        this.position = pos;
+        this.isCaught = isCaught;
     }
 }
