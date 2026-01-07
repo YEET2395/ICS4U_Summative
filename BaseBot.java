@@ -95,7 +95,7 @@ public abstract class BaseBot extends RobotSE {
      * Calculates the grid distance between the robot invoking the method and all other robots (including the invoker)
      * @return the distances to each other robot
      */
-    private int[] getDistances() {
+    public int[] getDistances() {
         int [] gridDistance = new int[myRecords.length];
         int[] myCoords = this.getMyPosition();
         int[] otherCoords;
@@ -113,7 +113,7 @@ public abstract class BaseBot extends RobotSE {
      * Moves robot to the target position
      * @param pos Array of position required to move, format is x,y
      */
-    private void moveToPos(int[] pos){
+    public void moveToPos(int[] pos){
         int x = pos[0];
         int y = pos[1];
         this.moveHorizontal(x);
@@ -168,7 +168,7 @@ public abstract class BaseBot extends RobotSE {
      * Turns the robot left until it is facing the specified Direction
      * @param dir the Direction the robot must face
      */
-    private void turnDirection(Direction dir)
+    public void turnDirection(Direction dir)
     {
         //check for robot's Direction then does the proper turn based on the desired Direction
         for(int i = 0; i < 4; i++)
