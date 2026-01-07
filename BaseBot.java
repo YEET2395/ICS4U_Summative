@@ -101,7 +101,7 @@ public abstract class BaseBot extends RobotSE {
         int[] otherCoords;
 
         //iterate through list of players and calculates the distance to get to each one
-        for (int i=0; i<myRecords.length; i++) {
+        for (int i=0; i<this.myRecords.length; i++) {
             otherCoords = myRecords[i].getPosition();
             gridDistance[i] = Math.abs(myCoords[0] - otherCoords[0]) + Math.abs(myCoords[1] - otherCoords[1]);
         }

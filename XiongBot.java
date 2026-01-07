@@ -6,7 +6,8 @@ import java.awt.*;
 
 public class XiongBot extends BaseBot{
     private int[] guardPos = {0, 0};
-    private int[] chaserPos = {0, 0};
+    // changed to support multiple chasers
+    private int[][] chaserPos = new int[0][0];
     private int movesPerTurn = 1;
 
     /**
@@ -34,9 +35,17 @@ public class XiongBot extends BaseBot{
         guardPos[1]=coord[1];
     }
 
-    public void getChaserPosition(int[] coord){
-        chaserPos[0]=coord[0];
-        chaserPos[1]=coord[1];
+    // accepts multiple chaser coordinates
+    public void setChaserPositions(int[][] coords) {
+        if (coords == null) {
+            this.chaserPos = new int[0][0];
+            return;
+        }
+        this.chaserPos = new int[coords.length][2];
+        for (int i = 0; i < coords.length; i++) {
+            this.chaserPos[i][0] = coords[i][0];
+            this.chaserPos[i][1] = coords[i][1];
+        }
     }
 
     private boolean attemptMove(Direction d) {
@@ -52,59 +61,81 @@ public class XiongBot extends BaseBot{
         int movesAllowed = this.movesPerTurn;
 
         for (int step = 0; step < movesAllowed; step++) {
-            int myX = this.getX();
-            int myY = this.getY();
-            int chX = this.chaserPos[0];
-            int chY = this.chaserPos[1];
+            int myX = this.getMyPosition()[0];
+            int myY = this.getMyPosition()[1];
 
-            int dx = myX - chX; // positive = we're east of chaser
-            int dy = myY - chY; // positive = we're south of chaser
-
-            // choose primary escape direction along the axis with larger separation
-            Direction primary;
-            if (Math.abs(dx) >= Math.abs(dy)) {
-                primary = (dx >= 0) ? Direction.EAST : Direction.WEST;
-            } else {
-                primary = (dy >= 0) ? Direction.SOUTH : Direction.NORTH;
+            // If we have no chaser info, do nothing this turn
+            if (this.chaserPos.length == 0) {
+                break;
             }
 
-            boolean moved = false;
-
-            // try primary
-            if (attemptMove(primary)) {
-                moved = true;
-            } else {
-                // determine and try secondary
-                Direction secondary;
-                if (primary == Direction.EAST || primary == Direction.WEST) {
-                    if (dy>=0){
-                        secondary = Direction.SOUTH;
-                    } else {
-                        secondary = Direction.NORTH;
-                    }
-                } else {
-                    if(dx>=0){
-                        secondary = Direction.EAST;
-                    } else {
-                        secondary = Direction.WEST;
-                    }
-                }
-
-                if (attemptMove(secondary)) {
-                    moved = true;
-                } else {
-                    // fallback: try all directions until one works
-                    Direction[] all = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
-                    for (Direction d : all) {
-                        if (attemptMove(d)) {
-                            moved = true; break;
-                        }
-                    }
+            // Current minimum distance to any chaser (used for tie-breaker)
+            int currentMinDist = Integer.MAX_VALUE;
+            for (int i = 0; i < this.chaserPos.length; i++) {
+                int[] c = this.chaserPos[i];
+                int d = Math.abs(myX - c[0]) + Math.abs(myY - c[1]);
+                if (d < currentMinDist) {
+                    currentMinDist = d;
                 }
             }
 
-            // if cannot move at this step, stop trying further steps
-            if (!moved) break;
+            // Evaluate candidate directions and pick the one that maximizes the minimum distance to any chaser
+            Direction[] candidates = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
+            Direction bestDir = null;
+            int bestMinDistance = Integer.MIN_VALUE;
+            int bestIncrease = Integer.MIN_VALUE;
+
+            for (int i=0; i<candidates.length; i++) {
+                Direction d = candidates[i];
+                // turn to the direction to check if front is clear
+                this.turnDirection(d);
+                if (!this.frontIsClear()) {
+                    continue;
+                }
+
+                // compute the coordinates if we move one step in this direction
+                int newX = myX;
+                int newY = myY;
+
+                if (d == Direction.NORTH) {
+                    newY = myY - 1;
+                } else if (d == Direction.SOUTH) {
+                    newY = myY + 1;
+                } else if (d == Direction.EAST) {
+                    newX = myX + 1;
+                } else if (d == Direction.WEST) {
+                    newX = myX - 1;
+                }
+
+                // compute minimum distance to any chaser from the new position
+                int minDist = Integer.MAX_VALUE;
+                for (int j = 0; j < this.chaserPos.length; j++) {
+                    int[] c = this.chaserPos[j];
+                    int dist = Math.abs(newX - c[0]) + Math.abs(newY - c[1]);
+                    if (dist < minDist) {
+                        minDist = dist;
+                    }
+                }
+
+                int increase = minDist - currentMinDist;
+
+                // prefer the direction which gives the largest minimum-distance; break ties by largest increase
+                if (minDist > bestMinDistance || (minDist == bestMinDistance && increase > bestIncrease)) {
+                    bestMinDistance = minDist;
+                    bestDir = d;
+                    bestIncrease = increase;
+                }
+            }
+
+            // If no valid move was found, stop trying further steps
+            if (bestDir == null) {
+                break;
+            }
+
+            // Attempt to move in the chosen best direction. If failed, stop further movement.
+            if (!attemptMove(bestDir)) {
+                break;
+            }
         }
     }
 }
