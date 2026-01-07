@@ -73,7 +73,7 @@ public class XiongBot extends BaseBot{
             int currentMinDist = Integer.MAX_VALUE;
             for (int i = 0; i < this.chaserPos.length; i++) {
                 int[] c = this.chaserPos[i];
-                int d = Math.abs(myX - c[0]) + Math.abs(myY - c[1]);
+                int d = this.getDistances(c);
                 if (d < currentMinDist) {
                     currentMinDist = d;
                 }
@@ -111,7 +111,7 @@ public class XiongBot extends BaseBot{
                 int minDist = Integer.MAX_VALUE;
                 for (int j = 0; j < this.chaserPos.length; j++) {
                     int[] c = this.chaserPos[j];
-                    int dist = Math.abs(newX - c[0]) + Math.abs(newY - c[1]);
+                    int dist = this.getDistances(new int[]{newX, newY});
                     if (dist < minDist) {
                         minDist = dist;
                     }
