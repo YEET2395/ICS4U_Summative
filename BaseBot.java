@@ -204,6 +204,14 @@ public abstract class BaseBot extends RobotSE {
     }
 
     /**
+     * For use of subclasses to get the personal records of this robot
+     * @return the personal records of this robot
+     */
+    public playerInfo[] getRecords() {
+        return this.myRecords;
+    }
+
+    /**
      * Gets the record of a robot given an ID
      * @param ID the ID of the desired robot
      * @return the record of the desired robot
