@@ -9,7 +9,7 @@ import java.awt.*;
  * @author Xinran Li
  * @version 2025 12 30
  */
-public class XinranBot extends BaseBot {
+public class LiBot extends BaseBot {
     private int[] vipPos = {0, 0};
     private int[] chaserPos = {0, 0};
 
@@ -22,7 +22,7 @@ public class XinranBot extends BaseBot {
      * @param id the robot's numerical id
      * @param role the robot's role
      */
-    public XinranBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, int dodgeDiff) {
+    public LiBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, int dodgeDiff) {
         super(city, str, ave, dir, role, id, hp, movesPerTurn, dodgeDiff);
 
         //for debugging
