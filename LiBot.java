@@ -9,9 +9,9 @@ import java.awt.*;
  * @author Xinran Li
  * @version 2025 12 30
  */
-public class XinranBot extends BaseBot {
-    private int[] vipPos = {0, 0};
-    private int[] chaserPos = {0, 0};
+public class LiBot extends BaseBot {
+    private int[][] vipPos;
+    private int[][] chaserPos;
 
     /**
      * Constructor for XinranBot
@@ -22,7 +22,7 @@ public class XinranBot extends BaseBot {
      * @param id the robot's numerical id
      * @param role the robot's role
      */
-    public XinranBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, int dodgeDiff) {
+    public LiBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, int dodgeDiff) {
         super(city, str, ave, dir, role, id, hp, movesPerTurn, dodgeDiff);
 
         //for debugging
@@ -34,20 +34,18 @@ public class XinranBot extends BaseBot {
      * Application class will send the position of VIP to XinranBot
      * @param pos array containing street and avenue number of VIP
      */
-    public void sendVIPPosition(int[] pos)
+    public void sendVIPPosition(int[][] pos)
     {
-        this.vipPos[0] = pos[0];
-        this.vipPos[1] = pos[1];
+        this.vipPos = pos;
     }
 
     /**
      * XinranBot should know the position of the chaser only if the chaser is within 5 intersections to the VIP
      * @param pos array containing street and avenue number of chaser
      */
-    public void sendChaserPosition(int[] pos)
+    public void sendChaserPosition(int[][] pos)
     {
-        chaserPos[0] = pos[0];
-        chaserPos[1] = pos[1];
+        this.chaserPos = pos;
     }
 
 
