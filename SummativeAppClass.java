@@ -1,5 +1,6 @@
 package ICS4U_Summative;
 import becker.robots.*;
+import java.util.*;
 
 /**
  * Application class for the summative project
@@ -30,7 +31,7 @@ public class SummativeAppClass {
     }
 
     /**
-     * Updates the robots copy of the records
+     * Updates the robots copy of their records
      * @param array the array of BaseBots
      * @param publicRecords the records containing the info for the Guards/VIP
      * @param chaserRecords the records containing the info for the Chasers

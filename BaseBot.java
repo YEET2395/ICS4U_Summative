@@ -43,10 +43,18 @@ public abstract class BaseBot extends RobotSE {
 
     /**
      * Gets the role of this robot
-     * @return the role of the robot
+     * @return the role of this robot
      */
     public int getMyRole() {
         return this.ROLE;
+    }
+
+    /**
+     * Gets the ID of this robot
+     * @return the numerical ID of this robot
+     */
+    public int getMyID() {
+        return this.ID;
     }
 
     /**
@@ -85,22 +93,19 @@ public abstract class BaseBot extends RobotSE {
 
     /**
      * Calculates the grid distance between the robot invoking the method and all other robots (including the invoker)
-     * @param records the array of other players
      * @return the distances to each other robot
      */
-    private int[] getDistances(playerInfo [] records) {
-        int [] gridDistance = new int[records.length-1];
+    private int[] getDistances() {
+        int [] gridDistance = new int[myRecords.length];
         int[] myCoords = this.getMyPosition();
         int[] otherCoords;
-        //iterate through list of players (excludes the robot calling it using ID)
-        //and calculates the distance to get to each one
-        for (int i=0; i<records.length; i++) {
-            otherCoords = records[i].getPosition();
-            //check that the robot's position being compared is not the BaseBot invoking the method
-            if (this.ID != records[i].getID()) {
-                gridDistance[i] = Math.abs(myCoords[0] - otherCoords[0]) + Math.abs(myCoords[1] - otherCoords[1]);
-            }
+
+        //iterate through list of players and calculates the distance to get to each one
+        for (int i=0; i<myRecords.length; i++) {
+            otherCoords = myRecords[i].getPosition();
+            gridDistance[i] = Math.abs(myCoords[0] - otherCoords[0]) + Math.abs(myCoords[1] - otherCoords[1]);
         }
+
         return gridDistance;
     }
 
@@ -183,6 +188,7 @@ public abstract class BaseBot extends RobotSE {
     public void takeDamage(int amount)
     {
         this.hp -= amount;
+
         //change state if its lost all hp
         if (this.hp<=0) {
             this.isCaught = true;
@@ -197,4 +203,24 @@ public abstract class BaseBot extends RobotSE {
         this.myRecords = records;
     }
 
+    /**
+     * Gets the record of a robot given an ID
+     * @param ID the ID of the desired robot
+     * @return the record of the desired robot
+     */
+    public playerInfo getRobotInfo(int ID) {
+        //initially sets targetInfo as you
+        playerInfo targetInfo = getRobotInfo(this.ID);
+
+        //iterates through the robot's records
+        for (int i=0; i<this.myRecords.length; i++) {
+
+            //checks if the target ID and record ID match
+            if (myRecords[i].getID() == ID) {
+                targetInfo = myRecords[i];
+            }
+        }
+
+        return targetInfo;
+    }
 }

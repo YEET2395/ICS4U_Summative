@@ -2,6 +2,8 @@ package ICS4U_Summative;
 
 import becker.robots.*;
 
+import java.awt.*;
+
 public class XiongBot extends BaseBot{
     private int[] guardPos = {0, 0};
     private int[] chaserPos = {0, 0};
@@ -19,6 +21,10 @@ public class XiongBot extends BaseBot{
      */
     public XiongBot(City city, int str, int ave, Direction dir, int role, int id, int hp, int movesPerTurn, int dodgeDiff) {
         super(city, str, ave, dir, role, id, hp, movesPerTurn, dodgeDiff);
+
+        //for debugging
+        super.setColor(Color.GREEN);
+        super.setLabel("Robot " + super.getMyID());
     }
 
     public void getGuardPosition(int[] coord){

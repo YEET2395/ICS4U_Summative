@@ -2,6 +2,8 @@ package ICS4U_Summative;
 
 import becker.robots.*;
 
+import java.awt.*;
+
 /**
  * Xinran's guarding robot
  * @author Xinran Li
@@ -22,6 +24,10 @@ public class XinranBot extends BaseBot {
      */
     public XinranBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, int dodgeDiff) {
         super(city, str, ave, dir, role, id, hp, movesPerTurn, dodgeDiff);
+
+        //for debugging
+        super.setColor(Color.BLUE);
+        super.setLabel("Robot " + super.getMyID());
     }
 
     /**

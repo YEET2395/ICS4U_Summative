@@ -8,7 +8,7 @@ The project demonstrates **object-oriented programming, records, sorting (non-bu
 ## Team & Responsibilities
 - **Xinran Li** — Guard AI (defensive positioning + threat scoring), shared BaseBot / OOP structure, testing for Guard
 - **Austin Xiong** — VIP AI (escape / survival strategy), testing for VIP
-- **[Member 3 Name]** — Chaser AI (pursuit / catch strategy), testing for Chaser
+- **Aadil Kureshy** — Chaser AI (pursuit / catch strategy), testing for Chaser
 
 > The summative is completed in groups of three, with individual robot AI work by each member. :contentReference[oaicite:4]{index=4}
 
@@ -29,7 +29,7 @@ The project demonstrates **object-oriented programming, records, sorting (non-bu
 
 **Win / Lose**
 - Chaser wins if it catches the required target(s) within the time limit.
-- VIP/Guard win if the time limit expires without the Chaser achieving its catch condition.
+- VIP/Guard win if the time limit expires without the Chaser achieving its catch condition, or if all Chasers are "caught".
 
 > Note: Our exact win condition (e.g., “Chaser must catch both robots” vs “Chaser must catch VIP”) is defined in the `Application` rules configuration.
 
