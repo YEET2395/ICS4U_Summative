@@ -10,6 +10,7 @@ public abstract class BaseBot extends RobotSE {
     private final double DODGE_DIFFICULTY;
     private int hp;
     private boolean isCaught;
+    public boolean[] playerCaught;
     //playerInfo[] myRecords;
 
     /**
@@ -73,10 +74,6 @@ public abstract class BaseBot extends RobotSE {
         return this.DODGE_DIFFICULTY;
     }
 
-    public int getMOVES_PER_TURN() {
-        return this.MOVES_PER_TURN;
-    }
-
     /**
      * Gets the state of this robot
      * @return whether the robot has been caught or not
@@ -116,11 +113,6 @@ public abstract class BaseBot extends RobotSE {
     public int getDistances(int[] point) {
         int[] myCoords = this.getMyPosition();
         return Math.abs(myCoords[0] - point[0]) + Math.abs(myCoords[1] - point[1]);
-    }
-
-    public int getDistances(int[] point1, int[] point2) {
-        int[] myCoords = this.getMyPosition();
-        return Math.abs(point1[0] - point2[0]) + Math.abs(point1[1] - point2[1]);
     }
 
     /**
