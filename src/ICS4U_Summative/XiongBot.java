@@ -24,8 +24,9 @@ public class XiongBot extends BaseBot{
      * @param role role of the bot
      * @param id   identifier of the bot
      * @param hp   health points of the bot
+     * @param dodgeDiff dodging difficulty (double)
      */
-    public XiongBot(City city, int str, int ave, Direction dir, int role, int id, int hp, int movesPerTurn, int dodgeDiff) {
+    public XiongBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, double dodgeDiff) {
         super(city, str, ave, dir, role, id, hp, movesPerTurn, dodgeDiff);
         this.movesPerTurn = movesPerTurn;
 
@@ -262,4 +263,3 @@ public class XiongBot extends BaseBot{
         return this.chaserSpeeds[chaserIndex];
     }
 }
-

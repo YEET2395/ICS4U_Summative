@@ -29,113 +29,71 @@ public class App {
         }
     }
 
-
-    /**
-     * Randomly generates a number and compares it to the chaser and target's dodging capability
-     * before applying damage and sending the results to the chaser
-     * @param chaser
-     * @param target
-     * @param r
-     * @return
-     */
-    public static void checkDodge(KureshyBot chaser, BaseBot target, Random r) {
-        int diff = r.nextInt(101);
-
-        //check which robots dodged and which didn't
-        if (chaser.getDodgeDifficulty() >= diff && target.getDodgeDifficulty() >= diff) {
-            chaser.sendTagResult(target.getMyID(), false);
-            //means both dodged
-        } else if (chaser.getDodgeDifficulty() >= diff && target.getDodgeDifficulty() < diff) {
-            chaser.sendTagResult(target.getMyID(), true);
-            target.takeDamage(1);
-            //means chaser dodged but target didn't
-        } else if (chaser.getDodgeDifficulty() < diff && target.getDodgeDifficulty() >= diff) {
-            chaser.sendTagResult(target.getMyID(), false);
-            chaser.takeDamage(1);
-            //means target dodged but chaser didn't
-        } else {
-            chaser.sendTagResult(target.getMyID(), true);
-            chaser.takeDamage(1);
-            target.takeDamage(1);
-            //means both didn't dodge
-        }
-
-    }
-
-    public static void testXiongBotSpeedTracking() {
-        // Create a simple test scenario with XiongBot VIP and TestChaserBot
+    public static void main(String[] args)
+    {
         City playground = new City();
         setupPlayground(playground);
-        playground.setSize(1500, 900);
 
-        // Create two XiongBot VIPs at different positions
-        XiongBot[] vipBots = new XiongBot[2];
-        vipBots[0] = new XiongBot(playground, 5, 2, Direction.EAST, 1, 1, 100, 1, 5);
-        vipBots[1] = new XiongBot(playground, 6, 3, Direction.EAST, 2, 1, 100, 1, 5);
+        // Initialize arrays for chasers, VIPs, and Guards, each with two bots
+        KureshyBot[] chasers = new KureshyBot[2];
+        XiongBot[] VIPs = new XiongBot[2];
+        LiBot[] Guards = new LiBot[2];
 
-        // Create two TestChaserBots at different positions
-        TestChaserBot[] testChasers = new TestChaserBot[2];
-        testChasers[0] = new TestChaserBot(playground, 10, 2, Direction.NORTH, 3, 3, 100, 1, 1);
-        testChasers[1] = new TestChaserBot(playground, 11, 3, Direction.NORTH, 4, 3, 100, 1, 1);
+        Random rand = new Random();
 
-        // Example: set up the chaser positions for the first VIP to track
-        int[][] chaserPositions = new int[][]{
-                {testChasers[0].getX(), testChasers[0].getY()},
-                {testChasers[1].getX(), testChasers[1].getY()}
-        };
-        vipBots[0].setChaserPositions(chaserPositions);
-        vipBots[1].setChaserPositions(chaserPositions);
+        // VIP: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
+        VIPs[0] = new XiongBot(
+            playground,
+            rand.nextInt(13) + 1,
+            rand.nextInt(24) + 1,
+            Direction.SOUTH, 1001, 1, 2,
+            rand.nextInt(3) + 1,
+            0.3 + rand.nextDouble() * 0.1
+        );
+        VIPs[1] = new XiongBot(
+            playground,
+            rand.nextInt(13) + 1,
+            rand.nextInt(24) + 1,
+            Direction.WEST, 1002, 1, 2,
+            rand.nextInt(3) + 1,
+            0.3 + rand.nextDouble() * 0.1
+        );
 
-        // Test loop - simulate 20 turns
-        System.out.println("Starting Test: XiongBot Speed Tracking and Position Prediction");
-        System.out.println("========================================================");
+        // Guard: movesPerTurn [2,4], dodgeDiff [0.45, 0.55]
+        Guards[0] = new LiBot(
+            playground,
+            rand.nextInt(13) + 1,
+            rand.nextInt(24) + 1,
+            Direction.NORTH, 2001, 2, 5,
+            rand.nextInt(3) + 2,
+            0.45 + rand.nextDouble() * 0.1
+        );
+        Guards[1] = new LiBot(
+            playground,
+            rand.nextInt(13) + 1,
+            rand.nextInt(24) + 1,
+            Direction.EAST, 2002, 2, 5,
+            rand.nextInt(3) + 2,
+            0.45 + rand.nextDouble() * 0.1
+        );
 
-        for (int turn = 0; turn < 20; turn++) {
-            // Update chaser positions
-            chaserPositions[0][0] = testChasers[0].getX();
-            chaserPositions[0][1] = testChasers[0].getY();
-            chaserPositions[1][0] = testChasers[1].getX();
-            chaserPositions[1][1] = testChasers[1].getY();
-            vipBots[0].setChaserPositions(chaserPositions);
-            vipBots[1].setChaserPositions(chaserPositions);
-
-            // Track speeds for both VIPs
-            vipBots[0].trackChaserSpeeds();
-            vipBots[1].trackChaserSpeeds();
-
-            // Get current speed and predict future position for both VIPs
-            for (int i = 0; i < vipBots.length; i++) {
-                System.out.println("VIPBot " + i + " Turn " + turn + ":");
-                for (int j = 0; j < testChasers.length; j++) {
-                    double speed = vipBots[i].getChaserSpeed(j);
-                    int[] predictedPos = vipBots[i].predictChaserPosition(j, 5);
-                    System.out.println("  Chaser " + j + " Position: (" + testChasers[j].getX() + ", " + testChasers[j].getY() + ")");
-                    System.out.println("  Chaser " + j + " Speed: " + String.format("%.2f", speed) + " units/turn");
-                    if (predictedPos != null) {
-                        System.out.println("  Predicted Position (5 turns ahead): (" + predictedPos[0] + ", " + predictedPos[1] + ")");
-                    }
-                }
-            }
-
-            // Let both chasers and VIPs take their turn
-            for (TestChaserBot chaser : testChasers) {
-                chaser.takeTurn();
-            }
-            for (XiongBot vip : vipBots) {
-                vip.takeTurn();
-            }
-
-            System.out.println();
-        }
-
-        System.out.println("Test Complete!");
-    }
-
-    public static void main(String[] args) {
-        playerInfo[] appRecords;
-        playerInfo[] publicRecords;
-        playerInfo[] chaserRecords;
-        testXiongBotSpeedTracking();
+        // Chaser: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
+        chasers[0] = new KureshyBot(
+            playground,
+            rand.nextInt(13) + 1,
+            rand.nextInt(24) + 1,
+            Direction.NORTH, 3001, 3, 3,
+            rand.nextInt(3) + 3,
+            0.7 + rand.nextDouble() * 0.2
+        );
+        chasers[1] = new KureshyBot(
+            playground,
+            rand.nextInt(13) + 1,
+            rand.nextInt(24) + 1,
+            Direction.EAST, 3001, 3, 3,
+            rand.nextInt(3) + 3,
+            0.7 + rand.nextDouble() * 0.2
+        );
     }
 
 }
