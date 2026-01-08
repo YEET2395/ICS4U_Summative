@@ -29,94 +29,99 @@ public class SummativeAppClass {
         }
     }
 
-//    /**
-//     * Updates the robots copy of their records
-//     * @param array the array of BaseBots
-//     * @param publicRecords the records containing the info for the Guards/VIP
-//     * @param chaserRecords the records containing the info for the Chasers
-//     */
-//    public void updateBotRecords(BaseBot[] array, playerInfo[] publicRecords, playerInfo[] chaserRecords) {
-//        //iterate through the robot array
-//        for (int i=0; i<array.length; i++) {
-//
-//            //check if the robot is a VIP/Guard; otherwise give chaser records
-//            if (array[i].getMyRole() != 3) {
-//                array[i].setRecords(publicRecords);
-//            } else {
-//                array[i].setRecords(chaserRecords);
-//            }
-//
-//        }
-//    }
-
     /**
-     * Updates the records used by the application
+     * Updates the robots copy of their records
      * @param array the array of BaseBots
-     * @param records the array of records to update
+     * @param publicRecords the records containing the info for the Guards/VIP
+     * @param chaserRecords the records containing the info for the Chasers
      */
-    public void updateRecords(BaseBot[] array, playerInfo[] records) {
+    public void updateBotRecords(BaseBot[] array, playerInfo[] publicRecords, playerInfo[] chaserRecords) {
+        //iterate through the robot array
+        for (int i=0; i<array.length; i++) {
 
-        //iterate through the list of records (each record should match with the BaseBot in array)
-        for (int i=0; i<records.length; i++) {
-
-            //update the info that will change
-            records[i].updateRecords(array[i].getMyHP(), array[i].getMyPosition(), array[i].getMyState());
+            //check if the robot is a VIP/Guard; otherwise give chaser records
+            if (array[i].getMyRole() != 3) {
+                array[i].setRecords(publicRecords);
+            } else {
+                array[i].setRecords(chaserRecords);
             }
 
         }
-
-    /**
-     * Gets the position of all robots of a specific role from the records
-     * @param records the application records
-     * @param numRobots the number of robots of that role
-     * @param role the role of desired robots
-     * @return the x,y coordinates of the robots of the specified role
-     */
-    public static int[][] getPosOfRole(playerInfo[] records, int numRobots, int role) {
-        int[][] robotPos = new int[numRobots][2];
-        int count = 0; //robotPos index
-
-        //iterate through records
-        for (int i=0; i<records.length; i++) {
-
-            //checks role
-            if (records[i].getRole() == role) {
-                robotPos[count] = records[i].getPosition();
-                count++;
-            }
-
-        }
-
-        return robotPos;
     }
 
     /**
-     * Gets the HP of all robots of a role from the records
-     * @param records the application records
-     * @param numRobots the number of robots of that role
-     * @param role the role of desired robots
-     * @return the HP of the robots of the specified role
+     * Updates the records used by the application/robots
+     * @param array the array of BaseBots
+     * @param records the array of records to update
+     * @param isChaserRecords to check whether to update the records with health values or not
      */
-    public static int[] getHPOfRole(playerInfo[] records, int numRobots, int role) {
-        int[] robotHP = new int[numRobots];
-        int count = 0; //robotHP index
-
-        //iterate through records
+    public void updateRecords(BaseBot[] array, playerInfo[] records, boolean isChaserRecords) {
+        //iterate through the list of records (each record should match with the BaseBot in array)
         for (int i=0; i<records.length; i++) {
 
-            //checks role
-            if (records[i].getRole() == role) {
-                robotHP[count] = records[i].getHP();
-                count++;
+            //checks whether it's updating the application/public record or chaser record
+            if (!isChaserRecords) {
+                records[i].updateRecords(array[i].getMyHP(), array[i].getMyPosition(), array[i].getMyState());
+            } else {
+                records[i].updateRecords(array[i].getMyPosition(), array[i].getMyState());
             }
-        }
 
-        return robotHP;
+        }
     }
 
     public static void main(String[] args){
         setupPlayground();
 
         playerInfo[] appRecords;
+        playerInfo[] publicRecords;
+        playerInfo[] chaserRecords;
+
+        // Create a simple test scenario with XiongBot VIP and TestChaserBot
+        City testCity = new City();
+        testCity.setSize(1500, 900);
+
+        // Create the XiongBot VIP at position (2, 5)
+        XiongBot vipBot = new XiongBot(testCity, 5, 2, Direction.EAST, 1, 1, 100, 1, 5);
+
+        // Create TestChaserBot at position (2, 10) moving towards the VIP
+        TestChaserBot testChaser = new TestChaserBot(testCity, 10, 2, Direction.NORTH, 2, 3, 100, 1, 1);
+
+        // Set up the chaser positions for the VIP to track
+        int[][] chaserPositions = new int[][]{{2, 10}};
+        vipBot.setChaserPositions(chaserPositions);
+
+        // Test loop - simulate 20 turns
+        System.out.println("Starting Test: XiongBot Speed Tracking and Position Prediction");
+        System.out.println("========================================================");
+
+        for (int turn = 0; turn < 20; turn++) {
+            // Update chaser position
+            chaserPositions[0][0] = testChaser.getX();
+            chaserPositions[0][1] = testChaser.getY();
+            vipBot.setChaserPositions(chaserPositions);
+
+            // Track speeds
+            vipBot.trackChaserSpeeds();
+
+            // Get current speed and predict future position
+            double speed = vipBot.getChaserSpeed(0);
+            int[] predictedPos = vipBot.predictChaserPosition(0, 5);
+
+            // Print debug information
+            System.out.println("Turn " + turn + ":");
+            System.out.println("  Chaser Position: (" + testChaser.getX() + ", " + testChaser.getY() + ")");
+            System.out.println("  Chaser Speed: " + String.format("%.2f", speed) + " units/turn");
+            if (predictedPos != null) {
+                System.out.println("  Predicted Position (5 turns ahead): (" + predictedPos[0] + ", " + predictedPos[1] + ")");
+            }
+
+            // Let both bots take their turn
+            testChaser.takeTurn();
+            vipBot.takeTurn();
+
+            System.out.println();
+        }
+
+        System.out.println("Test Complete!");
     }
 }
