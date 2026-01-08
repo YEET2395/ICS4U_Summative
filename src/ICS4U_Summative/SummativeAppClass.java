@@ -1,5 +1,6 @@
 package ICS4U_Summative;
 import becker.robots.*;
+import java.util.Random;
 
 /**
  * Application class for the summative project
@@ -13,9 +14,8 @@ public class SummativeAppClass {
      * @author Xinran Li
      * @version 2025 12 30
      */
-    private static void setupPlayground()
+    private static void setupPlayground(City playground)
     {
-        City playground = new City();
         playground.setSize(1500, 900);
         for(int i = 1; i <= 13; i++)
         {
@@ -164,8 +164,6 @@ public class SummativeAppClass {
     }
     
     public static void main(String[] args) {
-        setupPlayground();
-
         playerInfo[] appRecords;
         playerInfo[] publicRecords;
         playerInfo[] chaserRecords;
@@ -173,47 +171,66 @@ public class SummativeAppClass {
     }
     public static void testXiongBotSpeedTracking() {
         // Create a simple test scenario with XiongBot VIP and TestChaserBot
-        City testCity = new City();
-        testCity.setSize(1500, 900);
+        City playground = new City();
+        setupPlayground(playground);
+        playground.setSize(1500, 900);
 
-        // Create the XiongBot VIP at position (2, 5)
-        XiongBot vipBot = new XiongBot(testCity, 5, 2, Direction.EAST, 1, 1, 100, 1, 5);
+        // Create two XiongBot VIPs at different positions
+        XiongBot[] vipBots = new XiongBot[2];
+        vipBots[0] = new XiongBot(playground, 5, 2, Direction.EAST, 1, 1, 100, 1, 5);
+        vipBots[1] = new XiongBot(playground, 6, 3, Direction.EAST, 2, 1, 100, 1, 5);
 
-        // Create TestChaserBot at position (2, 10) moving towards the VIP
-        TestChaserBot testChaser = new TestChaserBot(testCity, 10, 2, Direction.NORTH, 2, 3, 100, 1, 1);
+        // Create two TestChaserBots at different positions
+        TestChaserBot[] testChasers = new TestChaserBot[2];
+        testChasers[0] = new TestChaserBot(playground, 10, 2, Direction.NORTH, 3, 3, 100, 1, 1);
+        testChasers[1] = new TestChaserBot(playground, 11, 3, Direction.NORTH, 4, 3, 100, 1, 1);
 
-        // Set up the chaser positions for the VIP to track
-        int[][] chaserPositions = new int[][]{{2, 10}};
-        vipBot.setChaserPositions(chaserPositions);
+        // Example: set up the chaser positions for the first VIP to track
+        int[][] chaserPositions = new int[][]{
+            {testChasers[0].getX(), testChasers[0].getY()},
+            {testChasers[1].getX(), testChasers[1].getY()}
+        };
+        vipBots[0].setChaserPositions(chaserPositions);
+        vipBots[1].setChaserPositions(chaserPositions);
 
         // Test loop - simulate 20 turns
         System.out.println("Starting Test: XiongBot Speed Tracking and Position Prediction");
         System.out.println("========================================================");
 
         for (int turn = 0; turn < 20; turn++) {
-            // Update chaser position
-            chaserPositions[0][0] = testChaser.getX();
-            chaserPositions[0][1] = testChaser.getY();
-            vipBot.setChaserPositions(chaserPositions);
+            // Update chaser positions
+            chaserPositions[0][0] = testChasers[0].getX();
+            chaserPositions[0][1] = testChasers[0].getY();
+            chaserPositions[1][0] = testChasers[1].getX();
+            chaserPositions[1][1] = testChasers[1].getY();
+            vipBots[0].setChaserPositions(chaserPositions);
+            vipBots[1].setChaserPositions(chaserPositions);
 
-            // Track speeds
-            vipBot.trackChaserSpeeds();
+            // Track speeds for both VIPs
+            vipBots[0].trackChaserSpeeds();
+            vipBots[1].trackChaserSpeeds();
 
-            // Get current speed and predict future position
-            double speed = vipBot.getChaserSpeed(0);
-            int[] predictedPos = vipBot.predictChaserPosition(0, 5);
-
-            // Print debug information
-            System.out.println("Turn " + turn + ":");
-            System.out.println("  Chaser Position: (" + testChaser.getX() + ", " + testChaser.getY() + ")");
-            System.out.println("  Chaser Speed: " + String.format("%.2f", speed) + " units/turn");
-            if (predictedPos != null) {
-                System.out.println("  Predicted Position (5 turns ahead): (" + predictedPos[0] + ", " + predictedPos[1] + ")");
+            // Get current speed and predict future position for both VIPs
+            for (int i = 0; i < vipBots.length; i++) {
+                System.out.println("VIPBot " + i + " Turn " + turn + ":");
+                for (int j = 0; j < testChasers.length; j++) {
+                    double speed = vipBots[i].getChaserSpeed(j);
+                    int[] predictedPos = vipBots[i].predictChaserPosition(j, 5);
+                    System.out.println("  Chaser " + j + " Position: (" + testChasers[j].getX() + ", " + testChasers[j].getY() + ")");
+                    System.out.println("  Chaser " + j + " Speed: " + String.format("%.2f", speed) + " units/turn");
+                    if (predictedPos != null) {
+                        System.out.println("  Predicted Position (5 turns ahead): (" + predictedPos[0] + ", " + predictedPos[1] + ")");
+                    }
+                }
             }
 
-            // Let both bots take their turn
-            testChaser.takeTurn();
-            vipBot.takeTurn();
+            // Let both chasers and VIPs take their turn
+            for (TestChaserBot chaser : testChasers) {
+                chaser.takeTurn();
+            }
+            for (XiongBot vip : vipBots) {
+                vip.takeTurn();
+            }
 
             System.out.println();
         }
