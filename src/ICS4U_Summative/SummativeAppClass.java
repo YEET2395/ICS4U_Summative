@@ -1,5 +1,7 @@
 package ICS4U_Summative;
+
 import becker.robots.*;
+import java.util.Random;
 
 /**
  * Application class for the summative project
@@ -13,9 +15,9 @@ public class SummativeAppClass {
      * @author Xinran Li
      * @version 2025 12 30
      */
-    private static void setupPlayground()
+    private static void setupPlayground(City playground)
     {
-        City playground = new City();
+
         playground.setSize(1500, 900);
         for(int i = 1; i <= 13; i++)
         {
@@ -115,8 +117,64 @@ public class SummativeAppClass {
     }
 
     public static void main(String[] args){
-        setupPlayground();
 
-        playerInfo[] appRecords;
+        // Constants
+        final int MAX_TURNS = 30;
+        final int MIN_TURNS = 25;
+        final int MAX_STREET = 13;
+        final int MAX_AVENUE = 24;
+
+        // Initialize city, robots, and other objects
+        City playground = new City();
+        Random rand = new Random();
+
+        // Set up the playground
+        setupPlayground(playground);
+
+        // Initialize robots, 2 bots for each role
+        KureshyBot[] chasers = new KureshyBot[2];
+        chasers[0] = new KureshyBot(playground, rand.nextInt(1, MAX_STREET), rand.nextInt(1, MAX_AVENUE), Direction.NORTH, 1001, 1, 100, rand.nextInt(3, 6), rand.nextDouble(0.7, 0.91));
+        chasers[1] = new KureshyBot(playground, rand.nextInt(1, MAX_STREET), rand.nextInt(1, MAX_AVENUE), Direction.NORTH, 1002, 1, 100, rand.nextInt(3, 6), rand.nextDouble(0.7, 0.91));
+
+        LiBot[] guards = new LiBot[2];
+        guards[0] = new LiBot(playground, rand.nextInt(1, MAX_STREET), rand.nextInt(1, MAX_AVENUE), Direction.SOUTH, 2001, 2, 100, rand.nextInt(2, 5), rand.nextDouble(0.45, 0.61));
+        guards[1] = new LiBot(playground, rand.nextInt(1, MAX_STREET), rand.nextInt(1, MAX_AVENUE), Direction.SOUTH, 2002, 2, 100, rand.nextInt(2, 5), rand.nextDouble(0.45, 0.61));
+
+        XiongBot[] vips = new XiongBot[2];
+        vips[0] = new XiongBot(playground, rand.nextInt(1, MAX_STREET), rand.nextInt(1, MAX_AVENUE), Direction.NORTH, 3001, 3, 100, rand.nextInt(1, 4), rand.nextDouble(0.3, 0.41));
+        vips[1] = new XiongBot(playground, rand.nextInt(1, MAX_STREET), rand.nextInt(1, MAX_AVENUE), Direction.NORTH, 3002, 3, 100, rand.nextInt(1, 4), rand.nextDouble(0.3, 0.41));
+
+        // Set up basic statistics for game loop
+        int totalTurns = rand.nextInt(MIN_TURNS, MAX_TURNS + 1);
+
+        // Start main game loop
+        for(int i = 0; i < totalTurns; i++)
+        {
+            if(i % 3 == 0)
+            {
+                // Chasers take their turn
+                for (KureshyBot chaser : chasers)
+                {
+                    chaser.takeTurn();
+                }
+            }
+            else if(i % 3 == 1)
+            {
+
+                // VIPs take their turn
+                for (XiongBot vip : vips)
+                {
+                    vip.takeTurn();
+                }
+            }
+            else
+            {
+                // Guards take their turn
+                for (LiBot guard : guards)
+                {
+                    guard.takeTurn();
+                }
+            }
+        }
     }
 }

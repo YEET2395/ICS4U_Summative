@@ -22,7 +22,7 @@ public class LiBot extends BaseBot {
      * @param id the robot's numerical id
      * @param role the robot's role
      */
-    public LiBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, int dodgeDiff) {
+    public LiBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, double dodgeDiff) {
         super(city, str, ave, dir, role, id, hp, movesPerTurn, dodgeDiff);
 
         //for debugging

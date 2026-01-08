@@ -7,7 +7,7 @@ public abstract class BaseBot extends RobotSE {
     private final int ROLE; // GUARD = 2, VIP = 1, CHASER = 3
     private final int ID;
     private final int MOVES_PER_TURN;
-    private final int DODGE_DIFFICULTY;
+    private final double DODGE_DIFFICULTY;
     private int hp;
     private boolean isCaught;
     //playerInfo[] myRecords;
@@ -21,7 +21,7 @@ public abstract class BaseBot extends RobotSE {
      * @param role role of the bot
      * @param id identifier of the bot
      */
-    public BaseBot(City city, int str, int ave, Direction dir, int role, int id, int hp, int movesPerTurn, int dodgeDiff)
+    public BaseBot(City city, int str, int ave, Direction dir, int role, int id, int hp, int movesPerTurn, double dodgeDiff)
     {
         super(city, str, ave, dir);
         this.ROLE = role;
@@ -69,7 +69,7 @@ public abstract class BaseBot extends RobotSE {
      * Gets the dodging/catching capability of this robot
      * @return the dodging/catching capability of this robot
      */
-    public int getDodgeDifficulty() {
+    public double getDodgeDifficulty() {
         return this.DODGE_DIFFICULTY;
     }
 

@@ -26,7 +26,7 @@ public class KureshyBot extends BaseBot{
      * @param movesPerTurn the max amount of moves the robot can make
      * @param dodgeDiff the dodging/catching capability of the robot
      */
-    public KureshyBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, int dodgeDiff) {
+    public KureshyBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, double dodgeDiff) {
         super(city, str, ave, dir, id, role, hp, movesPerTurn, dodgeDiff);
 
         //for debugging
