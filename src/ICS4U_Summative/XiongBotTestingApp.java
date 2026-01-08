@@ -7,7 +7,7 @@ import java.util.Random;
  * @author Aadil Kureshy, Austin Xiong,  Xinran Li
  * @version 2025 12 30
  */
-public class SummativeAppClass {
+public class XiongBotTestingApp {
 
     /**
      * Set up the playground for the robots
