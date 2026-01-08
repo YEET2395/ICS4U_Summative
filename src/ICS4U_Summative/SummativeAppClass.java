@@ -1,6 +1,5 @@
 package ICS4U_Summative;
 import becker.robots.*;
-import java.util.*;
 
 /**
  * Application class for the summative project

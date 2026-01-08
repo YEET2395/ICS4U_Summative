@@ -1,2 +1,3 @@
-/.idea/
-/ICS4U_Summative.iml/
+*.iml
+out/
+.idea/workspace.xml
