@@ -10,6 +10,9 @@ import java.awt.*;
  * @version Janurary 6, 2025
  */
 public class KureshyBot extends BaseBot{
+    private int[][] botsPos;
+    private int[][] chasersPos;
+    private double[][] targetTable;
 
     /**
      * Constructor for Chaser
@@ -31,7 +34,69 @@ public class KureshyBot extends BaseBot{
         super.setLabel("Robot " + super.getMyID());
     }
 
+    /**
+     * The application class will send the position of all non-chasers
+     * @param pos the locations of non-chasers
+     */
+    public void sendBotsPos(int[][] pos) {
+        this.botsPos = pos;
+    }
 
+    /**
+     * The application class will send the position of all non-chasers
+     * @param pos the locations of other chasers
+     */
+    public void sendChasersPos(int[][] pos) {
+        this.chasersPos = pos;
+    }
 
-    public void takeTurn() {}
+    private double calculatePriorityScore() {
+        return 0.0;
+    }
+
+    private double calculateDistanceScore(int targetDistance, int movesPerTurn) {
+        return -(Math.ceil( (double) targetDistance / movesPerTurn));
+    }
+
+    private int calculateChaserPressure(int[][] chaserPos) {
+        final int AVG_CHASER_MOVEMENT = 8;
+        int localChasers = -1; //since it includes this robot
+
+        //iterate through the chaser locations
+        for (int i=0; i<chaserPos.length; i++) {
+
+            int distanceToMe = 0;
+
+            //check that the chaser isn't me
+            if (chaserPos[i] != this.getMyPosition()) {
+                distanceToMe = super.getDistances(chaserPos[i]);
+            }
+
+            //check that it is less than the average
+            if (distanceToMe<AVG_CHASER_MOVEMENT) {
+                localChasers++;
+            }
+        }
+        return localChasers;
+    }
+
+    private void updateTargetTable() {
+        //for readability
+        final int TURN_DIST = 0;
+        final int DODGE_EST = 1;
+        final int MAX_MOVE_OBS = 2;
+        final int HP_EST = 3;
+        final int PRESSURE = 4;
+        final int PRIORITY_SCORE= 5;
+
+        //iterate through the first dimension (each is a bot with the same id from the array)
+        for (int i=0; i<targetTable.length; i++) {
+            targetTable[i][TURN_DIST] = this.calculateDistanceScore(super.getDistances(botsPos[i]), super.getMOVES_PER_TURN());
+            targetTable[i][PRESSURE] = this.calculateChaserPressure(this.chasersPos);
+        }
+    }
+
+    public void takeTurn() {
+
+    }
 }

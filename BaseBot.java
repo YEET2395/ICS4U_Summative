@@ -10,7 +10,7 @@ public abstract class BaseBot extends RobotSE {
     private final int DODGE_DIFFICULTY;
     private int hp;
     private boolean isCaught;
-    playerInfo[] myRecords;
+    //playerInfo[] myRecords;
 
     /**
      * Constructor for BaseBot
@@ -73,6 +73,10 @@ public abstract class BaseBot extends RobotSE {
         return this.DODGE_DIFFICULTY;
     }
 
+    public int getMOVES_PER_TURN() {
+        return this.MOVES_PER_TURN;
+    }
+
     /**
      * Gets the state of this robot
      * @return whether the robot has been caught or not
@@ -91,23 +95,23 @@ public abstract class BaseBot extends RobotSE {
         return this.getStreet();
     }
 
-    /**
-     * Calculates the grid distance between the robot invoking the method and all other robots (including the invoker)
-     * @return the distances to each other robot
-     */
-    public int[] getDistances() {
-        int [] gridDistance = new int[myRecords.length];
-        int[] myCoords = this.getMyPosition();
-        int[] otherCoords;
-
-        //iterate through list of players and calculates the distance to get to each one
-        for (int i=0; i<this.myRecords.length; i++) {
-            otherCoords = myRecords[i].getPosition();
-            gridDistance[i] = Math.abs(myCoords[0] - otherCoords[0]) + Math.abs(myCoords[1] - otherCoords[1]);
-        }
-
-        return gridDistance;
-    }
+//    /**
+//     * Calculates the grid distance between the robot invoking the method and all other robots (including the invoker)
+//     * @return the distances to each other robot
+//     */
+//    public int[] getDistances() {
+//        int [] gridDistance = new int[myRecords.length];
+//        int[] myCoords = this.getMyPosition();
+//        int[] otherCoords;
+//
+//        //iterate through list of players and calculates the distance to get to each one
+//        for (int i=0; i<this.myRecords.length; i++) {
+//            otherCoords = myRecords[i].getPosition();
+//            gridDistance[i] = Math.abs(myCoords[0] - otherCoords[0]) + Math.abs(myCoords[1] - otherCoords[1]);
+//        }
+//
+//        return gridDistance;
+//    }
 
     public int getDistances(int[] point) {
         int[] myCoords = this.getMyPosition();
@@ -205,32 +209,40 @@ public abstract class BaseBot extends RobotSE {
         }
     }
 
-    /**
-     * Updates the personal records of this robot
-     * @param records the new records
-     */
-    public void setRecords(playerInfo[] records) {
-        this.myRecords = records;
-    }
-
-    /**
-     * Gets the record of a robot given an ID
-     * @param ID the ID of the desired robot
-     * @return the record of the desired robot
-     */
-    public playerInfo getRobotInfo(int ID) {
-        //initially sets targetInfo as you
-        playerInfo targetInfo = getRobotInfo(this.ID);
-
-        //iterates through the robot's records
-        for (int i=0; i<this.myRecords.length; i++) {
-
-            //checks if the target ID and record ID match
-            if (myRecords[i].getID() == ID) {
-                targetInfo = myRecords[i];
-            }
-        }
-
-        return targetInfo;
-    }
+//    /**
+//     * Updates the personal records of this robot
+//     * @param records the new records
+//     */
+//    public void setRecords(playerInfo[] records) {
+//        this.myRecords = records;
+//    }
+//
+//    /**
+//     * For use of subclasses to get the personal records of this robot
+//     * @return the personal records of this robot
+//     */
+//    public playerInfo[] getRecords() {
+//        return this.myRecords;
+//    }
+//
+//    /**
+//     * Gets the record of a robot given an ID
+//     * @param ID the ID of the desired robot
+//     * @return the record of the desired robot
+//     */
+//    public playerInfo getRobotInfo(int ID) {
+//        //initially sets targetInfo as you
+//        playerInfo targetInfo = getRobotInfo(this.ID);
+//
+//        //iterates through the robot's records
+//        for (int i=0; i<this.myRecords.length; i++) {
+//
+//            //checks if the target ID and record ID match
+//            if (myRecords[i].getID() == ID) {
+//                targetInfo = myRecords[i];
+//            }
+//        }
+//
+//        return targetInfo;
+//    }
 }
