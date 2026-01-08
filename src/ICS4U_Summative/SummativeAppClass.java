@@ -69,13 +69,15 @@ public class SummativeAppClass {
         }
     }
 
-    public static void main(String[] args){
+    public static void main(String[] args) {
         setupPlayground();
 
         playerInfo[] appRecords;
         playerInfo[] publicRecords;
         playerInfo[] chaserRecords;
-
+        testXiongBotSpeedTracking();
+    }
+    public static void testXiongBotSpeedTracking() {
         // Create a simple test scenario with XiongBot VIP and TestChaserBot
         City testCity = new City();
         testCity.setSize(1500, 900);
