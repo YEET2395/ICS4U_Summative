@@ -114,6 +114,11 @@ public abstract class BaseBot extends RobotSE {
         return Math.abs(myCoords[0] - point[0]) + Math.abs(myCoords[1] - point[1]);
     }
 
+    public int getDistances(int[] point1, int[] point2) {
+        int[] myCoords = this.getMyPosition();
+        return Math.abs(point1[0] - point2[0]) + Math.abs(point1[1] - point2[1]);
+    }
+
     /**
      * Moves robot to the target position
      * @param pos Array of position required to move, format is x,y

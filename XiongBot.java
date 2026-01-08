@@ -70,7 +70,7 @@ public class XiongBot extends BaseBot{
             }
 
             // Current minimum distance to any chaser (used for tie-breaker)
-            int currentMinDist = Integer.MAX_VALUE;
+            int currentMinDist = 2147483647;
             for (int i = 0; i < this.chaserPos.length; i++) {
                 int[] c = this.chaserPos[i];
                 int d = this.getDistances(c);
@@ -82,8 +82,8 @@ public class XiongBot extends BaseBot{
             // Evaluate candidate directions and pick the one that maximizes the minimum distance to any chaser
             Direction[] candidates = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
             Direction bestDir = null;
-            int bestMinDistance = Integer.MIN_VALUE;
-            int bestIncrease = Integer.MIN_VALUE;
+            int bestMinDistance = -2147483648;
+            int bestIncrease = -2147483648;
 
             for (int i=0; i<candidates.length; i++) {
                 Direction d = candidates[i];
@@ -107,11 +107,12 @@ public class XiongBot extends BaseBot{
                     newX = myX - 1;
                 }
 
+                int [] newPos = {newX, newY};
                 // compute minimum distance to any chaser from the new position
-                int minDist = Integer.MAX_VALUE;
+                int minDist = 2147483647;
                 for (int j = 0; j < this.chaserPos.length; j++) {
                     int[] c = this.chaserPos[j];
-                    int dist = this.getDistances(new int[]{newX, newY});
+                    int dist = this.getDistances(newPos,c);
                     if (dist < minDist) {
                         minDist = dist;
                     }
