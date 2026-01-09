@@ -4,6 +4,9 @@ import becker.robots.*;
 
 import java.awt.*;
 
+/**
+ * @Todo: improve movement algorithm to better avoid chasers + fine tune speed tracking and prediction
+ */
 public class XiongBot extends BaseBot{
     private int[] guardPos = {0, 0};
     // changed to support multiple chasers
