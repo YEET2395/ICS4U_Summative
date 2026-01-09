@@ -19,8 +19,11 @@ public abstract class BaseBot extends RobotSE {
      * @param str Street number
      * @param ave Avenue number
      * @param dir direction the robot is facing
-     * @param role role of the bot
      * @param id identifier of the bot
+     * @param role role of the bot
+     * @param hp the health of the bot
+     * @param movesPerTurn the amount of moves the bot can make in a turn
+     * @param dodgeDiff the dodging capability of the bot
      */
     public BaseBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, double dodgeDiff)
     {
@@ -70,7 +73,7 @@ public abstract class BaseBot extends RobotSE {
      * Gets the dodging/catching capability of this robot
      * @return the dodging/catching capability of this robot
      */
-    public double getDodgeDifficulty() {
+    public double getMyDodgeDifficulty() {
         return this.DODGE_DIFFICULTY;
     }
 

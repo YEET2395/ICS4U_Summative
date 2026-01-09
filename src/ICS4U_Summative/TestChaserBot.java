@@ -59,7 +59,7 @@ public class TestChaserBot extends BaseBot {
      * @return the number of moves this robot can make per turn
      */
     private double getMovesPerTurn() {
-        return super.getDodgeDifficulty(); // Using dodge difficulty as a proxy for moves per turn
+        return super.getMyDodgeDifficulty(); // Using dodge difficulty as a proxy for moves per turn
     }
 }
 

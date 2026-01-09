@@ -143,14 +143,14 @@ public class XiongBotTestingApp {
         int diff = r.nextInt(101);
 
         //check which robots dodged and which didn't
-        if (chaser.getDodgeDifficulty() >= diff && target.getDodgeDifficulty() >= diff) {
+        if (chaser.getMyDodgeDifficulty() >= diff && target.getMyDodgeDifficulty() >= diff) {
             chaser.sendTagResult(target.getMyID(), false);
             //means both dodged
-        } else if (chaser.getDodgeDifficulty() >= diff && target.getDodgeDifficulty() < diff) {
+        } else if (chaser.getMyDodgeDifficulty() >= diff && target.getMyDodgeDifficulty() < diff) {
             chaser.sendTagResult(target.getMyID(), true);
             target.takeDamage(1);
             //means chaser dodged but target didn't
-        } else if (chaser.getDodgeDifficulty() < diff && target.getDodgeDifficulty() >= diff) {
+        } else if (chaser.getMyDodgeDifficulty() < diff && target.getMyDodgeDifficulty() >= diff) {
             chaser.sendTagResult(target.getMyID(), false);
             chaser.takeDamage(1);
             //means target dodged but chaser didn't

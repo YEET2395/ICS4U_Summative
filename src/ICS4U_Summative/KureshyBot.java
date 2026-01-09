@@ -10,12 +10,12 @@ import java.awt.*;
  * @version Janurary 6, 2025
  */
 public class KureshyBot extends BaseBot{
-    private int[][] botsPos;
-    private int[][] chasersPos;
-    private double[][] targetTable;
-    private int [][] prevPos;
-    private double[] priorityScore;
-    private int[] targetIndex;
+    private int[][] botsPos = new int[0][2];
+    private int[][] chasersPos = new int [0][2];
+    private int [][] prevPos = new int[0][2];
+    private double[][] targetTable = new double[0][6];
+    private double[] priorityScore = new double [0];
+    private int[] targetIndex = new int[0];
     private final int TURN_DIST = 0; //the first index for each bot in the target table
     private final int DODGE_EST = 1; //the second index for each bot in the target table
     private final int MAX_MOVE_OBS = 2; //the third index for each bot in the target table
@@ -41,7 +41,7 @@ public class KureshyBot extends BaseBot{
         super(city, str, ave, dir, id, role, hp, movesPerTurn, dodgeDiff);
         //for debugging
         super.setColor(Color.RED);
-        super.setLabel("Robot " + super.getMyID());
+        super.setLabel("Robot " + id);
     }
 
     /**
@@ -69,12 +69,41 @@ public class KureshyBot extends BaseBot{
     }
 
     /**
+     * Use a selection sort to sort the targetIndex and priorityScore to get the best target
+     */
+    private void sortByPriority() {
+        //iterate through the array
+        for (int i=0; i<this.priorityScore.length; i++) {
+            //temporarily store the next value in the unsorted section
+            double tempScore = this.priorityScore[i];
+            int tempID = this.targetIndex[i];
+            int counter = i-1;
+
+            //go down until it reaches the beginning of the array, or until the current score is smaller
+            while (counter>=0 && this.priorityScore[counter]>tempScore) {
+                //shift things up
+                this.priorityScore[counter+1] = this.priorityScore[counter];
+                this.targetIndex[counter+1] = this.targetIndex[counter];
+                counter--;
+            }
+
+            //insert into the right position
+            this.priorityScore[counter+1] = tempScore;
+            this.targetIndex[counter+1] = tempID;
+        }
+    }
+
+    /**
      * Calculates the priority scores using data from the targetTable where lower is a better target
      */
     private void calculatePriorityScores() {
 
+        //iterate through each target
         for (int i=0; i<this.targetTable.length; i++) {
             double rolePrediction = this.calculateRolePrediction(this.targetTable[i][MAX_MOVE_OBS], this.targetTable[i][NUM_CATCHES]);
+
+            //reset targetIndex
+            this.targetIndex[i] = i;
 
             //calculate a priority score where a lower value is more likely to be a VIP
             this.priorityScore[i] =
@@ -84,9 +113,10 @@ public class KureshyBot extends BaseBot{
                     (0.3 * this.targetTable[i][PRESSURE]) +
                     (0.3 * rolePrediction);
 
+            System.out.format("The robot %d has a priority score of %.2f\n", targetIndex[i], priorityScore[i]);
             //Completely deprioritize those already caught
             if (this.robotCaught[i]) {
-                this.priorityScore[i] = 1000; //don't consider any robot which is already caught
+                this.priorityScore[i] = 1000;
             }
         }
 
@@ -104,7 +134,7 @@ public class KureshyBot extends BaseBot{
             turnCount++;
         }
 
-        return (double) -turnCount;
+        return turnCount;
     }
 
     /**
@@ -206,8 +236,19 @@ public class KureshyBot extends BaseBot{
     /**
      * Used by the application to tell the chaser start targeting
      * @param numTargets the number of non-chaser robots in the arena
+     * @param numChasers the number of chasers in the arena (including this robot)
      */
-    public void initTargeteting(int numTargets) {
+    public void initTargeteting(int numTargets, int numChasers) {
+        //initialize position storing arrays
+        this.botsPos = new int[numTargets][2];
+        this.chasersPos = new int [numChasers][2];
+        this.prevPos = new int[numTargets][2];
+
+        //initialize target arrays
+        this.targetTable = new double[numTargets][6];
+        this.priorityScore = new double [numTargets];
+        this.targetIndex = new int[numTargets];
+
 
         //iterate through bots to get their positions and store them to calculate movement
         for (int i=0; i<numTargets; i++) {
@@ -227,5 +268,11 @@ public class KureshyBot extends BaseBot{
 
     public void takeTurn() {
 
+        //update target table with new info
+        this.updateTargetTable();
+        this.calculatePriorityScores();
+        this.sortByPriority();
+        this.targetID = this.targetIndex[0];
+        System.out.format("My target is %d who has a priority score of %.2f", this.targetID, this.priorityScore[0]);
     }
 }

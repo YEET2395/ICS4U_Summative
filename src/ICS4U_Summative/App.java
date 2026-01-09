@@ -8,6 +8,7 @@ import java.util.Random;
  * @version 2025 12 30
  */
 public class App {
+    private static boolean gameEnded = false;
 
     /**
      * Set up the playground for the robots
@@ -86,6 +87,86 @@ public class App {
         return robotStatus;
     }
 
+    /**
+     * Checks if either the VIPs/Guards or Chasers has reached their win conditions
+     * @param records the application records
+     * @param maxTurns the max number of turns
+     * @param turn the current turn
+     */
+    public void checkForWinCondition(playerInfo[] records, int maxTurns, int turn) {
+        int numVIPs = 0;
+        int numChasers = 0;
+        int numVIPsCaught = 0;
+        int numChasersCaught = 0;
+
+        //iterate through the records
+        for (int i=0; i<records.length; i++) {
+
+            //check how many VIPs there are
+            if (records[i].getRole() == 1) {
+                numVIPs++;
+
+                //check if they are caught
+                if (records[i].getState())
+                    numVIPsCaught++;
+            }
+
+            //check how many Chasers there are
+            if (records[i].getRole() == 3) {
+                numChasers++;
+
+                //check if they are caught
+                if (records[i].getState())
+                    numChasersCaught++;
+            }
+
+        }
+
+        //check if all VIPs have been caught
+        if (numVIPsCaught==numVIPs) {
+            gameEnded = true;
+        }
+
+        if (numChasersCaught==numChasers) {
+            gameEnded = true;
+        }
+
+        if (turn >= maxTurns) {
+            gameEnded = true;
+        }
+    }
+
+    /**
+     * Randomly generates a number and compares it to the chaser and target's dodging capability
+     * before applying damage and sending the results to the chaser
+     * @param chaser the chaser initiating the catch
+     * @param target the target of the chaser
+     * @param r the Random object
+     */
+    public static void checkDodge(KureshyBot chaser, BaseBot target, Random r) {
+        int diff = r.nextInt(101);
+
+        //check which robots dodged and which didn't
+        if (chaser.getMyDodgeDifficulty() >= diff && target.getMyDodgeDifficulty() >= diff) {
+            chaser.sendTagResult(target.getMyID(), false);
+            //means both dodged
+        } else if (chaser.getMyDodgeDifficulty() >= diff && target.getMyDodgeDifficulty() < diff) {
+            chaser.sendTagResult(target.getMyID(), true);
+            target.takeDamage(1);
+            //means chaser dodged but target didn't
+        } else if (chaser.getMyDodgeDifficulty() < diff && target.getMyDodgeDifficulty() >= diff) {
+            chaser.sendTagResult(target.getMyID(), false);
+            chaser.takeDamage(1);
+            //means target dodged but chaser didn't
+        } else {
+            chaser.sendTagResult(target.getMyID(), true);
+            chaser.takeDamage(1);
+            target.takeDamage(1);
+            //means both didn't dodge
+        }
+
+    }
+
     public static void main(String[] args)
     {
         City playground = new City();
@@ -154,6 +235,8 @@ public class App {
             infos[i] = new playerInfo(index, 3, 3, dodgeDiff, pos, false);
             index++;
         }
+
+
     }
 
 }
