@@ -29,131 +29,74 @@ public class LiBotTestingApp {
         }
     }
 
-    /**
-     * Updates the records used by the application
-     * @param array the array of BaseBots
-     * @param records the array of records to update
-     */
-    public void updateRecords(BaseBot[] array, playerInfo[] records) {
-
-        //iterate through the list of records (each record should match with the BaseBot in array)
-        for (int i=0; i<records.length; i++) {
-
-            //update the info that will change
-            records[i].updateRecords(array[i].getMyHP(), array[i].getMyPosition(), array[i].getMyState());
-        }
-
-    }
-
-    /**
-     * Gets the HP of all robots of a role from the records
-     * @param records the application records
-     * @param numRobots the number of robots of that role
-     * @param role the role of desired robots
-     * @return the HP of the robots of the specified role
-     */
-    public static int[] getHPOfRole(playerInfo[] records, int numRobots, int role) {
-        int[] robotHP = new int[numRobots];
-        int count = 0; //robotHP index
-
-        //iterate through records
-        for (int i=0; i<records.length; i++) {
-
-            //checks role
-            if (records[i].getRole() == role) {
-                robotHP[count] = records[i].getHP();
-                count++;
-            }
-        }
-
-        return robotHP;
-    }
-
-    /**
-     * Gets the status of all robots from the records
-     * @param records the application records
-     * @param numRobots the total number of robots
-     * @return the isCaught status of all robots with the index corresponding to ID
-     */
-    public static boolean[] getStates(playerInfo[] records, int numRobots) {
-        boolean[] robotStatus = new boolean[numRobots];
-
-        //iterate through records
-        for (int i=0; i<records.length; i++) {
-            robotStatus[i] = records[i].getState();
-        }
-
-        return robotStatus;
-    }
-
     public static void main(String[] args)
     {
         City playground = new City();
         setupPlayground(playground);
 
-        // Initialize arrays for all robots
-        BaseBot[] robots = new BaseBot[6];
-        playerInfo[] infos = new playerInfo[6]; // Add this array to store playerInfo
-        int index = 0;
-
         Random rand = new Random();
 
-        // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
-        for (int i=0; i<2; i++) {
-            int movesPerTurn = rand.nextInt(3) + 1;
-            double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
-            int row = rand.nextInt(13) + 1;
-            int col = rand.nextInt(24) + 1;
-            int[] pos = {row, col};
-            robots[i] = new XiongBot(
-                    playground,
-                    row,
-                    col,
-                    Direction.SOUTH, index, 1, 2,
-                    movesPerTurn,
-                    dodgeDiff
-            );
-            infos[i] = new playerInfo(index, 1, 2, dodgeDiff, pos, false);
-            index++;
-        }
+        // Random positions for LiBot (Guard) and LiTestChaserBot (Chaser)
+        int guardRow = rand.nextInt(13) + 1;
+        int guardCol = rand.nextInt(24) + 1;
+        int chaserRow = rand.nextInt(13) + 1;
+        int chaserCol = rand.nextInt(24) + 1;
 
-        // Guards: movesPerTurn [2,4], dodgeDiff [0.45, 0.55]
-        for (int i=2; i<4; i++) {
-            int movesPerTurn = rand.nextInt(3) + 2;
-            double dodgeDiff = 0.45 + rand.nextDouble() * 0.1;
-            int row = rand.nextInt(13) + 1;
-            int col = rand.nextInt(24) + 1;
-            int[] pos = {row, col};
-            robots[i] = new LiBot(
-                    playground,
-                    row,
-                    col,
-                    Direction.NORTH, index, 2, 5,
-                    movesPerTurn,
-                    dodgeDiff
-            );
-            infos[i] = new playerInfo(index, 2, 5, dodgeDiff, pos, false);
-            index++;
-        }
+        // Create LiBot (Guard, role=2)
+        LiBot guard = new LiBot(
+                playground,
+                guardRow,
+                guardCol,
+                Direction.NORTH,
+                0, // id
+                2, // role
+                5, // hp
+                3, // movesPerTurn
+                0.5 // dodgeDiff
+        );
 
-        // Chasers: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
-        for (int i=4; i<6; i++) {
-            int movesPerTurn = rand.nextInt(3) + 3;
-            double dodgeDiff = 0.7 + rand.nextDouble() * 0.2;
-            int row = rand.nextInt(13) + 1;
-            int col = rand.nextInt(24) + 1;
-            int[] pos = {row, col};
-            robots[i] = new KureshyBot(
-                    playground,
-                    row,
-                    col,
-                    Direction.NORTH, index, 3, 3,
-                    movesPerTurn,
-                    dodgeDiff
-            );
-            infos[i] = new playerInfo(index, 3, 3, dodgeDiff, pos, false);
-            index++;
+        // Create LiTestChaserBot (Chaser, role=3)
+        LiTestChaserBot chaser = new LiTestChaserBot(
+                playground,
+                chaserRow,
+                chaserCol,
+                Direction.SOUTH,
+                1, // id
+                3, // role
+                3, // hp
+                4, // movesPerTurn
+                0.8 // dodgeDiff
+        );
+
+        // Main loop: let chaser chase guard for 20 turns
+        for (int turn = 0; turn < 20; turn++) {
+            // Prepare positions and roles arrays for LiTestChaserBot
+            int[][] positions = new int[2][2];
+            int[] roles = new int[2];
+            positions[0] = guard.getMyPosition();
+            positions[1] = chaser.getMyPosition();
+            roles[0] = 2; // Guard
+            roles[1] = 3; // Chaser
+
+            chaser.setBotsInfo(positions, roles);
+            chaser.takeTurn();
+
+            // Optionally, move the guard randomly (or keep it stationary)
+            // Uncomment below to make the guard move randomly:
+            /*
+            int moveDir = rand.nextInt(4);
+            Direction[] dirs = {Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
+            guard.turnDirection(dirs[moveDir]);
+            if (guard.frontIsClear()) {
+                guard.move();
+            }
+            */
+
+            try {
+                Thread.sleep(400); // Pause for visibility
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
-
 }
