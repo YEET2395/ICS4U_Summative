@@ -26,7 +26,7 @@ public class LiBot extends BaseBot {
      * @param dodgeDiff dodging difficulty (double)
      */
     public LiBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, double dodgeDiff) {
-        super(city, str, ave, dir, role, id, hp, movesPerTurn, dodgeDiff);
+        super(city, str, ave, dir, id, role, hp, movesPerTurn, dodgeDiff);
 
         //for debugging
         super.setColor(Color.BLUE);
