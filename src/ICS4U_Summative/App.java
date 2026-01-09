@@ -29,71 +29,112 @@ public class App {
         }
     }
 
+    /**
+     * Updates the records used by the application
+     * @param array the array of BaseBots
+     * @param records the array of records to update
+     */
+    public void updateRecords(BaseBot[] array, playerInfo[] records) {
+
+        //iterate through the list of records (each record should match with the BaseBot in array)
+        for (int i=0; i<records.length; i++) {
+
+            //update the info that will change
+            records[i].updateRecords(array[i].getMyHP(), array[i].getMyPosition(), array[i].getMyState());
+        }
+
+    }
+
+    /**
+     * Gets the HP of all robots of a role from the records
+     * @param records the application records
+     * @param numRobots the number of robots of that role
+     * @param role the role of desired robots
+     * @return the HP of the robots of the specified role
+     */
+    public static int[] getHPOfRole(playerInfo[] records, int numRobots, int role) {
+        int[] robotHP = new int[numRobots];
+        int count = 0; //robotHP index
+
+        //iterate through records
+        for (int i=0; i<records.length; i++) {
+
+            //checks role
+            if (records[i].getRole() == role) {
+                robotHP[count] = records[i].getHP();
+                count++;
+            }
+        }
+
+        return robotHP;
+    }
+
+    /**
+     * Gets the status of all robots from the records
+     * @param records the application records
+     * @param numRobots the total number of robots
+     * @return the isCaught status of all robots with the index corresponding to ID
+     */
+    public static boolean[] getStates(playerInfo[] records, int numRobots) {
+        boolean[] robotStatus = new boolean[numRobots];
+
+        //iterate through records
+        for (int i=0; i<records.length; i++) {
+            robotStatus[i] = records[i].getState();
+        }
+
+        return robotStatus;
+    }
+
     public static void main(String[] args)
     {
         City playground = new City();
         setupPlayground(playground);
 
-        // Initialize arrays for chasers, VIPs, and Guards, each with two bots
-        KureshyBot[] chasers = new KureshyBot[2];
-        XiongBot[] VIPs = new XiongBot[2];
-        LiBot[] Guards = new LiBot[2];
+        // Initialize arrays for all robots
+        BaseBot[] robots = new BaseBot[6];
+        int index = 0;
 
         Random rand = new Random();
 
-        // VIP: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
-        VIPs[0] = new XiongBot(
-            playground,
-            rand.nextInt(13) + 1,
-            rand.nextInt(24) + 1,
-            Direction.SOUTH, 1001, 1, 2,
-            rand.nextInt(3) + 1,
-            0.3 + rand.nextDouble() * 0.1
-        );
-        VIPs[1] = new XiongBot(
-            playground,
-            rand.nextInt(13) + 1,
-            rand.nextInt(24) + 1,
-            Direction.WEST, 1002, 1, 2,
-            rand.nextInt(3) + 1,
-            0.3 + rand.nextDouble() * 0.1
-        );
+        // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
+        for (int i=0; i<2; i++) {
+            robots[i] = new XiongBot(
+                    playground,
+                    rand.nextInt(13) + 1,
+                    rand.nextInt(24) + 1,
+                    Direction.SOUTH, index, 1, 2,
+                    rand.nextInt(3) + 1,
+                    0.3 + rand.nextDouble() * 0.1
+            );
+            index++;
+        }
 
-        // Guard: movesPerTurn [2,4], dodgeDiff [0.45, 0.55]
-        Guards[0] = new LiBot(
-            playground,
-            rand.nextInt(13) + 1,
-            rand.nextInt(24) + 1,
-            Direction.NORTH, 2001, 2, 5,
-            rand.nextInt(3) + 2,
-            0.45 + rand.nextDouble() * 0.1
-        );
-        Guards[1] = new LiBot(
-            playground,
-            rand.nextInt(13) + 1,
-            rand.nextInt(24) + 1,
-            Direction.EAST, 2002, 2, 5,
-            rand.nextInt(3) + 2,
-            0.45 + rand.nextDouble() * 0.1
-        );
+        // Guards: movesPerTurn [2,4], dodgeDiff [0.45, 0.55]
+        for (int i=2; i<4; i++) {
+            robots[i] = new LiBot(
+                    playground,
+                    rand.nextInt(13) + 1,
+                    rand.nextInt(24) + 1,
+                    Direction.NORTH, index, 2, 5,
+                    rand.nextInt(3) + 2,
+                    0.45 + rand.nextDouble() * 0.1
+            );
+            index++;
+        }
 
-        // Chaser: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
-        chasers[0] = new KureshyBot(
-            playground,
-            rand.nextInt(13) + 1,
-            rand.nextInt(24) + 1,
-            Direction.NORTH, 3001, 3, 3,
-            rand.nextInt(3) + 3,
-            0.7 + rand.nextDouble() * 0.2
-        );
-        chasers[1] = new KureshyBot(
-            playground,
-            rand.nextInt(13) + 1,
-            rand.nextInt(24) + 1,
-            Direction.EAST, 3001, 3, 3,
-            rand.nextInt(3) + 3,
-            0.7 + rand.nextDouble() * 0.2
-        );
+        // Chasers: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
+        for (int i=4; i<6; i++) {
+            robots[i] = new KureshyBot(
+                    playground,
+                    rand.nextInt(13) + 1,
+                    rand.nextInt(24) + 1,
+                    Direction.NORTH, index, 3, 3,
+                    rand.nextInt(3) + 3,
+                    0.7 + rand.nextDouble() * 0.2
+            );
+            index++;
+        }
     }
 
 }
