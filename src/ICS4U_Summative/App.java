@@ -93,46 +93,65 @@ public class App {
 
         // Initialize arrays for all robots
         BaseBot[] robots = new BaseBot[6];
+        playerInfo[] infos = new playerInfo[6]; // Add this array to store playerInfo
         int index = 0;
 
         Random rand = new Random();
 
         // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
         for (int i=0; i<2; i++) {
+            int movesPerTurn = rand.nextInt(3) + 1;
+            double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
+            int row = rand.nextInt(13) + 1;
+            int col = rand.nextInt(24) + 1;
+            int[] pos = {row, col};
             robots[i] = new XiongBot(
                     playground,
-                    rand.nextInt(13) + 1,
-                    rand.nextInt(24) + 1,
+                    row,
+                    col,
                     Direction.SOUTH, index, 1, 2,
-                    rand.nextInt(3) + 1,
-                    0.3 + rand.nextDouble() * 0.1
+                    movesPerTurn,
+                    dodgeDiff
             );
+            infos[i] = new playerInfo(index, 1, 2, dodgeDiff, pos, false);
             index++;
         }
 
         // Guards: movesPerTurn [2,4], dodgeDiff [0.45, 0.55]
         for (int i=2; i<4; i++) {
+            int movesPerTurn = rand.nextInt(3) + 2;
+            double dodgeDiff = 0.45 + rand.nextDouble() * 0.1;
+            int row = rand.nextInt(13) + 1;
+            int col = rand.nextInt(24) + 1;
+            int[] pos = {row, col};
             robots[i] = new LiBot(
                     playground,
-                    rand.nextInt(13) + 1,
-                    rand.nextInt(24) + 1,
+                    row,
+                    col,
                     Direction.NORTH, index, 2, 5,
-                    rand.nextInt(3) + 2,
-                    0.45 + rand.nextDouble() * 0.1
+                    movesPerTurn,
+                    dodgeDiff
             );
+            infos[i] = new playerInfo(index, 2, 5, dodgeDiff, pos, false);
             index++;
         }
 
         // Chasers: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
         for (int i=4; i<6; i++) {
+            int movesPerTurn = rand.nextInt(3) + 3;
+            double dodgeDiff = 0.7 + rand.nextDouble() * 0.2;
+            int row = rand.nextInt(13) + 1;
+            int col = rand.nextInt(24) + 1;
+            int[] pos = {row, col};
             robots[i] = new KureshyBot(
                     playground,
-                    rand.nextInt(13) + 1,
-                    rand.nextInt(24) + 1,
+                    row,
+                    col,
                     Direction.NORTH, index, 3, 3,
-                    rand.nextInt(3) + 3,
-                    0.7 + rand.nextDouble() * 0.2
+                    movesPerTurn,
+                    dodgeDiff
             );
+            infos[i] = new playerInfo(index, 3, 3, dodgeDiff, pos, false);
             index++;
         }
     }

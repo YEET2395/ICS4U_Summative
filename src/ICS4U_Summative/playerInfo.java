@@ -9,7 +9,7 @@ public class playerInfo {
     private final int ID;
     private final int ROLE;
     private int hp;
-    private final int DODGE_DIFFICULTY;
+    private final double DODGE_DIFFICULTY;
     private int[] position;
     private boolean isCaught;
 
@@ -22,7 +22,7 @@ public class playerInfo {
      * @param pos the x,y coordinates of the robot
      * @param isCaught the state of the robot
      */
-    public playerInfo (int ID, int role, int hp, int dodgeDifficulty, int[] pos, boolean isCaught) {
+    public playerInfo (int ID, int role, int hp, double dodgeDifficulty, int[] pos, boolean isCaught) {
         this.ID = ID;
         this.ROLE = role;
         this.hp = hp;
@@ -71,7 +71,7 @@ public class playerInfo {
      * The catch/dodge capability of the robot (higher is better)
      * @return the dodge capability of the robot
      */
-    public int getDodgeDifficulty() {
+    public double getDodgeDifficulty() {
         return this.DODGE_DIFFICULTY;
     }
 
