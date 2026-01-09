@@ -94,24 +94,33 @@ public class XiongBot extends BaseBot{
             }
 
             // Evaluate candidate directions and pick the one that maximizes the minimum distance to any chaser
-            Direction[] candidates = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
+            // Order follows repeated turnLeft() sequence so changing to the next candidate requires at most one turn
+            Direction[] candidates = {Direction.NORTH, Direction.WEST, Direction.SOUTH, Direction.EAST};
             Direction bestDir = null;
             int bestMinDistance = -2147483648;
             int bestIncrease = -2147483648;
 
+            // Determine index of current direction so we can iterate candidates starting from current facing
+            Direction currentDirForChecks = this.getDirection();
+            int startIdx = 0;
             for (int i = 0; i < candidates.length; i++) {
-                Direction d = candidates[i];
+                if (candidates[i] == currentDirForChecks) {
+                    startIdx = i;
+                    break;
+                }
+            }
 
-                // Check if we can move in this direction by temporarily turning
+            // Iterate through directions once (rotate through them) instead of turning back-and-forth for each check
+            for (int k = 0; k < candidates.length; k++) {
+                Direction d = candidates[(startIdx + k) % candidates.length];
+
+                // Turn to the candidate direction (this rotates sequentially and avoids back-and-forth spinning)
                 this.turnDirection(d);
+
+                // If front is blocked, skip this candidate
                 if (!this.frontIsClear()) {
-                    // Turn back to current direction before continuing loop
-                    this.turnDirection(currentDir);
                     continue;
                 }
-
-                // Turn back to current direction
-                this.turnDirection(currentDir);
 
                 // compute the coordinates if we move one step in this direction
                 int newX = myX;
@@ -131,7 +140,7 @@ public class XiongBot extends BaseBot{
                 int minDist = 2147483647;
                 for (int j = 0; j < this.chaserPos.length; j++) {
                     int[] c = this.chaserPos[j];
-                    int dist = this.getDistances(new int[]{newX, newY});
+                    int dist = Math.abs(newX - c[0]) + Math.abs(newY - c[1]);
                     if (dist < minDist) {
                         minDist = dist;
                     }
@@ -146,6 +155,9 @@ public class XiongBot extends BaseBot{
                     bestIncrease = increase;
                 }
             }
+
+            // After checks, restore original facing direction
+            this.turnDirection(currentDir);
 
             // If no valid move was found, stop trying further steps
             if (bestDir == null) {

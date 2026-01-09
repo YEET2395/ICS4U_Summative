@@ -197,7 +197,7 @@ public class XiongBotTestingApp {
         System.out.println("Starting Test: XiongBot Speed Tracking and Position Prediction");
         System.out.println("========================================================");
 
-        for (int turn = 0; turn < 20; turn++) {
+        for (int turn = 0; turn < 50; turn++) {
             // Update chaser positions
             chaserPositions[0][0] = testChasers[0].getX();
             chaserPositions[0][1] = testChasers[0].getY();
