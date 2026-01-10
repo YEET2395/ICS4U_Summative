@@ -1,7 +1,6 @@
 package ICS4U_Summative;
 
 import becker.robots.*;
-
 import java.awt.*;
 
 /**
@@ -10,8 +9,13 @@ import java.awt.*;
  * @version 2025 12 30
  */
 public class LiBot extends BaseBot {
-    private int[][] vipPos;
-    private int[][] chaserPos;
+
+    // Role constants
+    private static final int ROLE_VIP = 1;
+    private static final int ROLE_GUARD = 2;
+    private static final int ROLE_CHASER = 3;
+    private static final int DANGER_RADIUS = 5;     // 你可以按规划文档改
+    private static final int ESCORT_DISTANCE = 2;   // 你可以按规划文档改
 
     /**
      * Constructor for XinranBot
@@ -30,18 +34,103 @@ public class LiBot extends BaseBot {
 
         //for debugging
         super.setColor(Color.BLUE);
-        super.setLabel("Robot " + super.myRecords.getID());
+        super.setLabel("Robot " + this.myRecords.getID());
     }
 
-    public void updateEnemyRecords(PlayerInfo[] records)
+    public void updateOtherRecords(PlayerInfo[] records)
     {
-        System.out.println("Updating enemy records for LiBot ");
+        for(int i = 0; i < records.length; i++)
+        {
+            this.otherRecords[i] = records[i];
+        }
     }
 
 
     public void takeTurn()
     {
+        if(otherRecords.length == 0)
+        {
+            return;
+        }
+
+        int[] myPos = getMyPosition();
+        int hp = myRecords.getHP();
+
+        PlayerInfo vip = findFirstByRole(otherRecords, 1);
+        PlayerInfo chaser = findNearestByRole(otherRecords, 3, myPos);
+
+        if (chaser == null || vip == null) {
+            System.out.println("LiBot: vip or chaser missing");
+            return; // No chaser or VIP found
+        }
+
+        int distCV = distance(chaser.getPosition(), vip.getPosition()); // dist(chaser, vip)
+        int distGV = distance(myPos, vip.getPosition()); // dist(guard, vip)
+        int distGC = distance(myPos, chaser.getPosition()); // dist(guard, chaser)
+
+        double cSpeed = 0;
+        double protect =
+                60
+                        + 12 * Math.max(0, DANGER_RADIUS - distCV)
+                        -  8 * Math.max(0, distGV - ESCORT_DISTANCE)
+                        - 10 * (hp == 1 ? 1 : 0);
+
+        double attack =
+                20
+                        + 10 * Math.max(0, 3 - distGC)
+                        +  4 * cSpeed
+                        - 25 * (hp <= 2 ? 1 : 0)
+                        - 20 * (distGC <= 1 ? 1 : 0);
+
+        double run =
+                10
+                        + 25 * (hp <= 2 ? 1 : 0)
+                        + 15 * (distGC <= 1 ? 1 : 0)
+                        - 10 * Math.max(0, 3 - distCV);
+
+        String decision = "PROTECT";
+        double best = protect;
+
+        if (attack > best) { best = attack; decision = "ATTACK"; }
+        if (run > best)    { best = run;    decision = "RUN"; }
 
     }
+
+    private int distance(int[] a, int[] b) {
+        return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
+    }
+
+    private PlayerInfo findFirstByRole(PlayerInfo[] records, int r)
+    {
+        for(PlayerInfo record : records)
+        {
+            if(record.getRole() == r)
+            {
+                return record;
+            }
+        }
+        return null;
+    }
+
+    private PlayerInfo findNearestByRole(PlayerInfo[] records, int role, int[] fromPos) {
+        PlayerInfo best = null;
+        int bestDist = Integer.MAX_VALUE;
+
+        for (PlayerInfo record : records) {
+            if (record == null) continue;
+            if (record.getState()) continue;
+            if (record.getRole() != role) continue;
+
+            int d = Math.abs(fromPos[0] - record.getPosition()[0])
+                    + Math.abs(fromPos[1] - record.getPosition()[1]);
+
+            if (d < bestDist) {
+                bestDist = d;
+                best = record;
+            }
+        }
+        return best;
+    }
+
 
 }

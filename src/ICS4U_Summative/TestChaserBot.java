@@ -32,7 +32,7 @@ public class TestChaserBot extends BaseBot {
         super.setLabel("TestChaser " + super.myRecords.getID());
     }
 
-    public void updateEnemyRecords(PlayerInfo[] records) {
+    public void updateOtherRecords(PlayerInfo[] records) {
         // For testing, we won't implement this method
     }
 

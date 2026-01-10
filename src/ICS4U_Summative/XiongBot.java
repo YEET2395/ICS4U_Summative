@@ -44,7 +44,7 @@ public class XiongBot extends BaseBot {
         super.setLabel("Robot " + super.myRecords.getID());
     }
 
-    public void updateEnemyRecords(PlayerInfo[] records) {
+    public void updateOtherRecords(PlayerInfo[] records) {
         System.out.println("Updating enemy records for XiongBot ");
     }
 

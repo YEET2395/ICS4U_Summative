@@ -3,7 +3,7 @@ package ICS4U_Summative;
 import becker.robots.*;
 
 public abstract class BaseBot extends RobotSE {
-    public PlayerInfo[] enemyRecords = new PlayerInfo[4];
+    public PlayerInfo[] otherRecords = new PlayerInfo[4];
     public PlayerInfo myRecords;
     public final int movesPerTurn;
 
@@ -29,7 +29,7 @@ public abstract class BaseBot extends RobotSE {
     /**
      * Updates this bot's enemy records
      */
-    abstract public void updateEnemyRecords(PlayerInfo[] records);
+    abstract public void updateOtherRecords(PlayerInfo[] records);
 
     /**
      * Get this bot's current position

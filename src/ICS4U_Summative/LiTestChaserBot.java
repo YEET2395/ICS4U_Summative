@@ -1,89 +1,87 @@
 package ICS4U_Summative;
 
 import becker.robots.*;
-
 import java.awt.*;
 
 /**
- * LiTestChaserBot: Chases the nearest Guard or VIP bot.
- * @author Xinran Li
- * @version 2026 01 10
+ * Simple test chaser: always chase the nearest Guard (role 2).
  */
 public class LiTestChaserBot extends BaseBot {
-    private int[][] botsPositions; // [id][2]
-    private int[] botsRoles;       // [id]
-    private int myIndex;           // This bot's index in the arrays
 
-    public LiTestChaserBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, double dodgeDiff) {
+    private PlayerInfo[] visibleRecords;
+
+    public LiTestChaserBot(City city, int str, int ave, Direction dir,
+                         int id, int role, int hp, int movesPerTurn, double dodgeDiff) {
         super(city, str, ave, dir, id, role, hp, movesPerTurn, dodgeDiff);
+
         super.setColor(Color.MAGENTA);
-        super.setLabel("LiChaser " + super.myRecords.getID());
-        this.myIndex = id;
+        super.setLabel("TestChaser " + super.myRecords.getID());
     }
 
-    public void updateEnemyRecords(PlayerInfo[] records) {
-        // For testing, we won't implement this method
+
+    public void updateOtherRecords(PlayerInfo[] records) {
+        this.visibleRecords = records;
     }
 
-    /**
-     * Provide all bots' positions and roles for targeting.
-     * @param positions array of [y, x] for each bot
-     * @param roles array of role for each bot
-     */
-    public void setBotsInfo(int[][] positions, int[] roles) {
-        this.botsPositions = positions;
-        this.botsRoles = roles;
-    }
 
-    @Override
     public void takeTurn() {
-        if (botsPositions == null || botsRoles == null) return;
+        if (visibleRecords == null || visibleRecords.length == 0) return;
 
         int[] myPos = this.getMyPosition();
-        int minDist = Integer.MAX_VALUE;
-        int[] targetPos = null;
 
 
-        //System.out.println("LiTestChaserBot roles: " + Arrays.toString(botsRoles));
+        PlayerInfo target = null;
+        int bestDist = Integer.MAX_VALUE;
 
-        // Find nearest Guard (role 2) or VIP (role 1)
-        for (int i = 0; i < botsPositions.length; i++) {
-            if (i == myIndex) continue;
-            if (botsRoles[i] == 0 || botsRoles[i] == 1) {
-                int dist = Math.abs(myPos[0] - botsPositions[i][0]) + Math.abs(myPos[1] - botsPositions[i][1]);
-                if (dist < minDist) {
-                    minDist = dist;
-                    targetPos = botsPositions[i];
-                }
+        for (PlayerInfo r : visibleRecords) {
+            if (r == null || r.getState()) continue;
+            if (r.getRole() != 2) continue;
+
+
+            if (r.getID() == this.myRecords.getID()) continue;
+
+            int d = manhattan(myPos, r.getPosition());
+            if (d < bestDist) {
+                bestDist = d;
+                target = r;
             }
         }
 
-        if (targetPos == null) return; // No target
+        if (target == null) return;
 
-        // Move toward the target position, up to MOVES_PER_TURN steps
+        int[] targetPos = target.getPosition();
+
+
         int moves = this.getMOVES_PER_TURN();
         int[] cur = this.getMyPosition();
-        for (int step = 0; step < moves; step++) {
-            int dx = targetPos[0] - cur[0];
-            int dy = targetPos[1] - cur[1];
-            if (dx == 0 && dy == 0) break; // Already at target
 
-            // Prefer horizontal move if not aligned, else vertical
-            if (dx != 0) {
-                this.turnDirection(dx > 0 ? Direction.SOUTH : Direction.NORTH);
+        for (int step = 0; step < moves; step++) {
+            int dStreet = targetPos[0] - cur[0];
+            int dAve    = targetPos[1] - cur[1];
+
+            if (dStreet == 0 && dAve == 0) break;
+
+
+            if (dStreet != 0) {
+                this.turnDirection(dStreet > 0 ? Direction.SOUTH : Direction.NORTH);
                 if (this.frontIsClear()) {
                     this.move();
                     cur = this.getMyPosition();
                     continue;
                 }
             }
-            if (dy != 0) {
-                this.turnDirection(dy > 0 ? Direction.EAST : Direction.WEST);
+
+            if (dAve != 0) {
+                this.turnDirection(dAve > 0 ? Direction.EAST : Direction.WEST);
                 if (this.frontIsClear()) {
                     this.move();
                     cur = this.getMyPosition();
                 }
             }
         }
+    }
+
+    private int manhattan(int[] a, int[] b) {
+        return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
     }
 }

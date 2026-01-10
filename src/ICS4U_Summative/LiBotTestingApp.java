@@ -1,19 +1,10 @@
 package ICS4U_Summative;
+
 import becker.robots.*;
 import java.util.Random;
 
-/**
- * Application class for the summative project
- * @author Aadil Kureshy, Austin Xiong,  Xinran Li
- * @version 2025 12 30
- */
 public class LiBotTestingApp {
 
-    /**
-     * Set up the playground for the robots
-     * @author Xinran Li
-     * @version 2025 12 30
-     */
     private static void setupPlayground(City playground)
     {
         playground.setSize(1500, 900);
@@ -29,73 +20,89 @@ public class LiBotTestingApp {
         }
     }
 
-    public static void main(String[] args)
-    {
+    public static void main(String[] args) {
+
         City playground = new City();
         setupPlayground(playground);
 
+        PlayerInfo[] allRecords = new PlayerInfo[6];
+        XiongBot[] VIPs = new XiongBot[2];
+        LiBot[] guards = new LiBot[2];
+        KureshyBot[] chasers = new KureshyBot[2];
+
         Random rand = new Random();
 
-        // Random positions for LiBot (Guard) and LiTestChaserBot (Chaser)
-        int guardRow = rand.nextInt(13) + 1;
-        int guardCol = rand.nextInt(24) + 1;
-        int chaserRow = rand.nextInt(13) + 1;
-        int chaserCol = rand.nextInt(24) + 1;
+        // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
+        for (int i = 0; i < 2; i++) {
+            int movesPerTurn = rand.nextInt(3) + 1;
+            double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
+            int row = rand.nextInt(13) + 1;
+            int col = rand.nextInt(24) + 1;
+            int[] pos = {row, col};
 
-        // Create LiBot (Guard, role=2)
-        LiBot guard = new LiBot(
-                playground,
-                guardRow,
-                guardCol,
-                Direction.NORTH,
-                0, // id
-                2, // role
-                5, // hp
-                3, // movesPerTurn
-                0.5 // dodgeDiff
-        );
+            VIPs[i] = new XiongBot(playground, row, col, Direction.SOUTH,
+                    i, 1, 2, movesPerTurn, dodgeDiff);
 
-        // Create LiTestChaserBot (Chaser, role=3)
-        LiTestChaserBot chaser = new LiTestChaserBot(
-                playground,
-                chaserRow,
-                chaserCol,
-                Direction.SOUTH,
-                1, // id
-                3, // role
-                3, // hp
-                4, // movesPerTurn
-                0.8 // dodgeDiff
-        );
+            allRecords[i] = new PlayerInfo(i, 1, 2, dodgeDiff, pos, false);
+        }
 
-        // Main loop: let chaser chase guard for 20 turns
-        for (int turn = 0; turn < 20; turn++) {
-            // Prepare positions and roles arrays for LiTestChaserBot
-            int[][] positions = new int[2][2];
-            int[] roles = new int[2];
-            positions[0] = guard.getMyPosition();
-            positions[1] = chaser.getMyPosition();
-            roles[0] = 2; // Guard
-            roles[1] = 3; // Chaser
+        // Guards: i=2..3  -> guards[0..1]
+        for (int i = 2; i < 4; i++) {
+            int movesPerTurn = rand.nextInt(3) + 2;
+            double dodgeDiff = 0.45 + rand.nextDouble() * 0.1;
+            int row = rand.nextInt(13) + 1;
+            int col = rand.nextInt(24) + 1;
+            int[] pos = {row, col};
 
-            chaser.setBotsInfo(positions, roles);
-            chaser.takeTurn();
+            guards[i - 2] = new LiBot(playground, row, col, Direction.NORTH,
+                    i, 2, 5, movesPerTurn, dodgeDiff);
 
-            // Optionally, move the guard randomly (or keep it stationary)
-            // Uncomment below to make the guard move randomly:
-            /*
-            int moveDir = rand.nextInt(4);
-            Direction[] dirs = {Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
-            guard.turnDirection(dirs[moveDir]);
-            if (guard.frontIsClear()) {
-                guard.move();
+            allRecords[i] = new PlayerInfo(i, 2, 5, dodgeDiff, pos, false);
+        }
+
+        // Chasers: i=4..5 -> chasers[0..1]
+        for (int i = 4; i < 6; i++) {
+            int movesPerTurn = rand.nextInt(3) + 3;
+            double dodgeDiff = 0.7 + rand.nextDouble() * 0.2;
+            int row = rand.nextInt(13) + 1;
+            int col = rand.nextInt(24) + 1;
+            int[] pos = {row, col};
+
+            chasers[i - 4] = new KureshyBot(playground, row, col, Direction.NORTH,
+                    i, 3, 3, movesPerTurn, dodgeDiff);
+
+            allRecords[i] = new PlayerInfo(i, 3, 3, dodgeDiff, pos, false);
+        }
+
+        for(int i = 0; i < 30; i++)
+        {
+            // Update records for all bots
+            for (XiongBot vip : VIPs) {
+                vip.updateOtherRecords(allRecords);
             }
-            */
+            for (LiBot guard : guards) {
+                guard.updateOtherRecords(allRecords);
+            }
+            for (KureshyBot chaser : chasers) {
+                chaser.updateOtherRecords(allRecords);
+            }
 
+            // Each bot takes its turn
+            for (XiongBot vip : VIPs) {
+                vip.takeTurn();
+            }
+            for (LiBot guard : guards) {
+                guard.takeTurn();
+            }
+            for (KureshyBot chaser : chasers) {
+                chaser.takeTurn();
+            }
+
+            // Pause between turns for visibility
             try {
-                Thread.sleep(400); // Pause for visibility
+                Thread.sleep(500);
             } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+                e.printStackTrace();
             }
         }
     }

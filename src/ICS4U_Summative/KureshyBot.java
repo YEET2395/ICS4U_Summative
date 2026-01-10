@@ -45,7 +45,7 @@ public class KureshyBot extends BaseBot{
         super.setLabel("Robot " + id);
     }
 
-    public void updateEnemyRecords(PlayerInfo[] records)
+    public void updateOtherRecords(PlayerInfo[] records)
     {
         System.out.println("Updating enemy records for KureshyBot ");
     }
