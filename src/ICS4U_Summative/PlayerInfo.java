@@ -71,9 +71,9 @@ public class PlayerInfo {
      * The catch/dodge capability of the robot (higher is better)
      * @return the dodge capability of the robot
      */
-//    public double getDodgeDifficulty() {
-//        return this.DODGE_DIFFICULTY;
-//    }
+    public double getDodgeDifficulty() {
+        return this.DODGE_DIFFICULTY;
+    }
 
     /**
      * Get the position of the robot

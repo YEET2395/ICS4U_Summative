@@ -17,8 +17,12 @@ public class LiTestChaserBot extends BaseBot {
     public LiTestChaserBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, double dodgeDiff) {
         super(city, str, ave, dir, id, role, hp, movesPerTurn, dodgeDiff);
         super.setColor(Color.MAGENTA);
-        super.setLabel("LiChaser " + super.getMyID());
+        super.setLabel("LiChaser " + super.myRecords.getID());
         this.myIndex = id;
+    }
+
+    public void updateEnemyRecords(PlayerInfo[] records) {
+        // For testing, we won't implement this method
     }
 
     /**
@@ -39,10 +43,13 @@ public class LiTestChaserBot extends BaseBot {
         int minDist = Integer.MAX_VALUE;
         int[] targetPos = null;
 
+
+        //System.out.println("LiTestChaserBot roles: " + Arrays.toString(botsRoles));
+
         // Find nearest Guard (role 2) or VIP (role 1)
         for (int i = 0; i < botsPositions.length; i++) {
             if (i == myIndex) continue;
-            if (botsRoles[i] == 1 || botsRoles[i] == 2) {
+            if (botsRoles[i] == 0 || botsRoles[i] == 1) {
                 int dist = Math.abs(myPos[0] - botsPositions[i][0]) + Math.abs(myPos[1] - botsPositions[i][1]);
                 if (dist < minDist) {
                     minDist = dist;

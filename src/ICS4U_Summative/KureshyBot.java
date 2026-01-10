@@ -24,6 +24,7 @@ public class KureshyBot extends BaseBot{
     private final int NUM_CATCHES = 5; //the sixth index for each bot in the target table
     private int targetID; //the current target
     private boolean isCatching; //to be used by application to know when to check dodge
+    private boolean[] robotCaught = new boolean[0];
 
     /**
      * Constructor for Chaser
@@ -42,6 +43,11 @@ public class KureshyBot extends BaseBot{
         //for debugging
         super.setColor(Color.RED);
         super.setLabel("Robot " + id);
+    }
+
+    public void updateEnemyRecords(PlayerInfo[] records)
+    {
+        System.out.println("Updating enemy records for KureshyBot ");
     }
 
     /**

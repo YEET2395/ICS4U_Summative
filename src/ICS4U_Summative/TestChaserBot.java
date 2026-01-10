@@ -24,12 +24,16 @@ public class TestChaserBot extends BaseBot {
      * @param movesPerTurn the max amount of moves the robot can make
      * @param dodgeDiff the dodging/catching capability of the robot
      */
-    public TestChaserBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, int dodgeDiff) {
+    public TestChaserBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, double dodgeDiff) {
         super(city, str, ave, dir, role, id, hp, movesPerTurn, dodgeDiff);
 
         // for debugging - make it blue to distinguish from other robots
         super.setColor(Color.BLUE);
-        super.setLabel("TestChaser " + super.getMyID());
+        super.setLabel("TestChaser " + super.myRecords.getID());
+    }
+
+    public void updateEnemyRecords(PlayerInfo[] records) {
+        // For testing, we won't implement this method
     }
 
     /**
@@ -59,7 +63,7 @@ public class TestChaserBot extends BaseBot {
      * @return the number of moves this robot can make per turn
      */
     private double getMovesPerTurn() {
-        return super.getMyDodgeDifficulty(); // Using dodge difficulty as a proxy for moves per turn
+        return super.myRecords.getDodgeDifficulty(); // Using dodge difficulty as a proxy for moves per turn
     }
 }
 

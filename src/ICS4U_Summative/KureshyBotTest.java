@@ -36,7 +36,7 @@ public class KureshyBotTest {
         for (int i=0; i<records.length; i++) {
 
             //update the info that will change
-            records[i].updateRecords(array[i].getMyHP(), array[i].getMyPosition(), array[i].getMyState());
+            records[i].updateRecords(array[i].myRecords.getHP(), array[i].getMyPosition(), array[i].myRecords.getState());
         }
 
     }
@@ -50,20 +50,25 @@ public class KureshyBotTest {
      */
     public static void checkDodge(KureshyBot chaser, BaseBot target, Random r) {
         double diff = r.nextDouble();
-        System.out.format("Chaser: %.2f -- Target %d: %.2f -- Difficulty: %.2f\n", chaser.getMyDodgeDifficulty(), target.getMyID(), target.getMyDodgeDifficulty(), diff);
+        System.out.format("Chaser: %s -- Target %d: %s -- Difficulty: %.2f\n",
+                Arrays.toString(chaser.myRecords.getPosition()),
+                target.myRecords.getID(),
+                Arrays.toString(target.myRecords.getPosition()),
+                diff);
 
         //check which robots dodged and which didn't
-        if (chaser.getMyDodgeDifficulty() >= diff && target.getMyDodgeDifficulty() >= diff) {
-            chaser.sendTagResult(target.getMyID(), false);
+        if (chaser.myRecords.getDodgeDifficulty() >= diff && target.myRecords.getDodgeDifficulty() >= diff) {
+            chaser.sendTagResult(target.myRecords.getID(), false);
             System.out.println("BOTH DODGED");
             //means both dodged
-        } else if (chaser.getMyDodgeDifficulty() >= diff && target.getMyDodgeDifficulty() < diff) {
-            chaser.sendTagResult(target.getMyID(), true);
+        } else if (chaser.myRecords.getDodgeDifficulty() >= diff && target.myRecords.getDodgeDifficulty() < diff) {
+            chaser.sendTagResult(target.myRecords.getID(), true);
             target.takeDamage(1);
             System.out.println("CHASER DODGED");
+
             //means chaser dodged but target didn't
         } else {
-            chaser.sendTagResult(target.getMyID(), true);
+            chaser.sendTagResult(target.myRecords.getID(), true);
             chaser.takeDamage(1);
             target.takeDamage(1);
             System.out.println("NONE DODGED");
@@ -184,9 +189,9 @@ public class KureshyBotTest {
 
         //initialize records
         for (int i=0; i<robots.length; i++) {
-            records[i] = new PlayerInfo(robots[i].getMyID(), robots[i].getMyRole(),
-                    robots[i].getMyHP(), robots[i].getMyDodgeDifficulty(),
-                    robots[i].getMyPosition(), robots[i].getMyState());
+            records[i] = new PlayerInfo(robots[i].myRecords.getID(), robots[i].myRecords.getRole(),
+                    robots[i].myRecords.getHP(), robots[i].myRecords.getDodgeDifficulty(),
+                    robots[i].getMyPosition(), robots[i].myRecords.getState());
         }
 
 

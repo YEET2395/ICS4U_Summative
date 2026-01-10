@@ -39,14 +39,14 @@ public class App {
      * @param records the array of records to update
      */
     public void updateRecords(BaseBot[] array, PlayerInfo[] records) {
-
-        //iterate through the list of records (each record should match with the BaseBot in array)
         for (int i=0; i<records.length; i++) {
-
-            //update the info that will change
-            records[i].updateRecords(array[i].getMyHP(), array[i].getMyPosition(), array[i].getMyState());
+            // Use getter method to retrieve info from BaseBot's PlayerInfo
+            records[i].updateRecords(
+                array[i].myRecords.getHP(),
+                array[i].myRecords.getPosition(),
+                array[i].myRecords.getState()
+            );
         }
-
     }
 
     /**
@@ -176,50 +176,49 @@ public class App {
     /**
      * Randomly generates a number and compares it to the chaser and target's dodging capability
      * before applying damage and sending the results to the chaser
-     * @param chaser the chaser initiating the catch
-     * @param target the target of the chaser
-     * @param r the Random object
-     */
-    public static void checkDodge(KureshyBot chaser, BaseBot target, Random r) {
-        int diff = r.nextInt(101);
+//     * @param chaser the chaser initiating the catch
+//     * @param target the target of the chaser
+//     * @param r the Random object
+//     */
+//    public static void checkDodge(KureshyBot chaser, BaseBot target, Random r) {
+//        int diff = r.nextInt(101);
+//
+//        //check which robots dodged and which didn't
+//        if (chaser.getMyDodgeDifficulty() >= diff && target.getMyDodgeDifficulty() >= diff) {
+//            chaser.sendTagResult(target.getMyID(), false);
+//            //means both dodged
+//        } else if (chaser.getMyDodgeDifficulty() >= diff && target.getMyDodgeDifficulty() < diff) {
+//            chaser.sendTagResult(target.getMyID(), true);
+//            target.takeDamage(1);
+//            //means chaser dodged but target didn't
+//        } else {
+//            chaser.sendTagResult(target.getMyID(), true);
+//            chaser.takeDamage(1);
+//            target.takeDamage(1);
+//            //means both didn't dodge
+//        }
+//
+//    }
 
-        //check which robots dodged and which didn't
-        if (chaser.getMyDodgeDifficulty() >= diff && target.getMyDodgeDifficulty() >= diff) {
-            chaser.sendTagResult(target.getMyID(), false);
-            //means both dodged
-        } else if (chaser.getMyDodgeDifficulty() >= diff && target.getMyDodgeDifficulty() < diff) {
-            chaser.sendTagResult(target.getMyID(), true);
-            target.takeDamage(1);
-            //means chaser dodged but target didn't
-        } else {
-            chaser.sendTagResult(target.getMyID(), true);
-            chaser.takeDamage(1);
-            target.takeDamage(1);
-            //means both didn't dodge
-        }
-
-    }
-
-    public static void sendInfo(PlayerInfo[] records, BaseBot[] array, int turn) {
-
-        //iterate through the robots
-        for (int i=0; i<array.length; i++) {
-
-            if (array[i].getMyRole() == 1) { //for VIPs
-                ((XiongBot) array[i]).setChaserPositions(getPosOfRole(records, NUM_CHASERS, 3));
-            } else if (array[i].getMyRole() == 2) { //for Guards
-                ((LiBot) array[i]).sendVIPPosition(getPosOfRole(records, NUM_VIPS, 1));
-                ((LiBot) array[i]).sendChaserPosition(getPosOfRole(records, NUM_CHASERS, 1));
-            } else { //for Chasers
-                if (turn==1) {
-                    ((KureshyBot) array[i]).initTargeting(NUM_VIPS+NUM_GUARDS, NUM_CHASERS);
-                }
-                ((KureshyBot) array[i]).sendBotsPos(getPosOfRole(records, 4, 4));
-                ((KureshyBot) array[i]).sendChasersPos(getPosOfRole(records, 1, 3));
-                ((KureshyBot) array[i]).sendStates(getStates(records, NUM_VIPS+NUM_GUARDS+NUM_CHASERS));
-            }
-        }
-    }
+//    public static void sendInfo(PlayerInfo[] records, BaseBot[] array, int turn) {
+//        //iterate through the robots
+//        for (int i=0; i<array.length; i++) {
+//            int role = array[i].myRecords.getRole();
+//            if (role == 1) { //for VIPs
+//                ((XiongBot) array[i]).setChaserPositions(getPosOfRole(records, NUM_CHASERS, 3));
+//            } else if (role == 2) { //for Guards
+//                ((LiBot) array[i]).sendVIPPosition(getPosOfRole(records, NUM_VIPS, 1));
+//                ((LiBot) array[i]).sendChaserPosition(getPosOfRole(records, NUM_CHASERS, 3));
+//            } else { //for Chasers
+//                if (turn==1) {
+//                    ((KureshyBot) array[i]).initTargeting(NUM_VIPS+NUM_GUARDS, NUM_CHASERS);
+//                }
+//                ((KureshyBot) array[i]).sendBotsPos(getPosOfRole(records, 4, 4));
+//                ((KureshyBot) array[i]).sendChasersPos(getPosOfRole(records, NUM_CHASERS, 3));
+//                ((KureshyBot) array[i]).sendStates(getStates(records, NUM_VIPS+NUM_GUARDS+NUM_CHASERS));
+//            }
+//        }
+//    }
 
     public static void main(String[] args)
     {
@@ -244,11 +243,14 @@ public class App {
                     playground,
                     row,
                     col,
-                    Direction.SOUTH, index, 1, 2,
+                    Direction.SOUTH, // str, ave, dir
+                    i, // id
+                    1, // role
+                    2, // hp
                     movesPerTurn,
                     dodgeDiff
             );
-            infos[i] = new PlayerInfo(index, 1, 2, dodgeDiff, pos, false);
+            infos[i] = new PlayerInfo(i, 1, 2, dodgeDiff, pos, false);
             index++;
         }
 
@@ -263,11 +265,14 @@ public class App {
                     playground,
                     row,
                     col,
-                    Direction.NORTH, index, 2, 5,
+                    Direction.NORTH, // str, ave, dir
+                    i, // id
+                    2, // role
+                    5, // hp
                     movesPerTurn,
                     dodgeDiff
             );
-            infos[i] = new PlayerInfo(index, 2, 5, dodgeDiff, pos, false);
+            infos[i] = new PlayerInfo(i, 2, 5, dodgeDiff, pos, false);
             index++;
         }
 
@@ -282,11 +287,14 @@ public class App {
                     playground,
                     row,
                     col,
-                    Direction.NORTH, index, 3, 3,
+                    Direction.NORTH, // str, ave, dir
+                    i, // id
+                    3, // role
+                    3, // hp
                     movesPerTurn,
                     dodgeDiff
             );
-            infos[i] = new PlayerInfo(index, 3, 3, dodgeDiff, pos, false);
+            infos[i] = new PlayerInfo(i, 3, 3, dodgeDiff, pos, false);
             index++;
         }
 

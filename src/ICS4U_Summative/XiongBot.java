@@ -41,7 +41,11 @@ public class XiongBot extends BaseBot {
 
         //for debugging
         super.setColor(Color.GREEN);
-        super.setLabel("Robot " + super.getMyID());
+        super.setLabel("Robot " + super.myRecords.getID());
+    }
+
+    public void updateEnemyRecords(PlayerInfo[] records) {
+        System.out.println("Updating enemy records for XiongBot ");
     }
 
     public void getGuardPosition(int[] coord) {

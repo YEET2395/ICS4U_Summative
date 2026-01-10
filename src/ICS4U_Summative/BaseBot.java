@@ -158,4 +158,10 @@ public abstract class BaseBot extends RobotSE {
             this.myRecords.updateRecords(this.getMyPosition(), true);
         }
     }
+
+    public int getMOVES_PER_TURN()
+    {
+        return movesPerTurn;
+    }
+
 }

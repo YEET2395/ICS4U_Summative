@@ -31,7 +31,7 @@ public class XiongBotTestingApp {
 
 //    /**
 //     * Updates the robots copy of their records
-//     * @param array the array of BaseBots
+//     * @param array the array of BaseBot
 //     * @param publicRecords the records containing the info for the Guards/VIP
 //     * @param chaserRecords the records containing the info for the Chasers
 //     */
@@ -51,7 +51,7 @@ public class XiongBotTestingApp {
 
     /**
      * Updates the records used by the application
-     * @param array the array of BaseBots
+     * @param array the array of BaseBot
      * @param records the array of records to update
      */
     public void updateRecords(BaseBot[] array, PlayerInfo[] records) {
@@ -60,7 +60,7 @@ public class XiongBotTestingApp {
         for (int i=0; i<records.length; i++) {
 
             //update the info that will change
-            records[i].updateRecords(array[i].getMyHP(), array[i].getMyPosition(), array[i].getMyState());
+            records[i].updateRecords(array[i].myRecords.getHP(), array[i].getMyPosition(), array[i].myRecords.getState());
             }
 
     }
@@ -140,22 +140,22 @@ public class XiongBotTestingApp {
      * @return
      */
     public static void checkDodge(KureshyBot chaser, BaseBot target, Random r) {
-        int diff = r.nextInt(101);
+        double diff = r.nextDouble(); // 0~1 double
 
         //check which robots dodged and which didn't
-        if (chaser.getMyDodgeDifficulty() >= diff && target.getMyDodgeDifficulty() >= diff) {
-            chaser.sendTagResult(target.getMyID(), false);
+        if (chaser.myRecords.getDodgeDifficulty() >= diff && target.myRecords.getDodgeDifficulty() >= diff) {
+            chaser.sendTagResult(target.myRecords.getID(), false);
             //means both dodged
-        } else if (chaser.getMyDodgeDifficulty() >= diff && target.getMyDodgeDifficulty() < diff) {
-            chaser.sendTagResult(target.getMyID(), true);
+        } else if (chaser.myRecords.getDodgeDifficulty() >= diff && target.myRecords.getDodgeDifficulty() < diff) {
+            chaser.sendTagResult(target.myRecords.getID(), true);
             target.takeDamage(1);
             //means chaser dodged but target didn't
-        } else if (chaser.getMyDodgeDifficulty() < diff && target.getMyDodgeDifficulty() >= diff) {
-            chaser.sendTagResult(target.getMyID(), false);
+        } else if (chaser.myRecords.getDodgeDifficulty() < diff && target.myRecords.getDodgeDifficulty() >= diff) {
+            chaser.sendTagResult(target.myRecords.getID(), false);
             chaser.takeDamage(1);
             //means target dodged but chaser didn't
         } else {
-            chaser.sendTagResult(target.getMyID(), true);
+            chaser.sendTagResult(target.myRecords.getID(), true);
             chaser.takeDamage(1);
             target.takeDamage(1);
             //means both didn't dodge
@@ -177,13 +177,13 @@ public class XiongBotTestingApp {
 
         // Create two XiongBot VIPs at different positions
         XiongBot[] vipBots = new XiongBot[2];
-        vipBots[0] = new XiongBot(playground, 5, 2, Direction.EAST, 1, 1, 100, 1, 5);
-        vipBots[1] = new XiongBot(playground, 6, 3, Direction.EAST, 2, 1, 100, 1, 5);
+        vipBots[0] = new XiongBot(playground, 5, 2, Direction.EAST, 1, 1, 100, 1, 5.0);
+        vipBots[1] = new XiongBot(playground, 6, 3, Direction.EAST, 2, 1, 100, 1, 5.0);
 
         // Create two TestChaserBots at different positions
         TestChaserBot[] testChasers = new TestChaserBot[2];
-        testChasers[0] = new TestChaserBot(playground, 10, 2, Direction.NORTH, 3, 3, 100, 1, 1);
-        testChasers[1] = new TestChaserBot(playground, 11, 3, Direction.NORTH, 4, 3, 100, 1, 1);
+        testChasers[0] = new TestChaserBot(playground, 10, 2, Direction.NORTH, 3, 3, 100, 1, 1.0);
+        testChasers[1] = new TestChaserBot(playground, 11, 3, Direction.NORTH, 4, 3, 100, 1, 1.0);
 
         // Example: set up the chaser positions for the first VIP to track
         int[][] chaserPositions = new int[][]{
@@ -193,7 +193,7 @@ public class XiongBotTestingApp {
         vipBots[0].setChaserPositions(chaserPositions);
         vipBots[1].setChaserPositions(chaserPositions);
 
-        // Test loop - simulate 20 turns
+        // Test loop - simulate 50 turns
         System.out.println("Starting Test: XiongBot Speed Tracking and Position Prediction");
         System.out.println("========================================================");
 
@@ -215,7 +215,7 @@ public class XiongBotTestingApp {
                 System.out.println("VIPBot " + i + " Turn " + turn + ":");
                 for (int j = 0; j < testChasers.length; j++) {
                     double speed = vipBots[i].getChaserSpeed(j);
-                    int[] predictedPos = vipBots[i].predictChaserPosition(j, 1);
+                    int[] predictedPos = vipBots[i].predictChaserPosition(j, 5);
                     System.out.println("  Chaser " + j + " Position: (" + testChasers[j].getX() + ", " + testChasers[j].getY() + ")");
                     System.out.println("  Chaser " + j + " Speed: " + String.format("%.2f", speed) + " units/turn");
                     if (predictedPos != null) {
