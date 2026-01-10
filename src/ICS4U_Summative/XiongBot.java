@@ -118,6 +118,30 @@ public class XiongBot extends BaseBot {
                 }
             }
 
+            // Determine which chaser is "most reachable" (can reach us in the fewest turns)
+            // We compute time-to-reach = ceil(distance / max(speed, 1)) using tracked chaserSpeeds.
+            int mostReachableIndex = -1;
+            int mostReachableTime = Integer.MAX_VALUE;
+            int mostReachableDist = Integer.MAX_VALUE; // tie-breaker: smaller distance
+            double minAssumedSpeed = 1.0;
+            for (int i = 0; i < this.chaserPos.length; i++) {
+                int[] c = this.chaserPos[i];
+                int dist = this.getDistances(c);
+                double s = minAssumedSpeed;
+                if (i >= 0 && i < this.chaserSpeeds.length) {
+                    s = this.chaserSpeeds[i];
+                }
+                if (s < minAssumedSpeed) {
+                    s = minAssumedSpeed;
+                }
+                int timeToReach = (int) Math.ceil((double) dist / s);
+                if (timeToReach < mostReachableTime || (timeToReach == mostReachableTime && dist < mostReachableDist)) {
+                    mostReachableTime = timeToReach;
+                    mostReachableIndex = i;
+                    mostReachableDist = dist;
+                }
+            }
+
             // Evaluate candidate directions and pick the one that maximizes the minimum distance to any chaser
             // We'll track the best and second-best candidates so we can apply probabilistic tie-breaking
             Direction[] candidates = {Direction.NORTH, Direction.WEST, Direction.SOUTH, Direction.EAST};
@@ -163,6 +187,17 @@ public class XiongBot extends BaseBot {
                     newX = myX + 1;
                 } else if (d == Direction.WEST) {
                     newX = myX - 1;
+                }
+
+                // If moving here would reduce our distance to the most reachable chaser, skip it.
+                if (mostReachableIndex >= 0 && mostReachableIndex < this.chaserPos.length) {
+                    int[] most = this.chaserPos[mostReachableIndex];
+                    int curDistToMost = mostReachableDist;
+                    int candDistToMost = Math.abs(newX - most[0]) + Math.abs(newY - most[1]);
+                    if (candDistToMost < curDistToMost) {
+                        // This candidate would move us closer to the most reachable chaser — disallow it.
+                        continue;
+                    }
                 }
 
                 // compute minimum distance to any chaser from the new position
