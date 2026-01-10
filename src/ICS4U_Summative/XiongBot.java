@@ -3,30 +3,33 @@ package ICS4U_Summative;
 import becker.robots.*;
 
 import java.awt.*;
+import java.util.Random;
 
 /**
  * @Todo: improve movement algorithm to better avoid chasers + fine tune speed tracking and prediction
  */
-public class XiongBot extends BaseBot{
+public class XiongBot extends BaseBot {
     private int[] guardPos = {0, 0};
     // changed to support multiple chasers
     private int[][] chaserPos = new int[0][0];
     private int movesPerTurn = 1;
-    // track chaser speeds: stores the average speed of each chaser
+    // track chaser speeds: stores the speed (manhattan distance) observed last round for each chaser
     private double[] chaserSpeeds = new double[0];
-    // store previous positions to calculate speed
-    private int[][][] chaserPositionHistory = new int[0][0][2];
+    // store previous position (one round) to calculate speed and direction
+    private int[][] chaserPrevPos = new int[0][2];
+    // random generator for tie-breaking and probabilistic decisions
+    private final Random rnd = new Random();
 
     /**
      * Constructor for BaseBot
      *
-     * @param city City the robot is in
-     * @param str  Street number
-     * @param ave  Avenue number
-     * @param dir  direction the robot is facing
-     * @param role role of the bot
-     * @param id   identifier of the bot
-     * @param hp   health points of the bot
+     * @param city      City the robot is in
+     * @param str       Street number
+     * @param ave       Avenue number
+     * @param dir       direction the robot is facing
+     * @param role      role of the bot
+     * @param id        identifier of the bot
+     * @param hp        health points of the bot
      * @param dodgeDiff dodging difficulty (double)
      */
     public XiongBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, double dodgeDiff) {
@@ -38,9 +41,9 @@ public class XiongBot extends BaseBot{
         super.setLabel("Robot " + super.getMyID());
     }
 
-    public void getGuardPosition(int[] coord){
-        guardPos[0]=coord[0];
-        guardPos[1]=coord[1];
+    public void getGuardPosition(int[] coord) {
+        guardPos[0] = coord[0];
+        guardPos[1] = coord[1];
     }
 
     // accepts multiple chaser coordinates
@@ -48,19 +51,35 @@ public class XiongBot extends BaseBot{
         if (coords == null) {
             this.chaserPos = new int[0][0];
             this.chaserSpeeds = new double[0];
-            this.chaserPositionHistory = new int[0][0][2];
+            this.chaserPrevPos = new int[0][2];
             return;
         }
+
+        // If chaser count unchanged and we already have prev positions, only update current positions
+        if (this.chaserPrevPos.length == coords.length && this.chaserPrevPos.length > 0) {
+            // ensure chaserPos and chaserSpeeds arrays are the right size
+            this.chaserPos = new int[coords.length][2];
+            this.chaserSpeeds = new double[coords.length];
+            for (int i = 0; i < coords.length; i++) {
+                this.chaserPos[i][0] = coords[i][0];
+                this.chaserPos[i][1] = coords[i][1];
+                // keep existing chaserPrevPos as-is so trackChaserSpeeds can compute a one-round delta
+                // chaserSpeeds will be updated by trackChaserSpeeds
+            }
+            return;
+        }
+
+        // Otherwise (first time or count changed) initialize arrays and set previous positions to current
         this.chaserPos = new int[coords.length][2];
         this.chaserSpeeds = new double[coords.length];
-        this.chaserPositionHistory = new int[coords.length][10][2]; // keep last 10 positions
+        this.chaserPrevPos = new int[coords.length][2]; // keep only the previous round position
         for (int i = 0; i < coords.length; i++) {
             this.chaserPos[i][0] = coords[i][0];
             this.chaserPos[i][1] = coords[i][1];
-            // initialize speeds and history
+            // initialize speeds and previous position to current (first round -> speed 0)
             this.chaserSpeeds[i] = 0;
-            this.chaserPositionHistory[i][0][0] = coords[i][0];
-            this.chaserPositionHistory[i][0][1] = coords[i][1];
+            this.chaserPrevPos[i][0] = coords[i][0];
+            this.chaserPrevPos[i][1] = coords[i][1];
         }
     }
 
@@ -73,7 +92,7 @@ public class XiongBot extends BaseBot{
         return false;
     }
 
-    public void takeTurn(){
+    public void takeTurn() {
         int movesAllowed = this.movesPerTurn;
 
         for (int step = 0; step < movesAllowed; step++) {
@@ -87,7 +106,7 @@ public class XiongBot extends BaseBot{
             }
 
             // Current minimum distance to any chaser (used for tie-breaker)
-            int currentMinDist = 2147483647;
+            int currentMinDist = Integer.MAX_VALUE;
             for (int i = 0; i < this.chaserPos.length; i++) {
                 int[] c = this.chaserPos[i];
                 int d = this.getDistances(c);
@@ -97,11 +116,15 @@ public class XiongBot extends BaseBot{
             }
 
             // Evaluate candidate directions and pick the one that maximizes the minimum distance to any chaser
-            // Order follows repeated turnLeft() sequence so changing to the next candidate requires at most one turn
+            // We'll track the best and second-best candidates so we can apply probabilistic tie-breaking
             Direction[] candidates = {Direction.NORTH, Direction.WEST, Direction.SOUTH, Direction.EAST};
             Direction bestDir = null;
-            int bestMinDistance = -2147483648;
-            int bestIncrease = -2147483648;
+            int bestMinDistance = Integer.MIN_VALUE;
+            int bestIncrease = Integer.MIN_VALUE;
+
+            Direction secondBestDir = null;
+            int secondBestMinDistance = Integer.MIN_VALUE;
+            int secondBestIncrease = Integer.MIN_VALUE;
 
             // Determine index of current direction so we can iterate candidates starting from current facing
             Direction currentDirForChecks = this.getDirection();
@@ -140,7 +163,7 @@ public class XiongBot extends BaseBot{
                 }
 
                 // compute minimum distance to any chaser from the new position
-                int minDist = 2147483647;
+                int minDist = Integer.MAX_VALUE;
                 for (int j = 0; j < this.chaserPos.length; j++) {
                     int[] c = this.chaserPos[j];
                     int dist = Math.abs(newX - c[0]) + Math.abs(newY - c[1]);
@@ -151,11 +174,20 @@ public class XiongBot extends BaseBot{
 
                 int increase = minDist - currentMinDist;
 
-                // prefer the direction which gives the largest minimum-distance; break ties by largest increase
+                // Update best/second-best accordingly
                 if (minDist > bestMinDistance || (minDist == bestMinDistance && increase > bestIncrease)) {
-                    bestMinDistance = minDist;
+                    // shift current best to second-best
+                    secondBestDir = bestDir;
+                    secondBestMinDistance = bestMinDistance;
+                    secondBestIncrease = bestIncrease;
+
                     bestDir = d;
+                    bestMinDistance = minDist;
                     bestIncrease = increase;
+                } else if (minDist > secondBestMinDistance || (minDist == secondBestMinDistance && increase > secondBestIncrease)) {
+                    secondBestDir = d;
+                    secondBestMinDistance = minDist;
+                    secondBestIncrease = increase;
                 }
             }
 
@@ -167,8 +199,21 @@ public class XiongBot extends BaseBot{
                 break;
             }
 
-            // Attempt to move in the chosen best direction. If failed, stop further movement.
-            if (!attemptMove(bestDir)) {
+            // Choose between best and second-best with the requested probabilities:
+            // - If both have the same min-distance, pick randomly between them 50/50
+            // - Otherwise pick best with 0.7 probability and second-best with 0.3
+            Direction chosenDir = bestDir;
+            if (secondBestDir != null) {
+                if (bestMinDistance == secondBestMinDistance) {
+                    chosenDir = rnd.nextBoolean() ? bestDir : secondBestDir;
+                } else {
+                    double p = rnd.nextDouble();
+                    chosenDir = (p < 0.7) ? bestDir : secondBestDir;
+                }
+            }
+
+            // Attempt to move in the chosen direction. If failed, stop further movement.
+            if (!attemptMove(chosenDir)) {
                 break;
             }
         }
@@ -176,6 +221,7 @@ public class XiongBot extends BaseBot{
 
     /**
      * Helper method to get the opposite direction
+     *
      * @param dir the direction to reverse
      * @return the opposite direction
      */
@@ -187,57 +233,52 @@ public class XiongBot extends BaseBot{
     }
 
     /**
-     * Observes and tracks the speed of each chaser based on their movement history.
-     * Updates the chaserSpeeds array with the average speed (manhattan distance per turn) for each chaser.
+     * Observes and tracks the speed of each chaser based on their last round movement.
+     * Updates the chaserSpeeds array with the Manhattan distance moved in the last round.
+     * This uses only the previous round (one-round tracking) for speed.
      */
     public void trackChaserSpeeds() {
-        if (this.chaserPos.length == 0 || this.chaserPositionHistory.length == 0) {
+        if (this.chaserPos.length == 0) {
             return;
         }
 
-        for (int i = 0; i < this.chaserPos.length; i++) {
-            // Shift history: move all positions back and add the new one
-            for (int j = this.chaserPositionHistory[i].length - 1; j > 0; j--) {
-                this.chaserPositionHistory[i][j][0] = this.chaserPositionHistory[i][j - 1][0];
-                this.chaserPositionHistory[i][j][1] = this.chaserPositionHistory[i][j - 1][1];
-            }
-            // Add current position as the most recent
-            this.chaserPositionHistory[i][0][0] = this.chaserPos[i][0];
-            this.chaserPositionHistory[i][0][1] = this.chaserPos[i][1];
-
-            // Calculate average speed based on position history
-            double totalDistance = 0;
-            int validMeasurements = 0;
-
-            for (int j = 0; j < this.chaserPositionHistory[i].length - 1; j++) {
-                int x1 = this.chaserPositionHistory[i][j][0];
-                int y1 = this.chaserPositionHistory[i][j][1];
-                int x2 = this.chaserPositionHistory[i][j + 1][0];
-                int y2 = this.chaserPositionHistory[i][j + 1][1];
-
-                // Skip if positions are the same (chaser didn't move)
-                if (x1 != x2 || y1 != y2) {
-                    int distance = Math.abs(x1 - x2) + Math.abs(y1 - y2);
-                    totalDistance += distance;
-                    validMeasurements++;
+        // Ensure prev-pos array matches length
+        if (this.chaserPrevPos.length != this.chaserPos.length) {
+            int[][] newPrev = new int[this.chaserPos.length][2];
+            for (int i = 0; i < this.chaserPos.length; i++) {
+                if (i < this.chaserPrevPos.length) {
+                    newPrev[i][0] = this.chaserPrevPos[i][0];
+                    newPrev[i][1] = this.chaserPrevPos[i][1];
+                } else {
+                    newPrev[i][0] = this.chaserPos[i][0];
+                    newPrev[i][1] = this.chaserPos[i][1];
                 }
             }
+            this.chaserPrevPos = newPrev;
+        }
 
-            // Update the speed for this chaser
-            if (validMeasurements > 0) {
-                this.chaserSpeeds[i] = totalDistance / validMeasurements;
-            } else {
-                this.chaserSpeeds[i] = 0;
-            }
+        for (int i = 0; i < this.chaserPos.length; i++) {
+            int curX = this.chaserPos[i][0];
+            int curY = this.chaserPos[i][1];
+            int prevX = this.chaserPrevPos[i][0];
+            int prevY = this.chaserPrevPos[i][1];
+
+            // Manhattan distance moved since last round -> one-round speed
+            int distance = Math.abs(curX - prevX) + Math.abs(curY - prevY);
+            this.chaserSpeeds[i] = distance;
+
+            // update prev to current for next round
+            this.chaserPrevPos[i][0] = curX;
+            this.chaserPrevPos[i][1] = curY;
         }
     }
 
     /**
-     * Predicts the future position of a specific chaser based on their current position and tracked speed.
-     * Uses linear extrapolation assuming the chaser continues moving in the same direction.
+     * Predicts the future position of a specific chaser based on their movement from the previous round.
+     * Uses the single-round delta (current - previous) and linear extrapolation.
      *
      * @param chaserIndex the index of the chaser to predict
-     * @param turnsAhead the number of turns to predict ahead
+     * @param turnsAhead  the number of turns to predict ahead (defaults to 1 for one-round prediction)
      * @return an array containing the predicted [x, y] coordinates, or null if prediction is not possible
      */
     public int[] predictChaserPosition(int chaserIndex, int turnsAhead) {
@@ -245,26 +286,27 @@ public class XiongBot extends BaseBot{
             return null;
         }
 
-        if (this.chaserPositionHistory[chaserIndex].length < 2) {
-            // Not enough history to determine direction
+        if (this.chaserPrevPos.length != this.chaserPos.length) {
+            // Not enough info, return current pos
             return new int[]{this.chaserPos[chaserIndex][0], this.chaserPos[chaserIndex][1]};
         }
 
-        // Get the current and previous position to determine direction
         int[] currentPos = this.chaserPos[chaserIndex];
-        int[] previousPos = this.chaserPositionHistory[chaserIndex][1];
+        int[] previousPos = this.chaserPrevPos[chaserIndex];
 
-        // Calculate the direction vector
         int deltaX = currentPos[0] - previousPos[0];
         int deltaY = currentPos[1] - previousPos[1];
 
-        // Predict future position by extrapolating the direction
+        // If there's no movement detected last round, prediction is current position
+        if (deltaX == 0 && deltaY == 0) {
+            return new int[]{currentPos[0], currentPos[1]};
+        }
+
         int predictedX = currentPos[0] + (deltaX * turnsAhead);
         int predictedY = currentPos[1] + (deltaY * turnsAhead);
 
         return new int[]{predictedX, predictedY};
     }
-
     /**
      * Gets the tracked speed of a specific chaser.
      *

@@ -36,9 +36,9 @@ public class TestChaserBot extends BaseBot {
      * Simple takeTurn method that just moves forward if the path is clear
      */
     public void takeTurn() {
-        int moveTurn = 1;
+        // int moveTurn = 2;
         // Move forward as many times as allowed per turn
-        for (int i = 0; i < 1; i++) {
+        for (int i = 0; i < 2; i++) {
             if (this.frontIsClear()) {
                 this.move();
             } else {
