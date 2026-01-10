@@ -30,25 +30,12 @@ public class LiBot extends BaseBot {
 
         //for debugging
         super.setColor(Color.BLUE);
-        super.setLabel("Robot " + super.getMyID());
+        super.setLabel("Robot " + super.myRecords.getID());
     }
 
-    /**
-     * Application class will send the position of VIP to XinranBot
-     * @param pos array containing street and avenue number of VIP
-     */
-    public void sendVIPPosition(int[][] pos)
+    public void updateEnemyRecords(PlayerInfo[] records)
     {
-        this.vipPos = pos;
-    }
-
-    /**
-     * XinranBot should know the position of the chaser only if the chaser is within 5 intersections to the VIP
-     * @param pos array containing street and avenue number of chaser
-     */
-    public void sendChaserPosition(int[][] pos)
-    {
-        this.chaserPos = pos;
+        System.out.println("Updating enemy records for LiBot ");
     }
 
 

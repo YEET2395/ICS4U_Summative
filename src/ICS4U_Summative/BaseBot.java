@@ -29,7 +29,7 @@ public abstract class BaseBot extends RobotSE {
     /**
      * Updates this bot's enemy records
      */
-    abstract public void updateEnemyRecords();
+    abstract public void updateEnemyRecords(PlayerInfo[] records);
 
     /**
      * Get this bot's current position
@@ -150,11 +150,12 @@ public abstract class BaseBot extends RobotSE {
      */
     public void takeDamage(int amount)
     {
-        this.hp -= amount;
+        int hp = this.myRecords.getHP();
+        hp -= amount;
 
         //change state if its lost all hp
-        if (this.hp<=0) {
-            this.isCaught = true;
+        if (hp<=0) {
+            this.myRecords.updateRecords(this.getMyPosition(), true);
         }
     }
 }
