@@ -3,15 +3,9 @@ package ICS4U_Summative;
 import becker.robots.*;
 
 public abstract class BaseBot extends RobotSE {
-
-    private final int ROLE; // GUARD = 2, VIP = 1, CHASER = 3
-    private final int ID;
-    private final int MOVES_PER_TURN;
-    private final double DODGE_DIFFICULTY;
-    private int hp;
-    private boolean isCaught;
-    public boolean[] robotCaught;
-    //playerInfo[] myRecords;
+    public PlayerInfo[] enemyRecords = new PlayerInfo[4];
+    public PlayerInfo myRecords;
+    public final int movesPerTurn;
 
     /**
      * Constructor for BaseBot
@@ -28,13 +22,14 @@ public abstract class BaseBot extends RobotSE {
     public BaseBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, double dodgeDiff)
     {
         super(city, str, ave, dir);
-        this.ROLE = role;
-        this.ID = id;
-        this.hp = hp;
-        this.DODGE_DIFFICULTY = dodgeDiff;
-        this.MOVES_PER_TURN = movesPerTurn;
-        this.isCaught = false;
+        this.movesPerTurn = movesPerTurn;
+        myRecords = new PlayerInfo(id, role, hp, dodgeDiff, new int[] {ave, str}, false);
     }
+
+    /**
+     * Updates this bot's enemy records
+     */
+    abstract public void updateEnemyRecords();
 
     /**
      * Get this bot's current position
@@ -45,57 +40,6 @@ public abstract class BaseBot extends RobotSE {
         return new int[] {this.getX(), this.getY()};
     }
 
-    /**
-     * Gets the role of this robot
-     * @return the role of this robot
-     */
-    public int getMyRole() {
-        return this.ROLE;
-    }
-
-    /**
-     * Gets the ID of this robot
-     * @return the numerical ID of this robot
-     */
-    public int getMyID() {
-        return this.ID;
-    }
-
-    /**
-     * Gets the health of this robot
-     * @return the health of the robot
-     */
-    public int getMyHP() {
-        return this.hp;
-    }
-
-    /**
-     * Gets the dodging/catching capability of this robot
-     * @return the dodging/catching capability of this robot
-     */
-    public double getMyDodgeDifficulty() {
-        return this.DODGE_DIFFICULTY;
-    }
-
-    /**
-     * Gets the array containing the isCaught state of all the other robots
-     * @return the array containing the isCaught state of the robots
-     */
-    public boolean[] getStates() {
-        return this.robotCaught;
-    }
-
-    public int getMOVES_PER_TURN() {
-        return this.MOVES_PER_TURN;
-    }
-
-    /**
-     * Gets the state of this robot
-     * @return whether the robot has been caught or not
-     */
-    public boolean getMyState() {
-        return this.isCaught;
-    }
 
     /** @return current X coordinate*/
     public int getX(){
@@ -107,23 +51,6 @@ public abstract class BaseBot extends RobotSE {
         return this.getStreet();
     }
 
-//    /**
-//     * Calculates the grid distance between the robot invoking the method and all other robots (including the invoker)
-//     * @return the distances to each other robot
-//     */
-//    public int[] getDistances() {
-//        int [] gridDistance = new int[myRecords.length];
-//        int[] myCoords = this.getMyPosition();
-//        int[] otherCoords;
-//
-//        //iterate through list of players and calculates the distance to get to each one
-//        for (int i=0; i<this.myRecords.length; i++) {
-//            otherCoords = myRecords[i].getPosition();
-//            gridDistance[i] = Math.abs(myCoords[0] - otherCoords[0]) + Math.abs(myCoords[1] - otherCoords[1]);
-//        }
-//
-//        return gridDistance;
-//    }
 
     /**
      * Gets the distance between the robot invoking it and another location
@@ -230,41 +157,4 @@ public abstract class BaseBot extends RobotSE {
             this.isCaught = true;
         }
     }
-
-//    /**
-//     * Updates the personal records of this robot
-//     * @param records the new records
-//     */
-//    public void setRecords(playerInfo[] records) {
-//        this.myRecords = records;
-//    }
-//
-//    /**
-//     * For use of subclasses to get the personal records of this robot
-//     * @return the personal records of this robot
-//     */
-//    public playerInfo[] getRecords() {
-//        return this.myRecords;
-//    }
-//
-//    /**
-//     * Gets the record of a robot given an ID
-//     * @param ID the ID of the desired robot
-//     * @return the record of the desired robot
-//     */
-//    public playerInfo getRobotInfo(int ID) {
-//        //initially sets targetInfo as you
-//        playerInfo targetInfo = getRobotInfo(this.ID);
-//
-//        //iterates through the robot's records
-//        for (int i=0; i<this.myRecords.length; i++) {
-//
-//            //checks if the target ID and record ID match
-//            if (myRecords[i].getID() == ID) {
-//                targetInfo = myRecords[i];
-//            }
-//        }
-//
-//        return targetInfo;
-//    }
 }

@@ -5,7 +5,7 @@ package ICS4U_Summative;
  * @author Aadil Kureshy, Austin Xiong,  Xinran Li
  * @version 2026 1 5
  */
-public class playerInfo {
+public class PlayerInfo {
     private final int ID;
     private final int ROLE;
     private int hp;
@@ -22,7 +22,7 @@ public class playerInfo {
      * @param pos the x,y coordinates of the robot
      * @param isCaught the state of the robot
      */
-    public playerInfo (int ID, int role, int hp, double dodgeDifficulty, int[] pos, boolean isCaught) {
+    public PlayerInfo(int ID, int role, int hp, double dodgeDifficulty, int[] pos, boolean isCaught) {
         this.ID = ID;
         this.ROLE = role;
         this.hp = hp;
@@ -71,9 +71,9 @@ public class playerInfo {
      * The catch/dodge capability of the robot (higher is better)
      * @return the dodge capability of the robot
      */
-    public double getDodgeDifficulty() {
-        return this.DODGE_DIFFICULTY;
-    }
+//    public double getDodgeDifficulty() {
+//        return this.DODGE_DIFFICULTY;
+//    }
 
     /**
      * Get the position of the robot

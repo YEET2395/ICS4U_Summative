@@ -38,7 +38,7 @@ public class App {
      * @param array the array of BaseBots
      * @param records the array of records to update
      */
-    public void updateRecords(BaseBot[] array, playerInfo[] records) {
+    public void updateRecords(BaseBot[] array, PlayerInfo[] records) {
 
         //iterate through the list of records (each record should match with the BaseBot in array)
         for (int i=0; i<records.length; i++) {
@@ -56,7 +56,7 @@ public class App {
      * @param role the role of desired robots (4 counts for both Guards and VIPs)
      * @return the x,y coordinates of the robots of the specified role
      */
-    public static int[][] getPosOfRole(playerInfo[] records, int numRobots, int role) {
+    public static int[][] getPosOfRole(PlayerInfo[] records, int numRobots, int role) {
         int[][] robotPos = new int[numRobots][2];
         int count = 0; //robotPos index
 
@@ -90,7 +90,7 @@ public class App {
      * @param role the role of desired robots
      * @return the HP of the robots of the specified role
      */
-    public static int[] getHPOfRole(playerInfo[] records, int numRobots, int role) {
+    public static int[] getHPOfRole(PlayerInfo[] records, int numRobots, int role) {
         int[] robotHP = new int[numRobots];
         int count = 0; //robotHP index
 
@@ -113,7 +113,7 @@ public class App {
      * @param numRobots the total number of robots
      * @return the isCaught status of all robots with the index corresponding to ID
      */
-    public static boolean[] getStates(playerInfo[] records, int numRobots) {
+    public static boolean[] getStates(PlayerInfo[] records, int numRobots) {
         boolean[] robotStatus = new boolean[numRobots];
 
         //iterate through records
@@ -130,7 +130,7 @@ public class App {
      * @param maxTurns the max number of turns
      * @param turn the current turn
      */
-    public void checkForWinCondition(playerInfo[] records, int maxTurns, int turn) {
+    public void checkForWinCondition(PlayerInfo[] records, int maxTurns, int turn) {
         int numVIPs = 0;
         int numChasers = 0;
         int numVIPsCaught = 0;
@@ -200,7 +200,7 @@ public class App {
 
     }
 
-    public static void sendInfo(playerInfo[] records, BaseBot[] array, int turn) {
+    public static void sendInfo(PlayerInfo[] records, BaseBot[] array, int turn) {
 
         //iterate through the robots
         for (int i=0; i<array.length; i++) {
@@ -228,7 +228,7 @@ public class App {
 
         // Initialize arrays for all robots
         BaseBot[] robots = new BaseBot[6];
-        playerInfo[] infos = new playerInfo[6]; // Add this array to store playerInfo
+        PlayerInfo[] infos = new PlayerInfo[6]; // Add this array to store playerInfo
         int index = 0;
 
         Random rand = new Random();
@@ -248,7 +248,7 @@ public class App {
                     movesPerTurn,
                     dodgeDiff
             );
-            infos[i] = new playerInfo(index, 1, 2, dodgeDiff, pos, false);
+            infos[i] = new PlayerInfo(index, 1, 2, dodgeDiff, pos, false);
             index++;
         }
 
@@ -267,7 +267,7 @@ public class App {
                     movesPerTurn,
                     dodgeDiff
             );
-            infos[i] = new playerInfo(index, 2, 5, dodgeDiff, pos, false);
+            infos[i] = new PlayerInfo(index, 2, 5, dodgeDiff, pos, false);
             index++;
         }
 
@@ -286,7 +286,7 @@ public class App {
                     movesPerTurn,
                     dodgeDiff
             );
-            infos[i] = new playerInfo(index, 3, 3, dodgeDiff, pos, false);
+            infos[i] = new PlayerInfo(index, 3, 3, dodgeDiff, pos, false);
             index++;
         }
 

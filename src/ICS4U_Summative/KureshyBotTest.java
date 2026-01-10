@@ -30,7 +30,7 @@ public class KureshyBotTest {
      * @param array the array of BaseBots
      * @param records the array of records to update
      */
-    public void updateRecords(BaseBot[] array, playerInfo[] records) {
+    public void updateRecords(BaseBot[] array, PlayerInfo[] records) {
 
         //iterate through the list of records (each record should match with the BaseBot in array)
         for (int i=0; i<records.length; i++) {
@@ -79,7 +79,7 @@ public class KureshyBotTest {
      * @param role the role of desired robots (4 counts for both Guards and VIPs)
      * @return the x,y coordinates of the robots of the specified role
      */
-    public static int[][] getPosOfRole(playerInfo[] records, int numRobots, int role) {
+    public static int[][] getPosOfRole(PlayerInfo[] records, int numRobots, int role) {
         int[][] robotPos = new int[numRobots][2];
         int count = 0; //robotPos index
 
@@ -112,7 +112,7 @@ public class KureshyBotTest {
      * @param role the role of desired robots
      * @return the HP of the robots of the specified role
      */
-    public static int[] getHPOfRole(playerInfo[] records, int numRobots, int role) {
+    public static int[] getHPOfRole(PlayerInfo[] records, int numRobots, int role) {
         int[] robotHP = new int[numRobots];
         int count = 0; //robotHP index
 
@@ -135,7 +135,7 @@ public class KureshyBotTest {
      * @param numRobots the total number of robots
      * @return the isCaught status of all robots with the index corresponding to ID
      */
-    public static boolean[] getStates(playerInfo[] records, int numRobots) {
+    public static boolean[] getStates(PlayerInfo[] records, int numRobots) {
         boolean[] robotStatus = new boolean[numRobots];
 
         //iterate through records
@@ -154,7 +154,7 @@ public class KureshyBotTest {
         Random rand = new Random();
 
         BaseBot[] robots = new BaseBot[5];
-        playerInfo[] records = new playerInfo[5];
+        PlayerInfo[] records = new PlayerInfo[5];
         int index = 0;
 
         //create multiple VIPs
@@ -184,7 +184,7 @@ public class KureshyBotTest {
 
         //initialize records
         for (int i=0; i<robots.length; i++) {
-            records[i] = new playerInfo(robots[i].getMyID(), robots[i].getMyRole(),
+            records[i] = new PlayerInfo(robots[i].getMyID(), robots[i].getMyRole(),
                     robots[i].getMyHP(), robots[i].getMyDodgeDifficulty(),
                     robots[i].getMyPosition(), robots[i].getMyState());
         }

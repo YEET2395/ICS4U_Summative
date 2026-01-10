@@ -54,7 +54,7 @@ public class XiongBotTestingApp {
      * @param array the array of BaseBots
      * @param records the array of records to update
      */
-    public void updateRecords(BaseBot[] array, playerInfo[] records) {
+    public void updateRecords(BaseBot[] array, PlayerInfo[] records) {
 
         //iterate through the list of records (each record should match with the BaseBot in array)
         for (int i=0; i<records.length; i++) {
@@ -72,7 +72,7 @@ public class XiongBotTestingApp {
      * @param role the role of desired robots
      * @return the x,y coordinates of the robots of the specified role
      */
-    public static int[][] getPosOfRole(playerInfo[] records, int numRobots, int role) {
+    public static int[][] getPosOfRole(PlayerInfo[] records, int numRobots, int role) {
         int[][] robotPos = new int[numRobots][2];
         int count = 0; //robotPos index
 
@@ -97,7 +97,7 @@ public class XiongBotTestingApp {
      * @param role the role of desired robots
      * @return the HP of the robots of the specified role
      */
-    public static int[] getHPOfRole(playerInfo[] records, int numRobots, int role) {
+    public static int[] getHPOfRole(PlayerInfo[] records, int numRobots, int role) {
         int[] robotHP = new int[numRobots];
         int count = 0; //robotHP index
 
@@ -120,7 +120,7 @@ public class XiongBotTestingApp {
      * @param numRobots the total number of robots
      * @return the isCaught status of all robots with the index corresponding to ID
      */
-    public static boolean[] getStates(playerInfo[] records, int numRobots) {
+    public static boolean[] getStates(PlayerInfo[] records, int numRobots) {
         boolean[] robotStatus = new boolean[numRobots];
 
         //iterate through records
@@ -164,9 +164,9 @@ public class XiongBotTestingApp {
     }
     
     public static void main(String[] args) {
-        playerInfo[] appRecords;
-        playerInfo[] publicRecords;
-        playerInfo[] chaserRecords;
+        PlayerInfo[] appRecords;
+        PlayerInfo[] publicRecords;
+        PlayerInfo[] chaserRecords;
         testXiongBotSpeedTracking();
     }
     public static void testXiongBotSpeedTracking() {
