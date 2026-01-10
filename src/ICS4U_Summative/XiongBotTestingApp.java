@@ -215,7 +215,7 @@ public class XiongBotTestingApp {
                 System.out.println("VIPBot " + i + " Turn " + turn + ":");
                 for (int j = 0; j < testChasers.length; j++) {
                     double speed = vipBots[i].getChaserSpeed(j);
-                    int[] predictedPos = vipBots[i].predictChaserPosition(j, 5);
+                    int[] predictedPos = vipBots[i].predictChaserPosition(j, 1);
                     System.out.println("  Chaser " + j + " Position: (" + testChasers[j].getX() + ", " + testChasers[j].getY() + ")");
                     System.out.println("  Chaser " + j + " Speed: " + String.format("%.2f", speed) + " units/turn");
                     if (predictedPos != null) {

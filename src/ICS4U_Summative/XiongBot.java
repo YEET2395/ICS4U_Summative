@@ -20,6 +20,9 @@ public class XiongBot extends BaseBot {
     // random generator for tie-breaking and probabilistic decisions
     private final Random rnd = new Random();
 
+    // how many future turns the bot wants to be sure chasers can't reach it in
+    private int safetyTurns = 3;
+
     /**
      * Constructor for BaseBot
      *
@@ -77,7 +80,7 @@ public class XiongBot extends BaseBot {
             this.chaserPos[i][0] = coords[i][0];
             this.chaserPos[i][1] = coords[i][1];
             // initialize speeds and previous position to current (first round -> speed 0)
-            this.chaserSpeeds[i] = 0;
+            this.chaserSpeeds[i] = 5;
             this.chaserPrevPos[i][0] = coords[i][0];
             this.chaserPrevPos[i][1] = coords[i][1];
         }
@@ -199,16 +202,44 @@ public class XiongBot extends BaseBot {
                 break;
             }
 
-            // Choose between best and second-best with the requested probabilities:
-            // - If both have the same min-distance, pick randomly between them 50/50
-            // - Otherwise pick best with 0.7 probability and second-best with 0.3
+            // Choose between best and second-best with a dynamic probability:
+            // The closer we are to the nearest chaser (smaller currentMinDist), the higher
+            // the probability of choosing the most optimal (best) direction.
             Direction chosenDir = bestDir;
             if (secondBestDir != null) {
-                if (bestMinDistance == secondBestMinDistance) {
-                    chosenDir = rnd.nextBoolean() ? bestDir : secondBestDir;
+                // configure thresholds for mapping distance -> probability
+                int minDistanceForMax = 1; // at or below this distance, pick best almost always
+                // Dynamically compute a maxRelevantDistance so that if the bot's currentMinDist
+                // exceeds this value, no chaser could reach the bot within `safetyTurns` turns.
+                int dynamicReach = computeMaxChaserReach(this.safetyTurns);
+                int maxRelevantDistance = dynamicReach + 1; // add small cushion
+
+                double pBest;
+                if (currentMinDist <= minDistanceForMax) {
+                    pBest = 0.99;
+                } else if (currentMinDist >= maxRelevantDistance) {
+                    pBest = 0.60;
                 } else {
-                    double p = rnd.nextDouble();
-                    chosenDir = (p < 0.7) ? bestDir : secondBestDir;
+                    // exponentioal interpolate between 0.99 (close) and 0.60 (far)
+                    double ratio = (double)(maxRelevantDistance - currentMinDist) / (double)(maxRelevantDistance - minDistanceForMax);
+                    pBest = 0.60 + Math.pow(0.39, ratio); // exponential curve for smoother transition
+                }
+
+                // If both candidates have equal min-distance, still bias toward best depending on proximity
+                if (bestMinDistance == secondBestMinDistance) {
+                    double r = rnd.nextDouble();
+                    if (r < pBest) {
+                        chosenDir = bestDir;
+                    } else {
+                        chosenDir = secondBestDir;
+                    }
+                } else {
+                    double r = rnd.nextDouble();
+                    if (r < pBest) {
+                        chosenDir = bestDir;
+                    } else {
+                        chosenDir = secondBestDir;
+                    }
                 }
             }
 
@@ -286,26 +317,63 @@ public class XiongBot extends BaseBot {
             return null;
         }
 
-        if (this.chaserPrevPos.length != this.chaserPos.length) {
-            // Not enough info, return current pos
-            return new int[]{this.chaserPos[chaserIndex][0], this.chaserPos[chaserIndex][1]};
+        // If we don't have prev/current data, return current position
+        if (this.chaserPos.length == 0) {
+            return null;
         }
 
-        int[] currentPos = this.chaserPos[chaserIndex];
-        int[] previousPos = this.chaserPrevPos[chaserIndex];
-
-        int deltaX = currentPos[0] - previousPos[0];
-        int deltaY = currentPos[1] - previousPos[1];
-
-        // If there's no movement detected last round, prediction is current position
-        if (deltaX == 0 && deltaY == 0) {
-            return new int[]{currentPos[0], currentPos[1]};
+        // Use the tracked speed for this chaser. If no speed tracked yet, assume 0 (stay in place).
+        double trackedSpeed = 0.0;
+        if (chaserIndex >= 0 && chaserIndex < this.chaserSpeeds.length) {
+            trackedSpeed = this.chaserSpeeds[chaserIndex];
         }
 
-        int predictedX = currentPos[0] + (deltaX * turnsAhead);
-        int predictedY = currentPos[1] + (deltaY * turnsAhead);
+        // Number of individual steps the chaser will take in the next `turnsAhead` turns.
+        // Round to nearest int (you could also floor/ceil depending on desired behaviour).
+        int stepsToSimulate = (int) Math.round(trackedSpeed * Math.max(1, turnsAhead));
 
-        return new int[]{predictedX, predictedY};
+        int curX = this.chaserPos[chaserIndex][0];
+        int curY = this.chaserPos[chaserIndex][1];
+
+        // Target is this bot's current position (assume chaser actively chases this bot)
+        int[] myPos = this.getMyPosition();
+        int targetX = myPos[0];
+        int targetY = myPos[1];
+
+        // If no movement expected, return current position
+        if (stepsToSimulate <= 0) {
+            return new int[]{curX, curY};
+        }
+
+        // Greedily move the chaser one step at a time towards the bot, reducing Manhattan distance each step.
+        for (int s = 0; s < stepsToSimulate; s++) {
+            int dx = targetX - curX;
+            int dy = targetY - curY;
+
+            if (dx == 0 && dy == 0) {
+                // Already at the bot's position
+                break;
+            }
+
+            // Prioritize the axis with the larger absolute difference to reduce distance faster.
+            if (Math.abs(dx) >= Math.abs(dy)) {
+                // Replace ternary with explicit if/else
+                if (dx > 0) {
+                    curX = curX + 1;
+                } else {
+                    curX = curX - 1;
+                }
+            } else {
+                // Replace ternary with explicit if/else
+                if (dy > 0) {
+                    curY = curY + 1;
+                } else {
+                    curY = curY - 1;
+                }
+            }
+        }
+
+        return new int[]{curX, curY};
     }
     /**
      * Gets the tracked speed of a specific chaser.
@@ -318,5 +386,49 @@ public class XiongBot extends BaseBot {
             return -1;
         }
         return this.chaserSpeeds[chaserIndex];
+    }
+
+    /**
+     * Set how many turns the bot uses to evaluate whether a chaser could reach it.
+     * A value < 1 will be clamped to 1.
+     * @param turns number of turns to be "safe" for
+     */
+    public void setSafetyTurns(int turns) {
+        if (turns < 1) {
+            this.safetyTurns = 1;
+        } else {
+            this.safetyTurns = turns;
+        }
+    }
+
+    /**
+     * Compute the maximum Manhattan distance any chaser could cover in `turns` turns
+     * based on tracked chaser speeds. To be conservative, if a chaser's tracked speed
+     * is < 1 (not observed or stationary), we assume at least 1 step/turn.
+     * @param turns number of turns to look ahead
+     * @return maximum reachable Manhattan distance by any chaser in `turns` turns
+     */
+    private int computeMaxChaserReach(int turns) {
+        if (turns < 1) {
+            turns = 1;
+        }
+        if (this.chaserSpeeds == null || this.chaserSpeeds.length == 0) {
+            // no data -> fallback to a small conservative default
+            return 3 * turns;
+        }
+
+        double minAssumedSpeed = 1.0; // conservative assumption when speed is unknown/zero
+        int maxReach = 0;
+        for (int i = 0; i < this.chaserSpeeds.length; i++) {
+            double s = this.chaserSpeeds[i];
+            if (s < minAssumedSpeed) {
+                s = minAssumedSpeed;
+            }
+            int reach = (int) Math.ceil(s * turns);
+            if (reach > maxReach) {
+                maxReach = reach;
+            }
+        }
+        return maxReach;
     }
 }
