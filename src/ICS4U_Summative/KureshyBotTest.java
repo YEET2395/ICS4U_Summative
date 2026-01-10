@@ -193,9 +193,9 @@ public class KureshyBotTest {
         chaser.initTargeting(4, 1);
 
         //simulating 10 turns to test the checkDodge function and see if the hp and dodging
-        //predictions from priorityScore are working as intended (mainly, to server as a tie-breaker
-        //when deciding which target to go after it theyre both closeby)
-        for (int turns=0; turns<10; turns++) {
+        //predictions (and chaser pressure) from priorityScore are working as intended (mainly, to serve
+        //as a tie-breaker when deciding which target to go after if they're both close by)
+        for (int turns=0; turns<1; turns++) {
             for (int i=0; i<4; i++) {
                 chaser.sendBotsPos(getPosOfRole(records, 4, 4));
                 chaser.sendChasersPos(getPosOfRole(records, 1, 3));

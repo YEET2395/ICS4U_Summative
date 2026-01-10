@@ -62,7 +62,7 @@ public class KureshyBot extends BaseBot{
 
     /**
      * The application class will send the states of all robots
-     * @param states
+     * @param states the array of all robots isCaught value
      */
     public void sendStates(boolean[] states) {
         this.robotCaught = states;
@@ -114,11 +114,11 @@ public class KureshyBot extends BaseBot{
                     (0.3 * rolePrediction);
 
             //for debugging
-            //System.out.format("ID: %d -- DODGE: %.3f -- HP: %.3f -- PRESSURE: %.3f -- ROLE: %.2f\n", i,
-//                    (0.5 * this.targetTable[i][DODGE_EST]),
-//                    (0.5 * (this.targetTable[i][HP_EST]/5.0)),
-//                    (0.3 * this.targetTable[i][PRESSURE]),
-//                    (0.3 * rolePrediction));
+            System.out.format("ID: %d -- DODGE: %.3f -- HP: %.3f -- PRESSURE: %.3f -- ROLE: %.2f\n", i,
+                    (0.7 * this.targetTable[i][DODGE_EST]),
+                    (0.7 * (this.targetTable[i][HP_EST]/5.0)),
+                    (0.3 * this.targetTable[i][PRESSURE]),
+                    (0.5 * rolePrediction));
             //System.out.format("The robot %d has a priority score of %.2f\n", targetIndex[i], priorityScore[i]);
             //Completely deprioritize those already caught
             if (this.robotCaught[i]) {
@@ -187,7 +187,7 @@ public class KureshyBot extends BaseBot{
             }
         }
 
-        pressureScore = nearbyChasers / (1+nearbyChasers);
+        pressureScore = (double) nearbyChasers / (1+nearbyChasers);
         return pressureScore;
     }
 
