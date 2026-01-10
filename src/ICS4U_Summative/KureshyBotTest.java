@@ -42,6 +42,37 @@ public class KureshyBotTest {
     }
 
     /**
+     * Randomly generates a number and compares it to the chaser and target's dodging capability
+     * before applying damage and sending the results to the chaser
+     * @param chaser the chaser initiating the catch
+     * @param target the target of the chaser
+     * @param r the Random object
+     */
+    public static void checkDodge(KureshyBot chaser, BaseBot target, Random r) {
+        double diff = r.nextDouble();
+        System.out.format("Chaser: %.2f -- Target %d: %.2f -- Difficulty: %.2f\n", chaser.getMyDodgeDifficulty(), target.getMyID(), target.getMyDodgeDifficulty(), diff);
+
+        //check which robots dodged and which didn't
+        if (chaser.getMyDodgeDifficulty() >= diff && target.getMyDodgeDifficulty() >= diff) {
+            chaser.sendTagResult(target.getMyID(), false);
+            System.out.println("BOTH DODGED");
+            //means both dodged
+        } else if (chaser.getMyDodgeDifficulty() >= diff && target.getMyDodgeDifficulty() < diff) {
+            chaser.sendTagResult(target.getMyID(), true);
+            target.takeDamage(1);
+            System.out.println("CHASER DODGED");
+            //means chaser dodged but target didn't
+        } else {
+            chaser.sendTagResult(target.getMyID(), true);
+            chaser.takeDamage(1);
+            target.takeDamage(1);
+            System.out.println("NONE DODGED");
+            //means both didn't dodge
+        }
+
+    }
+
+    /**
      * Gets the position of all robots of a specific role from the records
      * @param records the application records
      * @param numRobots the number of robots of that role
@@ -60,7 +91,6 @@ public class KureshyBotTest {
                 if (records[i].getRole() == 1 || records[i].getRole()==2) {
                     robotPos[count] = records[i].getPosition();
                     count++;
-                    System.out.println(count);
                 }
             } else {
                 //checks role
@@ -140,7 +170,6 @@ public class KureshyBotTest {
             index++;
         }
 
-        System.out.println("Chaser robot is " + index);
         //create chaser
         KureshyBot chaser = new KureshyBot(
                 playground,
@@ -161,10 +190,20 @@ public class KureshyBotTest {
         }
 
 
-        chaser.initTargeteting(4, 1);
-        chaser.sendBotsPos(getPosOfRole(records, 4, 4));
-        chaser.sendChasersPos(getPosOfRole(records, 1, 3));
-        chaser.sendStates(getStates(records, robots.length));
-        chaser.takeTurn();
+        chaser.initTargeting(4, 1);
+
+        //simulating 10 turns to test the checkDodge function and see if the hp and dodging
+        //predictions from priorityScore are working as intended (mainly, to server as a tie-breaker
+        //when deciding which target to go after it theyre both closeby)
+        for (int turns=0; turns<10; turns++) {
+            for (int i=0; i<4; i++) {
+                chaser.sendBotsPos(getPosOfRole(records, 4, 4));
+                chaser.sendChasersPos(getPosOfRole(records, 1, 3));
+                chaser.sendStates(getStates(records, robots.length));
+                chaser.takeTurn();
+                checkDodge(chaser, robots[i], rand);
+            }
+        }
+
     }
 }

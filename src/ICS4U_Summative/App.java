@@ -9,6 +9,9 @@ import java.util.Random;
  */
 public class App {
     private static boolean gameEnded = false;
+    private static final int NUM_VIPS = 2;
+    private static final int NUM_GUARDS = 2;
+    private static final int NUM_CHASERS = 2;
 
     /**
      * Set up the playground for the robots
@@ -44,6 +47,40 @@ public class App {
             records[i].updateRecords(array[i].getMyHP(), array[i].getMyPosition(), array[i].getMyState());
         }
 
+    }
+
+    /**
+     * Gets the position of all robots of a specific role from the records
+     * @param records the application records
+     * @param numRobots the number of robots of that role
+     * @param role the role of desired robots (4 counts for both Guards and VIPs)
+     * @return the x,y coordinates of the robots of the specified role
+     */
+    public static int[][] getPosOfRole(playerInfo[] records, int numRobots, int role) {
+        int[][] robotPos = new int[numRobots][2];
+        int count = 0; //robotPos index
+
+        //iterate through records
+        for (int i=0; i<records.length; i++) {
+
+            //for chaser, checks for both guards and VIPs
+            if (role==4) {
+                if (records[i].getRole() == 1 || records[i].getRole()==2) {
+                    robotPos[count] = records[i].getPosition();
+                    count++;
+                    System.out.println(count);
+                }
+            } else {
+                //checks role
+                if (records[i].getRole() == role) {
+                    robotPos[count] = records[i].getPosition();
+                    count++;
+                }
+            }
+
+        }
+
+        return robotPos;
     }
 
     /**
@@ -154,10 +191,6 @@ public class App {
             chaser.sendTagResult(target.getMyID(), true);
             target.takeDamage(1);
             //means chaser dodged but target didn't
-        } else if (chaser.getMyDodgeDifficulty() < diff && target.getMyDodgeDifficulty() >= diff) {
-            chaser.sendTagResult(target.getMyID(), false);
-            chaser.takeDamage(1);
-            //means target dodged but chaser didn't
         } else {
             chaser.sendTagResult(target.getMyID(), true);
             chaser.takeDamage(1);
@@ -165,6 +198,27 @@ public class App {
             //means both didn't dodge
         }
 
+    }
+
+    public static void sendInfo(playerInfo[] records, BaseBot[] array, int turn) {
+
+        //iterate through the robots
+        for (int i=0; i<array.length; i++) {
+
+            if (array[i].getMyRole() == 1) { //for VIPs
+                ((XiongBot) array[i]).setChaserPositions(getPosOfRole(records, NUM_CHASERS, 3));
+            } else if (array[i].getMyRole() == 2) { //for Guards
+                ((LiBot) array[i]).sendVIPPosition(getPosOfRole(records, NUM_VIPS, 1));
+                ((LiBot) array[i]).sendChaserPosition(getPosOfRole(records, NUM_CHASERS, 1));
+            } else { //for Chasers
+                if (turn==1) {
+                    ((KureshyBot) array[i]).initTargeting(NUM_VIPS+NUM_GUARDS, NUM_CHASERS);
+                }
+                ((KureshyBot) array[i]).sendBotsPos(getPosOfRole(records, 4, 4));
+                ((KureshyBot) array[i]).sendChasersPos(getPosOfRole(records, 1, 3));
+                ((KureshyBot) array[i]).sendStates(getStates(records, NUM_VIPS+NUM_GUARDS+NUM_CHASERS));
+            }
+        }
     }
 
     public static void main(String[] args)

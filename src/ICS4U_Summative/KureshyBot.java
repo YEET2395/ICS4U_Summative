@@ -61,7 +61,7 @@ public class KureshyBot extends BaseBot{
     }
 
     /**
-     * The application class will send the position of all non-chasers
+     * The application class will send the states of all robots
      * @param states
      */
     public void sendStates(boolean[] states) {
@@ -108,12 +108,18 @@ public class KureshyBot extends BaseBot{
             //calculate a priority score where a lower value is more likely to be a VIP
             this.priorityScore[i] =
                     this.targetTable[i][TURN_DIST] +
-                    (0.3 * this.targetTable[i][DODGE_EST]) +
-                    (0.5 * -this.targetTable[i][HP_EST]/5.0) +
+                    (0.5 * this.targetTable[i][DODGE_EST]) +
+                    (0.5 * (this.targetTable[i][HP_EST]/5.0)) +
                     (0.3 * this.targetTable[i][PRESSURE]) +
                     (0.3 * rolePrediction);
 
-            System.out.format("The robot %d has a priority score of %.2f\n", targetIndex[i], priorityScore[i]);
+            //for debugging
+            //System.out.format("ID: %d -- DODGE: %.3f -- HP: %.3f -- PRESSURE: %.3f -- ROLE: %.2f\n", i,
+//                    (0.5 * this.targetTable[i][DODGE_EST]),
+//                    (0.5 * (this.targetTable[i][HP_EST]/5.0)),
+//                    (0.3 * this.targetTable[i][PRESSURE]),
+//                    (0.3 * rolePrediction));
+            //System.out.format("The robot %d has a priority score of %.2f\n", targetIndex[i], priorityScore[i]);
             //Completely deprioritize those already caught
             if (this.robotCaught[i]) {
                 this.priorityScore[i] = 1000;
@@ -207,11 +213,12 @@ public class KureshyBot extends BaseBot{
      */
     public void sendTagResult(int ID, boolean isSuccess) {
         if (isSuccess) {
-            this.targetTable[ID][DODGE_EST] -= 0.03;
+            this.targetTable[ID][DODGE_EST] -= 0.15;
             this.targetTable[ID][HP_EST]--;
             this.targetTable[ID][NUM_CATCHES]++;
         } else {
-            this.targetTable[ID][DODGE_EST] += 0.03;
+            this.targetTable[ID][DODGE_EST] += 0.15;
+            System.out.println("Increasing dodge estimate of " + ID);
         }
     }
 
@@ -238,7 +245,7 @@ public class KureshyBot extends BaseBot{
      * @param numTargets the number of non-chaser robots in the arena
      * @param numChasers the number of chasers in the arena (including this robot)
      */
-    public void initTargeteting(int numTargets, int numChasers) {
+    public void initTargeting(int numTargets, int numChasers) {
         //initialize position storing arrays
         this.botsPos = new int[numTargets][2];
         this.chasersPos = new int [numChasers][2];
@@ -273,6 +280,10 @@ public class KureshyBot extends BaseBot{
         this.calculatePriorityScores();
         this.sortByPriority();
         this.targetID = this.targetIndex[0];
-        System.out.format("My target is %d who has a priority score of %.2f", this.targetID, this.priorityScore[0]);
+        System.out.format("My target is %d who has a priority score of %.2f\n", this.targetID, this.priorityScore[0]);
+        for (int i=1; i<priorityScore.length; i++) {
+            System.out.format("My next target is %d who has a priority score of %.2f\n", this.targetIndex[i], this.priorityScore[i]);
+        }
+        System.out.println("==============================================");
     }
 }
