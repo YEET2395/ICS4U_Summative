@@ -3,42 +3,33 @@ package ICS4U_Summative;
 import becker.robots.*;
 import java.awt.*;
 
-/**
- * Simple test chaser: always chase the nearest Guard (role 2).
- */
 public class LiTestChaserBot extends BaseBot {
 
-    private PlayerInfo[] visibleRecords;
-
     public LiTestChaserBot(City city, int str, int ave, Direction dir,
-                         int id, int role, int hp, int movesPerTurn, double dodgeDiff) {
+                           int id, int role, int hp, int movesPerTurn, double dodgeDiff) {
         super(city, str, ave, dir, id, role, hp, movesPerTurn, dodgeDiff);
-
-        super.setColor(Color.MAGENTA);
-        super.setLabel("TestChaser " + super.myRecords.getID());
+        setColor(Color.RED);
+        setLabel("Chaser " + myRecords.getID());
     }
 
-
+    @Override
     public void updateOtherRecords(PlayerInfo[] records) {
-        this.visibleRecords = records;
+        this.otherRecords = records;
     }
 
-
+    @Override
     public void takeTurn() {
-        if (visibleRecords == null || visibleRecords.length == 0) return;
-
-        int[] myPos = this.getMyPosition();
-
+        if (otherRecords == null || otherRecords.length == 0) return;
 
         PlayerInfo target = null;
         int bestDist = Integer.MAX_VALUE;
 
-        for (PlayerInfo r : visibleRecords) {
+        int[] myPos = getMyPosition();
+
+        for (PlayerInfo r : otherRecords) {
             if (r == null || r.getState()) continue;
-            if (r.getRole() != 2) continue;
-
-
-            if (r.getID() == this.myRecords.getID()) continue;
+            if (r.getID() == myRecords.getID()) continue;
+            if (r.getRole() == 3) continue;
 
             int d = manhattan(myPos, r.getPosition());
             if (d < bestDist) {
@@ -49,36 +40,36 @@ public class LiTestChaserBot extends BaseBot {
 
         if (target == null) return;
 
-        int[] targetPos = target.getPosition();
-
-
-        int moves = this.getMOVES_PER_TURN();
-        int[] cur = this.getMyPosition();
-
+        int moves = getMOVES_PER_TURN();
         for (int step = 0; step < moves; step++) {
-            int dStreet = targetPos[0] - cur[0];
-            int dAve    = targetPos[1] - cur[1];
+            int[] cur = getMyPosition();
+            int[] tp = target.getPosition();
 
-            if (dStreet == 0 && dAve == 0) break;
+            int dx = tp[0] - cur[0];
+            int dy = tp[1] - cur[1];
+            if (dx == 0 && dy == 0) break;
 
+            boolean moved = false;
 
-            if (dStreet != 0) {
-                this.turnDirection(dStreet > 0 ? Direction.SOUTH : Direction.NORTH);
-                if (this.frontIsClear()) {
-                    this.move();
-                    cur = this.getMyPosition();
-                    continue;
-                }
+            if (Math.abs(dx) >= Math.abs(dy) && dx != 0) {
+                moved = tryMove(dx > 0 ? Direction.EAST : Direction.WEST);
+                if (!moved && dy != 0) moved = tryMove(dy > 0 ? Direction.SOUTH : Direction.NORTH);
+            } else if (dy != 0) {
+                moved = tryMove(dy > 0 ? Direction.SOUTH : Direction.NORTH);
+                if (!moved && dx != 0) moved = tryMove(dx > 0 ? Direction.EAST : Direction.WEST);
             }
 
-            if (dAve != 0) {
-                this.turnDirection(dAve > 0 ? Direction.EAST : Direction.WEST);
-                if (this.frontIsClear()) {
-                    this.move();
-                    cur = this.getMyPosition();
-                }
-            }
+            if (!moved) break;
         }
+    }
+
+    private boolean tryMove(Direction d) {
+        turnDirection(d);
+        if (frontIsClear()) {
+            move();
+            return true;
+        }
+        return false;
     }
 
     private int manhattan(int[] a, int[] b) {
