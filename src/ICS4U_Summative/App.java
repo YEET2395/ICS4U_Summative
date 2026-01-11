@@ -1,5 +1,7 @@
 package ICS4U_Summative;
 import becker.robots.*;
+
+import java.util.Arrays;
 import java.util.Random;
 
 /**
@@ -16,7 +18,6 @@ public class App {
     /**
      * Set up the playground for the robots
      * @author Xinran Li
-     * @version 2025 12 30
      */
     private static void setupPlayground(City playground)
     {
@@ -50,78 +51,38 @@ public class App {
     }
 
     /**
-     * Gets the position of all robots of a specific role from the records
-     * @param records the application records
-     * @param numRobots the number of robots of that role
-     * @param role the role of desired robots (4 counts for both Guards and VIPs)
-     * @return the x,y coordinates of the robots of the specified role
+     * Randomly generates a number and compares it to the chaser and target's dodging capability
+     * before applying damage and sending the results to the chaser
+     * @param chaser the chaser initiating the catch
+     * @param target the target of the chaser
+     * @param r the Random object
      */
-    public static int[][] getPosOfRole(PlayerInfo[] records, int numRobots, int role) {
-        int[][] robotPos = new int[numRobots][2];
-        int count = 0; //robotPos index
+    public static void checkDodge(KureshyBot chaser, BaseBot target, Random r) {
+        double diff = r.nextDouble();
+        System.out.format("Chaser: %s -- Target %d: %s -- Difficulty: %.2f\n",
+                Arrays.toString(chaser.myRecords.getPosition()),
+                target.myRecords.getID(),
+                Arrays.toString(target.myRecords.getPosition()),
+                diff);
 
-        //iterate through records
-        for (int i=0; i<records.length; i++) {
+        //check which robots dodged and which didn't
+        if (chaser.myRecords.getDodgeDifficulty() >= diff && target.myRecords.getDodgeDifficulty() >= diff) {
+            chaser.sendTagResult(target.myRecords.getID(), false);
+            System.out.println("BOTH DODGED");
+            //means both dodged
+        } else if (chaser.myRecords.getDodgeDifficulty() >= diff && target.myRecords.getDodgeDifficulty() < diff) {
+            chaser.sendTagResult(target.myRecords.getID(), true);
+            target.takeDamage(1);
+            System.out.println("CHASER DODGED");
 
-            //for chaser, checks for both guards and VIPs
-            if (role==4) {
-                if (records[i].getRole() == 1 || records[i].getRole()==2) {
-                    robotPos[count] = records[i].getPosition();
-                    count++;
-                    System.out.println(count);
-                }
-            } else {
-                //checks role
-                if (records[i].getRole() == role) {
-                    robotPos[count] = records[i].getPosition();
-                    count++;
-                }
-            }
-
+            //means chaser dodged but target didn't
+        } else {
+            chaser.sendTagResult(target.myRecords.getID(), true);
+            chaser.takeDamage(1);
+            target.takeDamage(1);
+            System.out.println("NONE DODGED");
+            //means both didn't dodge
         }
-
-        return robotPos;
-    }
-
-    /**
-     * Gets the HP of all robots of a role from the records
-     * @param records the application records
-     * @param numRobots the number of robots of that role
-     * @param role the role of desired robots
-     * @return the HP of the robots of the specified role
-     */
-    public static int[] getHPOfRole(PlayerInfo[] records, int numRobots, int role) {
-        int[] robotHP = new int[numRobots];
-        int count = 0; //robotHP index
-
-        //iterate through records
-        for (int i=0; i<records.length; i++) {
-
-            //checks role
-            if (records[i].getRole() == role) {
-                robotHP[count] = records[i].getHP();
-                count++;
-            }
-        }
-
-        return robotHP;
-    }
-
-    /**
-     * Gets the status of all robots from the records
-     * @param records the application records
-     * @param numRobots the total number of robots
-     * @return the isCaught status of all robots with the index corresponding to ID
-     */
-    public static boolean[] getStates(PlayerInfo[] records, int numRobots) {
-        boolean[] robotStatus = new boolean[numRobots];
-
-        //iterate through records
-        for (int i=0; i<records.length; i++) {
-            robotStatus[i] = records[i].getState();
-        }
-
-        return robotStatus;
     }
 
     /**
@@ -228,7 +189,6 @@ public class App {
         // Initialize arrays for all robots
         BaseBot[] robots = new BaseBot[6];
         PlayerInfo[] infos = new PlayerInfo[6]; // Add this array to store playerInfo
-        int index = 0;
 
         Random rand = new Random();
 
@@ -251,7 +211,6 @@ public class App {
                     dodgeDiff
             );
             infos[i] = new PlayerInfo(i, 1, 2, dodgeDiff, pos, false);
-            index++;
         }
 
         // Guards: movesPerTurn [2,4], dodgeDiff [0.45, 0.55]
@@ -273,7 +232,6 @@ public class App {
                     dodgeDiff
             );
             infos[i] = new PlayerInfo(i, 2, 5, dodgeDiff, pos, false);
-            index++;
         }
 
         // Chasers: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
@@ -295,9 +253,7 @@ public class App {
                     dodgeDiff
             );
             infos[i] = new PlayerInfo(i, 3, 3, dodgeDiff, pos, false);
-            index++;
         }
-
 
     }
 

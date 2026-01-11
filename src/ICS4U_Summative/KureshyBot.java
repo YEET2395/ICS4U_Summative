@@ -10,21 +10,12 @@ import java.awt.*;
  * @version Janurary 6, 2025
  */
 public class KureshyBot extends BaseBot{
-    private int[][] botsPos = new int[0][2];
-    private int[][] chasersPos = new int [0][2];
-    private int [][] prevPos = new int[0][2];
-    private double[][] targetTable = new double[0][6];
-    private double[] priorityScore = new double [0];
-    private int[] targetIndex = new int[0];
-    private final int TURN_DIST = 0; //the first index for each bot in the target table
-    private final int DODGE_EST = 1; //the second index for each bot in the target table
-    private final int MAX_MOVE_OBS = 2; //the third index for each bot in the target table
-    private final int HP_EST = 3; //the fourth index for each bot in the target table
-    private final int PRESSURE = 4; //the fifth index for each bot in the target table
-    private final int NUM_CATCHES = 5; //the sixth index for each bot in the target table
+    private final int WIDTH = 24;
+    private final int HEIGHT = 13;
     private int targetID; //the current target
     private boolean isCatching; //to be used by application to know when to check dodge
-    private boolean[] robotCaught = new boolean[0];
+    private int targetX;
+    private int targetY;
 
     /**
      * Constructor for Chaser
@@ -43,135 +34,102 @@ public class KureshyBot extends BaseBot{
         //for debugging
         super.setColor(Color.RED);
         super.setLabel("Robot " + id);
+        this.otherRecords = new PlayerInfo[5]; //changed length since chasers need to keep track of each other
     }
 
     public void updateOtherRecords(PlayerInfo[] records)
     {
-        System.out.println("Updating enemy records for KureshyBot ");
+        System.out.println("Updating enemy locations and states for KureshyBot ");
+        for ( int i=0; i<records.length; i++) {
+
+            //find the position of the record in otherRecords to update
+            int index = super.findRecordByID(records[i].getID());
+
+            //checks if it's my records by checking if it got a result
+            if (index==-1) {
+                this.myRecords.updateRecords(records[i].getHP(), records[i].getPosition(), records[i].getState());
+            } else {
+                int[] prevPos = this.otherRecords[index].getPosition(); //gets the old enemy position
+                ((ChaserPlayerInfo) this.otherRecords[index]).updateRecords(records[i].getPosition(), prevPos, records[i].getState());
+            }
+        }
     }
 
     /**
-     * The application class will send the position of all non-chasers
-     * @param pos the locations of non-chasers
+     * Initializes each robot's record of others (excludes itself) and uses negative values for info
+     * it's not supposed to know
+     * @param records the records to get information from
      */
-    public void sendBotsPos(int[][] pos) {
-        this.botsPos = pos;
+    public void initRecords(PlayerInfo[] records) {
+        //since otherRecords has a length of 5 and records will have a length of 6:
+        //for loop's iterator variable will keep track of records and skip this chaser
+        //based on conditional structure while otherRecordsIndex will be incremented only
+        //when otherRecords gets a new record
+        int otherRecordsIndex = 0;
+
+        //go through the records
+        for (int i=0; i<records.length; i++) {
+
+            //makes sure it's not this chaser (since it already has its personal records) and that it's another chaser
+            if (records[i].getID() != this.myRecords.getID() && records[i].getRole()==3) {
+                this.otherRecords[otherRecordsIndex] = new ChaserPlayerInfo(records[i].getID(), 3, -1, -1, records[i].getPosition(), records[i].getState());
+                otherRecordsIndex++;
+            } else {
+                this.otherRecords[otherRecordsIndex] = new ChaserPlayerInfo(records[i].getID(), -1, -1, -1, records[i].getPosition(), records[i].getState());
+                otherRecordsIndex++;
+            }
+        }
     }
 
     /**
-     * The application class will send the position of all non-chasers
-     * @param pos the locations of other chasers
-     */
-    public void sendChasersPos(int[][] pos) {
-        this.chasersPos = pos;
-    }
-
-    /**
-     * The application class will send the states of all robots
-     * @param states the array of all robots isCaught value
-     */
-    public void sendStates(boolean[] states) {
-        this.robotCaught = states;
-    }
-
-    /**
-     * Use a selection sort to sort the targetIndex and priorityScore to get the best target
+     * Calculates the priorityScore of each target and then uses a selection sort to sort otherRecords based on their
+     * priorityScore to get the best target
      */
     private void sortByPriority() {
-        //iterate through the array
-        for (int i=0; i<this.priorityScore.length; i++) {
+
+        //Calculate the priorityScore and then add to the priorityScore the two factors which require information about
+        //the chaser itself or other chasers (which isn't stored in the record)
+        for (int i=0; i<this.otherRecords.length; i++) {
+            int turnDistance = this.calculateTurnDistance(super.getDistances(this.otherRecords[i].getPosition()), super.getMOVES_PER_TURN());
+            ((ChaserPlayerInfo) this.otherRecords[i]).calculatePriorityScore();
+            ((ChaserPlayerInfo) this.otherRecords[i]).addTurnDistAndPressure(calculateChaserPressure(this.otherRecords[i].getPosition()), turnDistance);
+        }
+
+        //iterate through the records
+        for (int i=0; i<this.otherRecords.length; i++) {
             //temporarily store the next value in the unsorted section
-            double tempScore = this.priorityScore[i];
-            int tempID = this.targetIndex[i];
+            ChaserPlayerInfo temp = (ChaserPlayerInfo) this.otherRecords[i];
             int counter = i-1;
 
             //go down until it reaches the beginning of the array, or until the current score is smaller
-            while (counter>=0 && this.priorityScore[counter]>tempScore) {
+            while (counter>=0 && ((ChaserPlayerInfo) this.otherRecords[counter]).getPriorityScore()>temp.getPriorityScore()) {
                 //shift things up
-                this.priorityScore[counter+1] = this.priorityScore[counter];
-                this.targetIndex[counter+1] = this.targetIndex[counter];
+                this.otherRecords[counter+1] = this.otherRecords[counter];
                 counter--;
             }
 
             //insert into the right position
-            this.priorityScore[counter+1] = tempScore;
-            this.targetIndex[counter+1] = tempID;
+            this.otherRecords[counter+1] = temp;
         }
-    }
-
-    /**
-     * Calculates the priority scores using data from the targetTable where lower is a better target
-     */
-    private void calculatePriorityScores() {
-
-        //iterate through each target
-        for (int i=0; i<this.targetTable.length; i++) {
-            double rolePrediction = this.calculateRolePrediction(this.targetTable[i][MAX_MOVE_OBS], this.targetTable[i][NUM_CATCHES]);
-
-            //reset targetIndex
-            this.targetIndex[i] = i;
-
-            //calculate a priority score where a lower value is more likely to be a VIP
-            this.priorityScore[i] =
-                    this.targetTable[i][TURN_DIST] +
-                    (0.5 * this.targetTable[i][DODGE_EST]) +
-                    (0.5 * (this.targetTable[i][HP_EST]/5.0)) +
-                    (0.3 * this.targetTable[i][PRESSURE]) +
-                    (0.3 * rolePrediction);
-
-            //for debugging
-            System.out.format("ID: %d -- DODGE: %.3f -- HP: %.3f -- PRESSURE: %.3f -- ROLE: %.2f\n", i,
-                    (0.7 * this.targetTable[i][DODGE_EST]),
-                    (0.7 * (this.targetTable[i][HP_EST]/5.0)),
-                    (0.3 * this.targetTable[i][PRESSURE]),
-                    (0.5 * rolePrediction));
-            //System.out.format("The robot %d has a priority score of %.2f\n", targetIndex[i], priorityScore[i]);
-            //Completely deprioritize those already caught
-            if (this.robotCaught[i]) {
-                this.priorityScore[i] = 1000;
-            }
-        }
-
     }
 
     /**
      * Calculates how many turns it would take to reach the target
      * @param targetDistance the distance to the target
      * @param movesPerTurn how many moves the chaser can make per turn
-     * @return the distance score
+     * @return the amount of turns it would take to reach the target
      */
-    private double calculateDistanceScore(int targetDistance, int movesPerTurn) {
-        int turnCount = targetDistance/movesPerTurn;
+    private int calculateTurnDistance(int targetDistance, int movesPerTurn) {
+        int turns = targetDistance/movesPerTurn;
         if (targetDistance % movesPerTurn != 0){
-            turnCount++;
+            turns++;
         }
 
-        return turnCount;
+        return turns;
     }
 
     /**
-     * Observes the maximum amount of movment observed by the chaser of each non-chaser
-     * robot to use in predicting its role
-     * @param currentPos the current position of the target
-     * @param prevPos the position of the target last turn
-     * @param maxMovementLearned the current maximum observed
-     * @return the current maximum observed
-     */
-    private double calculateMaxMovement(int[] currentPos, int[] prevPos, double maxMovementLearned) {
-
-        int newMove = super.getDistances(currentPos, prevPos);
-
-        //check if movement was greater than previous movement observed
-        if (((double) newMove) > maxMovementLearned) {
-            return newMove;
-        } else {
-            return maxMovementLearned;
-        }
-
-    }
-
-    /**
-     * Gets the amount of chasers nearby to a possible target and delivers a value between 0-1
+     * Gets the amount of chasers nearby (including itself) to a possible target and delivers a value between 0-1
      * on how much "pressure" the target is under
      * @param targetPos the location of the target
      * @return a pressure value between 0-1 that tells how much pressure the target is under
@@ -180,16 +138,18 @@ public class KureshyBot extends BaseBot{
         int nearbyChasers = 0;
         double pressureScore;
 
-        //iterate through the nearby chasers
-        for (int chaserIndex=0; chaserIndex<this.chasersPos.length; chaserIndex++) {
+        //iterate through the records
+        for (int i=0; i<this.otherRecords.length; i++) {
 
-            //gets the distance between the target and the chaser
-            int distance = super.getDistances(targetPos, this.chasersPos[chaserIndex]);
+            //checks for chasers and gets the distance between the target and chaser
+            if (this.otherRecords[i].getRole()==3) {
+                int distance = super.getDistances(targetPos, this.otherRecords[i].getPosition());
 
-            //increases the amount of nearby chasers if it detects that they are within
-            //two turns of a chaser's possible max movement
-            if (distance <= (2*5) ) {
-                nearbyChasers++;
+                //increases the amount of nearby chasers if it detects that they are within
+                //two turns of a chaser's possible max movement
+                if (distance <= (2*5) ) {
+                    nearbyChasers++;
+                }
             }
         }
 
@@ -198,98 +158,214 @@ public class KureshyBot extends BaseBot{
     }
 
     /**
-     * Predicts the role of the target using observations with negative numbers being more likely
-     * to be VIPs
-     * @param maxMovementLearned the maximum movement observed by the chaser
-     * @param numCatches the number of catches the chaser has succeeded against the target
-     * @return a value representing how likely it is to be a VIP (lower is likely VIP and vice versa)
-     */
-    private double calculateRolePrediction(double maxMovementLearned, double numCatches) {
-        if (maxMovementLearned > 3 || numCatches >= 2) { //is a guard
-            return 1.0; //deprioritize
-        } else {
-            return -(1.0 - (maxMovementLearned/4));
-        }
-    }
-
-    /**
      * The application class will send the results of the tag attempt
      * @param ID the ID of the target
      * @param isSuccess whether the target dodged or not
      */
     public void sendTagResult(int ID, boolean isSuccess) {
-        if (isSuccess) {
-            this.targetTable[ID][DODGE_EST] -= 0.15;
-            this.targetTable[ID][HP_EST]--;
-            this.targetTable[ID][NUM_CATCHES]++;
+        int index = super.findRecordByID(ID);
+        ((ChaserPlayerInfo) this.otherRecords[index]).takeDamage(isSuccess);
+    }
+
+    /**
+     * Calculates the distance between the target and the nearest wall
+     * @return the distance to the closest wall
+     */
+    private int calcDistanceToWall() {
+        int distance = this.targetX; //distance between the left wall and target
+
+        //checks the distance between the right wall and the target and chooses the higher one
+        if (this.WIDTH-this.targetX < distance) {
+            distance = this.WIDTH - this.targetX;
+        }
+
+        //checks the distance between the top wall and the target
+        if (this.targetY < distance) {
+            distance = this.targetY;
+        }
+
+        //checks the distance between the bottom wall and the target
+        if (this.HEIGHT-this.targetY < distance) {
+            distance = this.HEIGHT-this.targetY;
+        }
+
+        return distance;
+    }
+
+    /**
+     * Calculates the best, achievable position to close the gap to the target
+     * @return the x,y coordinates to go to
+     */
+    private int[] calcChasePath() {
+        int[] myPos = this.getMyPosition();
+        int[] targetPos = {this.targetX, this.targetY};
+        int movesLeft = this.getMOVES_PER_TURN();
+
+        //aligns with the x-axis of the target first (makes it easier to corner the target since the arena is wider than it is tall)
+        for (int i=0; i<movesLeft; i++) {
+            //if already on the x axis
+            if (myPos[0] == targetPos[0]) {
+                break;
+            }
+
+            if (myPos[0] < targetPos[0]) {
+                myPos[0]++;
+            } else {
+                myPos[0]--;
+            }
+            movesLeft--;
+        }
+
+        //aligns with the y-axis of the target
+        for (int i=0; i<movesLeft; i++) {
+            //if already on the y axis
+            if (myPos[1] == targetPos[1]) {
+                break;
+            }
+
+            if (myPos[1] < targetPos[1]) {
+                myPos[1]++;
+            } else {
+                myPos[1]--;
+            }
+            movesLeft--;
+        }
+
+        return myPos;
+    }
+
+    /**
+     * Finds the nearest corner to the target
+     * @return the x,y coordinates of the nearest coordinate
+     */
+    private int[] findNearestCorner() {
+        int[] nearestCorner = new int[2];
+
+        //checks whether the corner is at the left or right
+        if (this.targetX <= this.WIDTH/2) {
+            nearestCorner[0] = 1;
         } else {
-            this.targetTable[ID][DODGE_EST] += 0.15;
-            System.out.println("Increasing dodge estimate of " + ID);
+            nearestCorner[0] = this.WIDTH;
+        }
+
+        //check whether the corner is at the top or bottom
+        if (this.targetY <= this.HEIGHT/2) {
+            nearestCorner[1] = 1;
+        } else {
+            nearestCorner[1] = this.HEIGHT;
+        }
+
+        return nearestCorner;
+    }
+
+    /**
+     * Finds the target position to travel towards to be able to corner the target using movement per turn
+     * @return the buffered target x,y coordinates
+     */
+    private int[] findTargetCorner() {
+        int[] goalPos = this.findNearestCorner();
+        int buffer = this.getMOVES_PER_TURN();
+
+        //gets a buffer position to let me corner the target with chaser's (usually) greater movement
+        if (goalPos[0] == 0) {
+            goalPos[0] = buffer;
+        } else {
+            goalPos[0] = this.WIDTH-buffer;
+        }
+
+        if (goalPos[0] == 0) {
+            goalPos[1] = buffer;
+        } else {
+            goalPos[1] = this.HEIGHT-buffer;
+        }
+
+        return goalPos;
+    }
+
+    /**
+     * Calculates the best, achievable position to move towards that corners the target
+     * @return the x,y to go to
+     */
+    private int[] calcCutOffPath() {
+        int[] myPos = this.getMyPosition();
+        int[] goalPos = this.findTargetCorner();
+        int movesLeft = this.getMOVES_PER_TURN();
+
+        for (int i=0; i<movesLeft; i++) {
+
+            //find the horizontal and vertical distance to the buffered corner position
+            int distanceX = goalPos[0] - myPos[0];
+            int distanceY = goalPos[1] - myPos[1];
+
+            //check whether the horizontal gap or vertical gap is bigger
+            if (Math.abs(distanceX) >= Math.abs(distanceY)) {
+
+                //close the gap on the larger distance
+                if (distanceX > 0) {
+                    myPos[0]++;
+                } else if (distanceX < 0) {
+                    myPos[0]--;
+                }
+            } else {
+                //close the gap on the larger distance
+                if (distanceY > 0 ) {
+                    myPos[1]++;
+                } else if (distanceY < 0) {
+                    myPos[1]--;
+                }
+            }
+        }
+
+        return myPos;
+    }
+
+    /**
+     * Only activates once it's directly on a target
+     */
+    private void attemptTag() {
+        this.isCatching = true;
+    }
+
+    /**
+     * Decides how to go after the designated target: immediate tag if in range, corner the target, or just chase
+     */
+    private void executeStrat() {
+        int targetIndex = super.findRecordByID(this.targetID); //finds the target's record index
+        int turns = ((ChaserPlayerInfo) this.otherRecords[targetIndex]).getTurnDistance(); //gets how many turns away it is
+
+        //used for deciding on whether to chase or cutoff
+        int distanceToWall = this.calcDistanceToWall();
+        int[] nearestTargetCorner = this.findNearestCorner();
+        int targetCornerDistance = this.getDistances(nearestTargetCorner, this.otherRecords[targetIndex].getPosition());
+        int chaserCornerDistance = this.getDistances(nearestTargetCorner);
+
+        //checks if the target can be caught within this turn
+        if (turns == 1) {
+            super.moveToPos(this.otherRecords[targetIndex].getPosition());
+            this.attemptTag();
+        //check if the target is close to a wall, the chaser, and closer to the nearest corner than the chaser
+        } else if (turns == 2 && distanceToWall <= (this.getMOVES_PER_TURN()-1) &&
+                    targetCornerDistance<chaserCornerDistance) {
+            super.moveToPos(this.calcCutOffPath());
+        } else { //otherwise just chase in an open area
+            super.moveToPos(this.calcChasePath());
         }
     }
 
     /**
-     * Updates the targetTable data
+     * Called by the application when it's the chaser's turn
      */
-    private void updateTargetTable() {
-
-        //iterate through the table (position corresponds to id)
-        for (int i=0; i<this.targetTable.length; i++) {
-            this.targetTable[i][TURN_DIST] = this.calculateDistanceScore(super.getDistances(botsPos[i]), super.getMOVES_PER_TURN());
-            this.targetTable[i][MAX_MOVE_OBS] = this.calculateMaxMovement(this.botsPos[i], this.prevPos[i], this.targetTable[i][MAX_MOVE_OBS]);
-            this.targetTable[i][PRESSURE] = this.calculateChaserPressure(this.botsPos[i]);
-        }
-
-        //getting the current position after it has calculated the max movement
-        for (int i=0; i<this.targetTable.length; i++) {
-            this.prevPos[i] = botsPos[i];
-        }
-    }
-
-    /**
-     * Used by the application to tell the chaser start targeting
-     * @param numTargets the number of non-chaser robots in the arena
-     * @param numChasers the number of chasers in the arena (including this robot)
-     */
-    public void initTargeting(int numTargets, int numChasers) {
-        //initialize position storing arrays
-        this.botsPos = new int[numTargets][2];
-        this.chasersPos = new int [numChasers][2];
-        this.prevPos = new int[numTargets][2];
-
-        //initialize target arrays
-        this.targetTable = new double[numTargets][6];
-        this.priorityScore = new double [numTargets];
-        this.targetIndex = new int[numTargets];
-
-
-        //iterate through bots to get their positions and store them to calculate movement
-        for (int i=0; i<numTargets; i++) {
-            this.prevPos[i] = this.botsPos[i];
-        }
-
-        //iterate through the table (index corresponds to id)
-        for (int i=0; i<numTargets; i++) {
-            this.targetTable[i][TURN_DIST] = this.calculateDistanceScore(super.getDistances(this.botsPos[i]), super.getMOVES_PER_TURN());
-            this.targetTable[i][DODGE_EST] = 0.45; //will be modified after a catch attempt
-            this.targetTable[i][MAX_MOVE_OBS] = 1;
-            this.targetTable[i][HP_EST] = 3;
-            this.targetTable[i][PRESSURE] = this.calculateChaserPressure(this.botsPos[i]);
-            this.targetTable[i][NUM_CATCHES] = 0;
-        }
-    }
-
     public void takeTurn() {
-
-        //update target table with new info
-        this.updateTargetTable();
-        this.calculatePriorityScores();
+        //sort the records by their priority scores
         this.sortByPriority();
-        this.targetID = this.targetIndex[0];
-        System.out.format("My target is %d who has a priority score of %.2f\n", this.targetID, this.priorityScore[0]);
-        for (int i=1; i<priorityScore.length; i++) {
-            System.out.format("My next target is %d who has a priority score of %.2f\n", this.targetIndex[i], this.priorityScore[i]);
+        this.targetID = this.otherRecords[0].getID();
+        this.targetX = this.otherRecords[0].getPosition()[0];
+        this.targetY = this.otherRecords[0].getPosition()[1];
+        System.out.format("My target is %d who has a priority score of %.2f\n", this.targetID, ((ChaserPlayerInfo) this.otherRecords[0]).getPriorityScore());
+        for (int i=1; i<this.otherRecords.length; i++) {
+            System.out.format("My next target is %d who has a priority score of %.2f\n", this.otherRecords[i].getID(), ((ChaserPlayerInfo) this.otherRecords[i]).getPriorityScore());
         }
         System.out.println("==============================================");
+        this.executeStrat();
     }
 }

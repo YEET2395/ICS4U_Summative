@@ -4,11 +4,10 @@ import becker.robots.*;
 import java.util.*;
 
 public class KureshyBotTest {
-
+    public static boolean gameEnded = false;
     /**
      * Set up the playground for the robots
      * @author Xinran Li
-     * @version 2025 12 30
      */
     private static void setupPlayground(City playground)
     {
@@ -74,81 +73,55 @@ public class KureshyBotTest {
             System.out.println("NONE DODGED");
             //means both didn't dodge
         }
-
     }
 
     /**
-     * Gets the position of all robots of a specific role from the records
+     * Checks if either the VIPs/Guards or Chasers has reached their win conditions
      * @param records the application records
-     * @param numRobots the number of robots of that role
-     * @param role the role of desired robots (4 counts for both Guards and VIPs)
-     * @return the x,y coordinates of the robots of the specified role
+     * @param maxTurns the max number of turns
+     * @param turn the current turn
      */
-    public static int[][] getPosOfRole(PlayerInfo[] records, int numRobots, int role) {
-        int[][] robotPos = new int[numRobots][2];
-        int count = 0; //robotPos index
+    public void checkForWinCondition(PlayerInfo[] records, int maxTurns, int turn) {
+        int numVIPs = 0;
+        int numChasers = 0;
+        int numVIPsCaught = 0;
+        int numChasersCaught = 0;
 
-        //iterate through records
+        //iterate through the records
         for (int i=0; i<records.length; i++) {
 
-            //for chaser, checks for both guards and VIPs
-            if (role==4) {
-                if (records[i].getRole() == 1 || records[i].getRole()==2) {
-                    robotPos[count] = records[i].getPosition();
-                    count++;
-                }
-            } else {
-                //checks role
-                if (records[i].getRole() == role) {
-                    robotPos[count] = records[i].getPosition();
-                    count++;
-                }
+            //check how many VIPs there are
+            if (records[i].getRole() == 1) {
+                numVIPs++;
+
+                //check if they are caught
+                if (records[i].getState())
+                    numVIPsCaught++;
+            }
+
+            //check how many Chasers there are
+            if (records[i].getRole() == 3) {
+                numChasers++;
+
+                //check if they are caught
+                if (records[i].getState())
+                    numChasersCaught++;
             }
 
         }
 
-        return robotPos;
-    }
-
-    /**
-     * Gets the HP of all robots of a role from the records
-     * @param records the application records
-     * @param numRobots the number of robots of that role
-     * @param role the role of desired robots
-     * @return the HP of the robots of the specified role
-     */
-    public static int[] getHPOfRole(PlayerInfo[] records, int numRobots, int role) {
-        int[] robotHP = new int[numRobots];
-        int count = 0; //robotHP index
-
-        //iterate through records
-        for (int i=0; i<records.length; i++) {
-
-            //checks role
-            if (records[i].getRole() == role) {
-                robotHP[count] = records[i].getHP();
-                count++;
-            }
+        //check if all VIPs have been caught
+        if (numVIPsCaught==numVIPs) {
+            gameEnded = true;
         }
 
-        return robotHP;
-    }
-
-    /**
-     * Gets the status of all robots from the records
-     * @param records the application records
-     * @param numRobots the total number of robots
-     * @return the isCaught status of all robots with the index corresponding to ID
-     */
-    public static boolean[] getStates(PlayerInfo[] records, int numRobots) {
-        boolean[] robotStatus = new boolean[numRobots];
-
-        //iterate through records
-        for (int i=0; i<records.length; i++) {
-            robotStatus[i] = records[i].getState();
+        if (numChasersCaught==numChasers) {
+            gameEnded = true;
         }
 
-        return robotStatus;
+        if (turn >= maxTurns) {
+            gameEnded = true;
+        }
     }
 
     public static void main(String[] args) {
@@ -159,54 +132,54 @@ public class KureshyBotTest {
         Random rand = new Random();
 
         BaseBot[] robots = new BaseBot[5];
-        PlayerInfo[] records = new PlayerInfo[5];
-        int index = 0;
+        PlayerInfo[] infos = new PlayerInfo[5];
 
-        //create multiple VIPs
+        // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
         for (int i=0; i<4; i++) {
+            int movesPerTurn = rand.nextInt(3) + 1;
+            double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
+            int row = rand.nextInt(13) + 1;
+            int col = rand.nextInt(24) + 1;
+            int[] pos = {row, col};
             robots[i] = new XiongBot(
                     playground,
-                    rand.nextInt(13) + 1,
-                    rand.nextInt(24) + 1,
-                    Direction.SOUTH, index, 1, 2,
-                    rand.nextInt(3) + 1,
-                    0.3 + rand.nextDouble() * 0.1
+                    row,
+                    col,
+                    Direction.SOUTH, // str, ave, dir
+                    i, // id
+                    1, // role
+                    2, // hp
+                    movesPerTurn,
+                    dodgeDiff
             );
-            index++;
+            infos[i] = new PlayerInfo(i, 1, 2, dodgeDiff, pos, false);
         }
 
-        //create chaser
-        KureshyBot chaser = new KureshyBot(
-                playground,
-                rand.nextInt(13) + 1,
-                rand.nextInt(24) + 1,
-                Direction.NORTH, index, 3, 3,
-                rand.nextInt(3) + 3,
-                0.7 + rand.nextDouble() * 0.2
-        );
-
-        robots[4] = chaser;
-
-        //initialize records
-        for (int i=0; i<robots.length; i++) {
-            records[i] = new PlayerInfo(robots[i].myRecords.getID(), robots[i].myRecords.getRole(),
-                    robots[i].myRecords.getHP(), robots[i].myRecords.getDodgeDifficulty(),
-                    robots[i].getMyPosition(), robots[i].myRecords.getState());
-        }
-
-
-        chaser.initTargeting(4, 1);
+        // Chasers: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
+            int movesPerTurn = rand.nextInt(3) + 3;
+            double dodgeDiff = 0.7 + rand.nextDouble() * 0.2;
+            int row = rand.nextInt(13) + 1;
+            int col = rand.nextInt(24) + 1;
+            int[] pos = {row, col};
+            robots[4] = new KureshyBot(
+                    playground,
+                    row,
+                    col,
+                    Direction.NORTH, // str, ave, dir
+                    4, // id
+                    3, // role
+                    3, // hp
+                    movesPerTurn,
+                    dodgeDiff
+            );
+            infos[4] = new PlayerInfo(4, 3, 3, dodgeDiff, pos, false);
 
         //simulating 10 turns to test the checkDodge function and see if the hp and dodging
         //predictions (and chaser pressure) from priorityScore are working as intended (mainly, to serve
         //as a tie-breaker when deciding which target to go after if they're both close by)
         for (int turns=0; turns<1; turns++) {
             for (int i=0; i<4; i++) {
-                chaser.sendBotsPos(getPosOfRole(records, 4, 4));
-                chaser.sendChasersPos(getPosOfRole(records, 1, 3));
-                chaser.sendStates(getStates(records, robots.length));
-                chaser.takeTurn();
-                checkDodge(chaser, robots[i], rand);
+                System.out.println(turns + " " + i);
             }
         }
 

@@ -28,8 +28,29 @@ public abstract class BaseBot extends RobotSE {
 
     /**
      * Updates this bot's enemy records
+     * @param records the records to get information from
      */
     abstract public void updateOtherRecords(PlayerInfo[] records);
+
+    /**
+     * Initializes this bot's enemy records with only the info they are supposed to know
+     * @param records the records to get information from
+     */
+    abstract public void initRecords(PlayerInfo[] records);
+
+    /**
+     * Finds the index of the desired record given the ID
+     * @param ID the ID of the robot whose record is desired
+     * @return the position of the record in the array
+     */
+    public int findRecordByID(int ID) {
+        for (int i=0; i<this.otherRecords.length; i++) {
+            if (this.otherRecords[i].getID() == ID) {
+                return i;
+            }
+        }
+        return -1;
+    }
 
     /**
      * Get this bot's current position
