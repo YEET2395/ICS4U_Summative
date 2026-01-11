@@ -34,7 +34,7 @@ public class LiBot extends BaseBot {
 
         //for debugging
         super.setColor(Color.BLUE);
-        super.setLabel("Robot " + this.myRecords.getID());
+        super.setLabel("Guard " + this.myRecords.getID());
     }
 
     public void updateOtherRecords(PlayerInfo[] records)
@@ -88,17 +88,38 @@ public class LiBot extends BaseBot {
                         + 15 * (distGC <= 1 ? 1 : 0)
                         - 10 * Math.max(0, 3 - distCV);
 
-        String decision = "PROTECT";
-        double best = protect;
 
-        if (attack > best) { best = attack; decision = "ATTACK"; }
-        if (run > best)    { best = run;    decision = "RUN"; }
+
 
     }
 
     private int distance(int[] a, int[] b) {
         return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
     }
+
+    /**
+     * Insertion Sort (descending).
+     * @param scores an array of scores
+     * @param actions an array of actions
+     */
+    public static void insertionSortDescending(double[] scores, int[] actions) {
+        for (int i = 1; i < scores.length; i++) {
+            double keyScore = scores[i];
+            int keyAction = actions[i];
+            int j = i - 1;
+
+            while (j >= 0 && scores[j] < keyScore) {
+                scores[j + 1] = scores[j];
+                actions[j + 1] = actions[j];
+                j--;
+            }
+
+            scores[j + 1] = keyScore;
+            actions[j + 1] = keyAction;
+        }
+    }
+
+
 
     private PlayerInfo findFirstByRole(PlayerInfo[] records, int r)
     {
