@@ -59,13 +59,24 @@ public class LiBot extends BaseBot {
         int[] myPos = getMyPosition();
         int hp = myRecords.getHP();
 
-        PlayerInfo vip = findFirstByRole(otherRecords, 1);
-        PlayerInfo chaser = findNearestByRole(otherRecords, 3, myPos);
+        PlayerInfo[] vips = new PlayerInfo[2];
+        PlayerInfo[] chasers = new PlayerInfo[2];
 
-        if (chaser == null || vip == null)
-        {
+        int vipCount = collectByRole(otherRecords, ROLE_VIP, vips);
+        int chaserCount = collectByRole(otherRecords, ROLE_CHASER, chasers);
+
+        if (vipCount == 0 || chaserCount == 0) {
             System.out.println("LiBot: vip or chaser missing");
-            return; // No chaser or VIP found
+            return;
+        }
+
+        PlayerInfo vip = pickMostThreatenedVIP(vips, vipCount, chasers, chaserCount);
+
+        PlayerInfo chaser = pickNearestToPos(vip.getPosition(), chasers, chaserCount);
+
+        if (vip == null || chaser == null) {
+            System.out.println("LiBot: vip or chaser missing after pick");
+            return;
         }
 
         int distCV = distance(chaser.getPosition(), vip.getPosition()); // dist(chaser, vip)
@@ -96,17 +107,108 @@ public class LiBot extends BaseBot {
         if(nextAct == 0)
         {
             //protect
+            doProtect();
         }
         else if(nextAct == 1)
         {
             //attack
+            doAttack();
         }
         else
         {
             //run
+            doRun();
         }
 
         
+    }
+
+    private int collectByRole(PlayerInfo[] records, int role, PlayerInfo[] out)
+    {
+        int k = 0;
+        for (PlayerInfo r : records)
+        {
+            if (r == null) continue;
+            if (r.getState()) continue;          // 被catch的跳过
+            if (r.getRole() != role) continue;
+
+            if (k < out.length)
+            {
+                out[k] = r;
+                k++;
+            }
+        }
+        return k;
+    }
+
+    private PlayerInfo pickMostThreatenedVIP(PlayerInfo[] vips, int vipCount,
+                                             PlayerInfo[] chasers, int chaserCount)
+    {
+        PlayerInfo bestVIP = null;
+        int bestThreat = Integer.MAX_VALUE;
+
+        for (int i = 0; i < vipCount; i++)
+        {
+            PlayerInfo v = vips[i];
+            if (v == null) continue;
+
+            int threat = Integer.MAX_VALUE;
+            for (int j = 0; j < chaserCount; j++)
+            {
+                PlayerInfo c = chasers[j];
+                if (c == null) continue;
+                int d = distance(v.getPosition(), c.getPosition());
+                if (d < threat) threat = d;
+            }
+
+            if (threat < bestThreat)
+            {
+                bestThreat = threat;
+                bestVIP = v;
+            } else if (threat == bestThreat && bestVIP != null)
+            {
+                if (v.getHP() < bestVIP.getHP()) bestVIP = v;
+            }
+        }
+        return bestVIP;
+    }
+
+    private PlayerInfo pickNearestToPos(int[] pos, PlayerInfo[] arr, int count)
+    {
+        PlayerInfo best = null;
+        int bestDist = Integer.MAX_VALUE;
+
+        for (int i = 0; i < count; i++)
+        {
+            PlayerInfo r = arr[i];
+            if (r == null) continue;
+            int d = distance(pos, r.getPosition());
+            if (d < bestDist)
+            {
+                bestDist = d;
+                best = r;
+            }
+        }
+        return best;
+    }
+
+
+    /**
+     * Protect the VIP by moving towards them
+     */
+    private void doProtect()
+    {
+
+    }
+
+    private void doAttack()
+    {
+
+    }
+
+    private void doRun()
+    {
+
     }
 
     /**
@@ -145,7 +247,7 @@ public class LiBot extends BaseBot {
      * Find the first record with the specified role
      * @param records the array of records to search
      * @param r the role to search for
-     * @return
+     * @return the first PlayerInfo with the specified role, or null if none found
      */
     private PlayerInfo findFirstByRole(PlayerInfo[] records, int r)
     {
