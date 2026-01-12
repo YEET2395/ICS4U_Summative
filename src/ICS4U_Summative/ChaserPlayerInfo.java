@@ -182,4 +182,15 @@ public class ChaserPlayerInfo extends PlayerInfo {
         }
 
     }
+
+    /**
+     * Debug method
+     * @return a String containing important info about the target
+     */
+    public String toString() {
+        return "ID: " + this.getID() + " POS: " + this.getPosition()[0] + "," + this.getPosition()[1]
+                + " TURN DISTANCE: " + this.turnDistance + " DODGE_EST: " + this.dodgeEst + " HP_EST " + this.hpEst
+         + " prevPos: " + this.prevPos[0] + "," + this.prevPos[1] + " SPEED: " + this.speedObs +
+                " DODGES: " + this.numDodges + " CATCHES: " + this.numCatches + " PRIORITY SCORE: " + this.priorityScore;
+    }
 }

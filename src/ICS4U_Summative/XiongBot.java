@@ -48,6 +48,10 @@ public class XiongBot extends BaseBot {
         System.out.println("Updating enemy records for XiongBot ");
     }
 
+    public void initRecords(PlayerInfo[] records) {
+        System.out.println("Initializing records");
+    }
+
     public void getGuardPosition(int[] coord) {
         guardPos[0] = coord[0];
         guardPos[1] = coord[1];

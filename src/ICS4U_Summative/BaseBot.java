@@ -3,7 +3,7 @@ package ICS4U_Summative;
 import becker.robots.*;
 
 public abstract class BaseBot extends RobotSE {
-    public PlayerInfo[] otherRecords = new PlayerInfo[4];
+    public PlayerInfo[] otherRecords = new PlayerInfo[5];
     public PlayerInfo myRecords;
     public final int movesPerTurn;
 
@@ -45,6 +45,7 @@ public abstract class BaseBot extends RobotSE {
      */
     public int findRecordByID(int ID) {
         for (int i=0; i<this.otherRecords.length; i++) {
+            //System.out.println(this.otherRecords[i] + "\n trying to find " + ID); for debugging
             if (this.otherRecords[i].getID() == ID) {
                 return i;
             }

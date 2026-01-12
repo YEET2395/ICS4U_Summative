@@ -36,6 +36,10 @@ public class LiBotTestingApp {
             this.otherRecords = records;
         }
 
+        public void initRecords(PlayerInfo[] records) {
+            System.out.println("Initializing records");
+        }
+
         @Override
         public void takeTurn() {
             if (otherRecords == null || otherRecords.length == 0) return;
@@ -139,6 +143,10 @@ public class LiBotTestingApp {
         @Override
         public void updateOtherRecords(PlayerInfo[] records) {
             this.otherRecords = records;
+        }
+
+        public void initRecords(PlayerInfo[] records) {
+            System.out.println("Initializing records");
         }
 
         @Override

@@ -70,13 +70,17 @@ public class KureshyBot extends BaseBot{
         //go through the records
         for (int i=0; i<records.length; i++) {
 
-            //makes sure it's not this chaser (since it already has its personal records) and that it's another chaser
-            if (records[i].getID() != this.myRecords.getID() && records[i].getRole()==3) {
-                this.otherRecords[otherRecordsIndex] = new ChaserPlayerInfo(records[i].getID(), 3, -1, -1, records[i].getPosition(), records[i].getState());
-                otherRecordsIndex++;
-            } else {
-                this.otherRecords[otherRecordsIndex] = new ChaserPlayerInfo(records[i].getID(), -1, -1, -1, records[i].getPosition(), records[i].getState());
-                otherRecordsIndex++;
+            //make sure it's not this chaser since it already has its personal records
+            if (records[i].getID() != this.myRecords.getID()) {
+
+                //checks if it's another chaser since it needs to know where the other chasers are
+                if(records[i].getRole() == 3) {
+                    this.otherRecords[otherRecordsIndex] = new ChaserPlayerInfo(records[i].getID(), 3, -1, -1, records[i].getPosition(), records[i].getState());
+                    otherRecordsIndex++;
+                } else {
+                    this.otherRecords[otherRecordsIndex] = new ChaserPlayerInfo(records[i].getID(), -1, -1, -1, records[i].getPosition(), records[i].getState());
+                    otherRecordsIndex++;
+                }
             }
         }
     }

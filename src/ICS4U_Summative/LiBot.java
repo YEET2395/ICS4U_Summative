@@ -45,6 +45,9 @@ public class LiBot extends BaseBot {
         }
     }
 
+    public void initRecords(PlayerInfo[] records) {
+        System.out.println("Initializing records");
+    }
 
     public void takeTurn()
     {

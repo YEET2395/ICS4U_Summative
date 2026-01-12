@@ -29,7 +29,7 @@ public class KureshyBotTest {
      * @param array the array of BaseBots
      * @param records the array of records to update
      */
-    public void updateRecords(BaseBot[] array, PlayerInfo[] records) {
+    public static void updateRecords(BaseBot[] array, PlayerInfo[] records) {
 
         //iterate through the list of records (each record should match with the BaseBot in array)
         for (int i=0; i<records.length; i++) {
@@ -131,11 +131,11 @@ public class KureshyBotTest {
 
         Random rand = new Random();
 
-        BaseBot[] robots = new BaseBot[5];
-        PlayerInfo[] infos = new PlayerInfo[5];
+        BaseBot[] robots = new BaseBot[6];
+        PlayerInfo[] infos = new PlayerInfo[6];
 
         // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
-        for (int i=0; i<4; i++) {
+        for (int i=0; i<5; i++) {
             int movesPerTurn = rand.nextInt(3) + 1;
             double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
             int row = rand.nextInt(13) + 1;
@@ -161,25 +161,39 @@ public class KureshyBotTest {
             int row = rand.nextInt(13) + 1;
             int col = rand.nextInt(24) + 1;
             int[] pos = {row, col};
-            robots[4] = new KureshyBot(
+            robots[5] = new KureshyBot(
                     playground,
                     row,
                     col,
                     Direction.NORTH, // str, ave, dir
-                    4, // id
+                    5, // id
                     3, // role
                     3, // hp
                     movesPerTurn,
                     dodgeDiff
             );
-            infos[4] = new PlayerInfo(4, 3, 3, dodgeDiff, pos, false);
+            infos[5] = new PlayerInfo(5, 3, 3, dodgeDiff, pos, false);
+
+            //init records
+            for (BaseBot bot : robots) {
+                bot.initRecords(infos);
+            }
 
         //simulating 10 turns to test the checkDodge function and see if the hp and dodging
         //predictions (and chaser pressure) from priorityScore are working as intended (mainly, to serve
         //as a tie-breaker when deciding which target to go after if they're both close by)
-        for (int turns=0; turns<1; turns++) {
-            for (int i=0; i<4; i++) {
-                System.out.println(turns + " " + i);
+        for (int turns=0; turns<10; turns++) {
+            for (int i=0; i<6; i++) {
+                robots[i].updateOtherRecords(infos);
+                System.out.format("TURN: %d \n ROBOT ACTIVE: %d\n", turns, infos[i].getID());
+                robots[i].takeTurn();
+                updateRecords(robots, infos);
+            }
+
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
 
