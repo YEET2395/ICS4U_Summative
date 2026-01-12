@@ -210,7 +210,7 @@ public class App {
                     movesPerTurn,
                     dodgeDiff
             );
-            infos[i] = new PlayerInfo(i, 1, 2, dodgeDiff, pos, false);
+            infos[i] = new PlayerInfo(i, 1, 2, dodgeDiff, robots[i].getMyPosition(), false);
         }
 
         // Guards: movesPerTurn [2,4], dodgeDiff [0.45, 0.55]
@@ -231,7 +231,7 @@ public class App {
                     movesPerTurn,
                     dodgeDiff
             );
-            infos[i] = new PlayerInfo(i, 2, 5, dodgeDiff, pos, false);
+            infos[i] = new PlayerInfo(i, 2, 5, dodgeDiff, robots[i].getMyPosition(), false);
         }
 
         // Chasers: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
@@ -252,7 +252,7 @@ public class App {
                     movesPerTurn,
                     dodgeDiff
             );
-            infos[i] = new PlayerInfo(i, 3, 3, dodgeDiff, pos, false);
+            infos[i] = new PlayerInfo(i, 3, 3, dodgeDiff, robots[i].getMyPosition(), false);
         }
 
     }

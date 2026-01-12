@@ -48,10 +48,11 @@ public class LiBot extends BaseBot {
 
     public void takeTurn()
     {
-        if(otherRecords.length == 0)
+        if (otherRecords == null || otherRecords.length == 0)
         {
             return;
         }
+
 
         int[] myPos = getMyPosition();
         int hp = myRecords.getHP();
@@ -68,14 +69,19 @@ public class LiBot extends BaseBot {
         }
 
         PlayerInfo vip = pickMostThreatenedVIP(vips, vipCount, chasers, chaserCount);
+        if (vip == null)
+        {
+            System.out.println("LiBot: vip or chaser missing after pickMostThreatenedVIP");
+            return;
+        }
 
         PlayerInfo chaser = pickNearestToPos(vip.getPosition(), chasers, chaserCount);
-
-        if (vip == null || chaser == null) {
+        if (chaser == null) {
             System.out.println("LiBot: vip or chaser missing after pick");
             return;
         }
 
+        myPos = getMyPosition();
         int distCV = distance(chaser.getPosition(), vip.getPosition()); // dist(chaser, vip)
         int distGV = distance(myPos, vip.getPosition()); // dist(guard, vip)
         int distGC = distance(myPos, chaser.getPosition()); // dist(guard, chaser)
@@ -201,7 +207,7 @@ public class LiBot extends BaseBot {
             int distToVip = distance(myPos, vipPos);
 
             if (distToVip > ESCORT_DISTANCE) {
-                moveTowardPos(vipPos);
+                if (!moveTowardPos(vipPos)) break;
                 continue;
             }
 
@@ -215,7 +221,10 @@ public class LiBot extends BaseBot {
                 int[] next = nextPos(myPos, d);
                 int distNextToChaser = distance(next, chPos);
                 int distNextToVip    = distance(next, vipPos);
-
+                if (distNextToVip > ESCORT_DISTANCE + 1)
+                {
+                    continue;
+                }
                 int score = 10 * distNextToChaser - 8 * distNextToVip;
 
                 if (score > bestScore) {
@@ -224,11 +233,15 @@ public class LiBot extends BaseBot {
                 }
             }
 
-            if (bestDir != null) {
-                tryMove(bestDir);
-            } else {
+            if (bestDir != null)
+            {
+                if (!tryMove(bestDir)) break;
+            }
+            else
+            {
                 break;
             }
+
         }
     }
 
@@ -243,7 +256,7 @@ public class LiBot extends BaseBot {
             if (distance(myPos, targetPos) <= 1) {
                 break;
             }
-            moveTowardPos(targetPos);
+            if (!moveTowardPos(targetPos)) break;
         }
     }
 
@@ -274,30 +287,90 @@ public class LiBot extends BaseBot {
                 }
             }
 
-            if (bestDir != null) {
-                tryMove(bestDir);
-            } else {
-                break;
+            boolean moved = false;
+
+            if (bestDir != null) moved = tryMove(bestDir);
+
+            if (!moved)
+            {
+                int curDist = distance(getMyPosition(), chPos);
+
+                for (Direction d : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST})
+                {
+                    if (!canMove(d)) continue;
+                    int[] next = nextPos(getMyPosition(), d);
+                    int d2 = distance(next, chPos);
+                    if (d2 >= curDist)
+                    {
+                        moved = tryMove(d);
+                        if (moved) break;
+                    }
+                }
             }
+
+            if (!moved) break;
+
         }
     }
 
 
-    private void moveTowardPos(int[] targetPos) {
+    private boolean moveTowardPos(int[] targetPos) {
         int[] myPos = getMyPosition();
         int dx = targetPos[0] - myPos[0]; // x=avenue
         int dy = targetPos[1] - myPos[1]; // y=street
 
-        if (Math.abs(dx) >= Math.abs(dy) && dx != 0) {
-            if (tryMove(dx > 0 ? Direction.EAST : Direction.WEST)) return;
+        Direction primary = null;
+        Direction secondary = null;
+
+        if (Math.abs(dx) >= Math.abs(dy))
+        {
+            if (dx != 0)
+            {
+                primary = (dx > 0 ? Direction.EAST : Direction.WEST);
+            }
+            if (dy != 0)
+            {
+                secondary = (dy > 0 ? Direction.SOUTH : Direction.NORTH);
+            }
         }
-        if (dy != 0) {
-            if (tryMove(dy > 0 ? Direction.SOUTH : Direction.NORTH)) return;
+        else
+        {
+            if (dy != 0)
+            {
+                primary = (dy > 0 ? Direction.SOUTH : Direction.NORTH);
+            }
+            if (dx != 0)
+            {
+                secondary = (dx > 0 ? Direction.EAST : Direction.WEST);
+            }
         }
-        if (dx != 0) {
-            tryMove(dx > 0 ? Direction.EAST : Direction.WEST);
+
+        if (primary != null && tryMove(primary))
+        {
+            return true;
         }
+
+        if (secondary != null && tryMove(secondary))
+        {
+            return true;
+        }
+
+        int curDist = distance(myPos, targetPos);
+
+        for (Direction d : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST})
+        {
+            if (d == primary || d == secondary) continue;
+            if (!canMove(d)) continue;
+
+            int[] next = nextPos(myPos, d);
+            if (distance(next, targetPos) <= curDist)
+            {
+                return tryMove(d);
+            }
+        }
+        return false;
     }
+
 
     private boolean canMove(Direction d) {
         turnDirection(d);
@@ -401,6 +474,4 @@ public class LiBot extends BaseBot {
         }
         return best;
     }
-
-
 }
