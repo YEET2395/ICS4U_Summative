@@ -172,11 +172,14 @@ public abstract class BaseBot extends RobotSE {
      */
     public void takeDamage(int amount)
     {
-        int hp = this.myRecords.getHP();
-        hp -= amount;
+        // update the stored HP in myRecords
+        int newHP = this.myRecords.getHP() - amount;
+        if (newHP < 0) newHP = 0;
+        this.myRecords.setHP(newHP);
 
-        //change state if its lost all hp
-        if (hp<=0) {
+        // change state if it lost all hp
+        if (newHP <= 0) {
+            // ensure the record stores caught state and current position
             this.myRecords.updateRecords(this.getMyPosition(), true);
         }
     }

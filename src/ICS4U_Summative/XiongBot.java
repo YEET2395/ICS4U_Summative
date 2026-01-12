@@ -4,6 +4,7 @@ import becker.robots.*;
 
 import java.awt.*;
 import java.util.Random;
+import java.util.ArrayList;
 
 /**
  * @Todo: improve movement algorithm to better avoid chasers + fine tune speed tracking and prediction
@@ -46,10 +47,67 @@ public class XiongBot extends BaseBot {
 
     public void updateOtherRecords(PlayerInfo[] records) {
         System.out.println("Updating enemy records for XiongBot ");
+        // Collect chaser positions from the global records and update internal tracking arrays
+        ArrayList<int[]> chasers = new ArrayList<>();
+        for (int i = 0; i < records.length; i++) {
+            PlayerInfo r = records[i];
+            // role 3 denotes chaser in this application
+            if (r.getRole() == 3) {
+                int[] pos = r.getPosition();
+                if (pos != null) {
+                    // make a defensive copy
+                    chasers.add(new int[]{pos[0], pos[1]});
+                }
+            }
+            // if there is a guard role (2) supply the guard position
+            if (r.getRole() == 2) {
+                int[] pos = r.getPosition();
+                if (pos != null) {
+                    this.getGuardPosition(new int[]{pos[0], pos[1]});
+                }
+            }
+        }
+
+        // convert to array and set
+        int[][] coords = new int[chasers.size()][2];
+        for (int i = 0; i < chasers.size(); i++) {
+            coords[i][0] = chasers.get(i)[0];
+            coords[i][1] = chasers.get(i)[1];
+        }
+
+        // Update chaser positions and then compute speeds based on previous positions
+        this.setChaserPositions(coords);
+        this.trackChaserSpeeds();
     }
 
     public void initRecords(PlayerInfo[] records) {
         System.out.println("Initializing records");
+        // On initialization, populate chaser positions so takeTurn() can operate immediately
+        ArrayList<int[]> chasers = new ArrayList<>();
+        for (int i = 0; i < records.length; i++) {
+            PlayerInfo r = records[i];
+            if (r.getRole() == 3) {
+                int[] pos = r.getPosition();
+                if (pos != null) {
+                    chasers.add(new int[]{pos[0], pos[1]});
+                }
+            }
+            if (r.getRole() == 2) {
+                int[] pos = r.getPosition();
+                if (pos != null) {
+                    this.getGuardPosition(new int[]{pos[0], pos[1]});
+                }
+            }
+        }
+
+        int[][] coords = new int[chasers.size()][2];
+        for (int i = 0; i < chasers.size(); i++) {
+            coords[i][0] = chasers.get(i)[0];
+            coords[i][1] = chasers.get(i)[1];
+        }
+
+        // initialize internal chaser tracking
+        this.setChaserPositions(coords);
     }
 
     public void getGuardPosition(int[] coord) {
@@ -104,6 +162,12 @@ public class XiongBot extends BaseBot {
     }
 
     public void takeTurn() {
+//        // If this bot has been caught, it should not move anymore.
+//        if (this.myRecords != null && this.myRecords.getState()) {
+//            // Optionally print debug info
+//            System.out.format("Robot %d is caught and will not move.\n", this.myRecords.getID());
+//            return;
+//        }
         int movesAllowed = this.movesPerTurn;
 
         for (int step = 0; step < movesAllowed; step++) {
