@@ -1,6 +1,8 @@
 package ICS4U_Summative;
 
 import becker.robots.*;
+
+import java.awt.*;
 import java.util.*;
 
 public class KureshyBotTest {
@@ -36,6 +38,9 @@ public class KureshyBotTest {
 
             //update the info that will change
             records[i].updateRecords(array[i].myRecords.getHP(), array[i].getMyPosition(), array[i].myRecords.getState());
+            if (array[i].myRecords.getState()) {
+                array[i].setColor(Color.BLACK);
+            }
         }
 
     }
@@ -45,14 +50,14 @@ public class KureshyBotTest {
      * before applying damage and sending the results to the chaser
      * @param chaser the chaser initiating the catch
      * @param target the target of the chaser
-     * @param r the Random object
+     * @param r the Random object used for ehcking who dodged
      */
     public static void checkDodge(KureshyBot chaser, BaseBot target, Random r) {
         double diff = r.nextDouble();
-        System.out.format("Chaser: %s -- Target %d: %s -- Difficulty: %.2f\n",
-                Arrays.toString(chaser.myRecords.getPosition()),
+        System.out.format("Chaser: %.2f -- Target %d: %.2f -- Difficulty: %.2f\n",
+                chaser.myRecords.getDodgeDifficulty(),
                 target.myRecords.getID(),
-                Arrays.toString(target.myRecords.getPosition()),
+                target.myRecords.getDodgeDifficulty(),
                 diff);
 
         //check which robots dodged and which didn't
@@ -64,7 +69,6 @@ public class KureshyBotTest {
             chaser.sendTagResult(target.myRecords.getID(), true);
             target.takeDamage(1);
             System.out.println("CHASER DODGED");
-
             //means chaser dodged but target didn't
         } else {
             chaser.sendTagResult(target.myRecords.getID(), true);
@@ -76,12 +80,28 @@ public class KureshyBotTest {
     }
 
     /**
+     * Checks if a chaser is tagging
+     * @param array the BaseBot array
+     * @param rand the Random object used for checking who dodged
+     */
+    public static void checkForTags(BaseBot[] array, Random rand) {
+        for (BaseBot bot : array) {
+            if (bot.myRecords.getRole() == 3) {
+                if (((KureshyBot) bot).getIsCatching()) {
+                    int target = ((KureshyBot) bot).getTargetID();
+                    checkDodge((KureshyBot) bot, array[target], rand);
+                }
+            }
+        }
+    }
+
+    /**
      * Checks if either the VIPs/Guards or Chasers has reached their win conditions
      * @param records the application records
      * @param maxTurns the max number of turns
      * @param turn the current turn
      */
-    public void checkForWinCondition(PlayerInfo[] records, int maxTurns, int turn) {
+    public static void checkForWinCondition(PlayerInfo[] records, int maxTurns, int turn) {
         int numVIPs = 0;
         int numChasers = 0;
         int numVIPsCaught = 0;
@@ -140,7 +160,7 @@ public class KureshyBotTest {
             double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
             int row = rand.nextInt(13) + 1;
             int col = rand.nextInt(24) + 1;
-            int[] pos = {row, col};
+            int[] pos = {col, row};
             robots[i] = new XiongBot(
                     playground,
                     row,
@@ -160,7 +180,7 @@ public class KureshyBotTest {
             double dodgeDiff = 0.7 + rand.nextDouble() * 0.2;
             int row = rand.nextInt(13) + 1;
             int col = rand.nextInt(24) + 1;
-            int[] pos = {row, col};
+            int[] pos = {col, row};
             robots[5] = new KureshyBot(
                     playground,
                     row,
@@ -182,16 +202,25 @@ public class KureshyBotTest {
         //simulating 10 turns to test the checkDodge function and see if the hp and dodging
         //predictions (and chaser pressure) from priorityScore are working as intended (mainly, to serve
         //as a tie-breaker when deciding which target to go after if they're both close by)
-        for (int turns=0; turns<10; turns++) {
-            for (int i=0; i<6; i++) {
-                robots[i].updateOtherRecords(infos);
-                System.out.format("TURN: %d \n ROBOT ACTIVE: %d\n", turns, infos[i].getID());
-                robots[i].takeTurn();
-                updateRecords(robots, infos);
+
+
+        int turns = 0;
+        while (!gameEnded) {
+            System.out.format(" TURN: %d \n", turns);
+            for (BaseBot bot : robots) bot.updateOtherRecords(infos);
+            for (BaseBot bot: robots) bot.takeTurn();
+
+            if (((KureshyBot) robots[5]).getIsCatching()) {
+                int target = ((KureshyBot) robots[5]).getTargetID();
+                checkDodge((KureshyBot) robots[5], robots[target], rand);
             }
 
+            updateRecords(robots, infos);
+            checkForWinCondition(infos, 10, turns);
+            turns++;
+
             try {
-                Thread.sleep(300);
+                Thread.sleep(1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
