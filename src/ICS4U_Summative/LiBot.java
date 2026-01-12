@@ -39,10 +39,7 @@ public class LiBot extends BaseBot {
 
     public void updateOtherRecords(PlayerInfo[] records)
     {
-        for(int i = 0; i < records.length; i++)
-        {
-            this.otherRecords[i] = records[i];
-        }
+        this.otherRecords = records;
     }
 
     public void initRecords(PlayerInfo[] records) {
@@ -88,7 +85,7 @@ public class LiBot extends BaseBot {
                 60
                         + 12 * Math.max(0, DANGER_RADIUS - distCV)
                         -  8 * Math.max(0, distGV - ESCORT_DISTANCE)
-                        - 10 * (hp == 1 ? 1 : 0);
+                        - 10 * (vip.getHP() == 1 ? 1 : 0);
 
         double attack =
                 20
@@ -104,23 +101,18 @@ public class LiBot extends BaseBot {
                         - 10 * Math.max(0, 3 - distCV);
 
         int nextAct = insertionSortDescending(new double[] {protect, attack, run}, new int[] {0, 1, 2});
-        if(nextAct == 0)
+        if (nextAct == 0)
         {
-            //protect
-            doProtect();
+            doProtect(vip, chaser, vips, vipCount, chasers, chaserCount);
         }
-        else if(nextAct == 1)
+        else if (nextAct == 1)
         {
-            //attack
-            doAttack();
+            doAttack(chaser);
         }
         else
         {
-            //run
-            doRun();
+            doRun(chaser);
         }
-
-        
     }
 
     private int collectByRole(PlayerInfo[] records, int role, PlayerInfo[] out)
@@ -129,7 +121,7 @@ public class LiBot extends BaseBot {
         for (PlayerInfo r : records)
         {
             if (r == null) continue;
-            if (r.getState()) continue;          // 被catch的跳过
+            if (r.getState()) continue;
             if (r.getRole() != role) continue;
 
             if (k < out.length)
@@ -193,23 +185,143 @@ public class LiBot extends BaseBot {
     }
 
 
-    /**
-     * Protect the VIP by moving towards them
-     */
-    private void doProtect()
+    private void doProtect(PlayerInfo vip, PlayerInfo threatChaser,
+                           PlayerInfo[] vips, int vipCount,
+                           PlayerInfo[] chasers, int chaserCount)
     {
+        int[] vipPos = vip.getPosition();
+        int[] chPos  = threatChaser.getPosition();
+        int[] myPos  = getMyPosition();
 
+        int moves = getMOVES_PER_TURN();
+
+        for (int step = 0; step < moves; step++) {
+            myPos = getMyPosition();
+
+            int distToVip = distance(myPos, vipPos);
+
+            if (distToVip > ESCORT_DISTANCE) {
+                moveTowardPos(vipPos);
+                continue;
+            }
+
+
+            Direction bestDir = null;
+            int bestScore = Integer.MIN_VALUE;
+
+            for (Direction d : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
+                if (!canMove(d)) continue;
+
+                int[] next = nextPos(myPos, d);
+                int distNextToChaser = distance(next, chPos);
+                int distNextToVip    = distance(next, vipPos);
+
+                int score = 10 * distNextToChaser - 8 * distNextToVip;
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestDir = d;
+                }
+            }
+
+            if (bestDir != null) {
+                tryMove(bestDir);
+            } else {
+                break;
+            }
+        }
     }
 
-    private void doAttack()
+    private void doAttack(PlayerInfo threatChaser)
     {
+        int[] targetPos = threatChaser.getPosition();
+        int moves = getMOVES_PER_TURN();
 
+        for (int step = 0; step < moves; step++) {
+            int[] myPos = getMyPosition();
+
+            if (distance(myPos, targetPos) <= 1) {
+                break;
+            }
+            moveTowardPos(targetPos);
+        }
     }
 
-    private void doRun()
+    private void doRun(PlayerInfo threatChaser)
     {
+        int[] chPos = threatChaser.getPosition();
+        int moves = getMOVES_PER_TURN();
 
+        for (int step = 0; step < moves; step++) {
+            int[] myPos = getMyPosition();
+
+            Direction bestDir = null;
+            int bestDist = distance(myPos, chPos);
+
+            for (Direction d : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
+                if (!canMove(d)) continue;
+                int[] next = nextPos(myPos, d);
+                int d2 = distance(next, chPos);
+                if (d2 > bestDist) {
+                    bestDist = d2;
+                    bestDir = d;
+                }
+            }
+
+            if (bestDir == null) {
+                for (Direction d : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
+                    if (canMove(d)) { bestDir = d; break; }
+                }
+            }
+
+            if (bestDir != null) {
+                tryMove(bestDir);
+            } else {
+                break;
+            }
+        }
     }
+
+
+    private void moveTowardPos(int[] targetPos) {
+        int[] myPos = getMyPosition();
+        int dx = targetPos[0] - myPos[0]; // x=avenue
+        int dy = targetPos[1] - myPos[1]; // y=street
+
+        if (Math.abs(dx) >= Math.abs(dy) && dx != 0) {
+            if (tryMove(dx > 0 ? Direction.EAST : Direction.WEST)) return;
+        }
+        if (dy != 0) {
+            if (tryMove(dy > 0 ? Direction.SOUTH : Direction.NORTH)) return;
+        }
+        if (dx != 0) {
+            tryMove(dx > 0 ? Direction.EAST : Direction.WEST);
+        }
+    }
+
+    private boolean canMove(Direction d) {
+        turnDirection(d);
+        return frontIsClear();
+    }
+
+    private boolean tryMove(Direction d) {
+        turnDirection(d);
+        if (frontIsClear()) {
+            move();
+            return true;
+        }
+        return false;
+    }
+
+    private int[] nextPos(int[] cur, Direction d) {
+        int x = cur[0], y = cur[1];
+        if (d == Direction.EAST) x++;
+        else if (d == Direction.WEST) x--;
+        else if (d == Direction.SOUTH) y++;
+        else if (d == Direction.NORTH) y--;
+        return new int[]{x, y};
+    }
+
 
     /**
      * Calculate Manhattan distance between two points
