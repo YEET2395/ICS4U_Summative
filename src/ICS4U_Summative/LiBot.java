@@ -14,8 +14,8 @@ public class LiBot extends BaseBot {
     private static final int ROLE_VIP = 1;
     private static final int ROLE_GUARD = 2;
     private static final int ROLE_CHASER = 3;
-    private static final int DANGER_RADIUS = 5;     // 你可以按规划文档改
-    private static final int ESCORT_DISTANCE = 2;   // 你可以按规划文档改
+    private static final int DANGER_RADIUS = 5;
+    private static final int ESCORT_DISTANCE = 2;
 
     /**
      * Constructor for XinranBot
@@ -62,7 +62,8 @@ public class LiBot extends BaseBot {
         PlayerInfo vip = findFirstByRole(otherRecords, 1);
         PlayerInfo chaser = findNearestByRole(otherRecords, 3, myPos);
 
-        if (chaser == null || vip == null) {
+        if (chaser == null || vip == null)
+        {
             System.out.println("LiBot: vip or chaser missing");
             return; // No chaser or VIP found
         }
@@ -91,11 +92,29 @@ public class LiBot extends BaseBot {
                         + 15 * (distGC <= 1 ? 1 : 0)
                         - 10 * Math.max(0, 3 - distCV);
 
+        int nextAct = insertionSortDescending(new double[] {protect, attack, run}, new int[] {0, 1, 2});
+        if(nextAct == 0)
+        {
+            //protect
+        }
+        else if(nextAct == 1)
+        {
+            //attack
+        }
+        else
+        {
+            //run
+        }
 
-
-
+        
     }
 
+    /**
+     * Calculate Manhattan distance between two points
+     * @param a first point
+     * @param b second point
+     * @return the Manhattan distance
+     */
     private int distance(int[] a, int[] b) {
         return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
     }
@@ -105,7 +124,7 @@ public class LiBot extends BaseBot {
      * @param scores an array of scores
      * @param actions an array of actions
      */
-    public static void insertionSortDescending(double[] scores, int[] actions) {
+    public static int insertionSortDescending(double[] scores, int[] actions) {
         for (int i = 1; i < scores.length; i++) {
             double keyScore = scores[i];
             int keyAction = actions[i];
@@ -116,18 +135,24 @@ public class LiBot extends BaseBot {
                 actions[j + 1] = actions[j];
                 j--;
             }
-
             scores[j + 1] = keyScore;
             actions[j + 1] = keyAction;
         }
+        return actions[0]; // Return the action with the highest score
     }
 
-
-
+    /**
+     * Find the first record with the specified role
+     * @param records the array of records to search
+     * @param r the role to search for
+     * @return
+     */
     private PlayerInfo findFirstByRole(PlayerInfo[] records, int r)
     {
         for(PlayerInfo record : records)
         {
+            if (record == null) continue;
+            if (record.getState()) continue;
             if(record.getRole() == r)
             {
                 return record;
@@ -136,6 +161,13 @@ public class LiBot extends BaseBot {
         return null;
     }
 
+    /**
+     * Find the nearest record with the specified role
+     * @param records Record array
+     * @param role Role to search for
+     * @param fromPos Position to measure distance from
+     * @return The nearest PlayerInfo with the specified role, or null if none found
+     */
     private PlayerInfo findNearestByRole(PlayerInfo[] records, int role, int[] fromPos) {
         PlayerInfo best = null;
         int bestDist = Integer.MAX_VALUE;
