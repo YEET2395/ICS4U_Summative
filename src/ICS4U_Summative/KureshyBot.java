@@ -3,6 +3,7 @@ package ICS4U_Summative;
 import becker.robots.*;
 
 import java.awt.*;
+import java.util.*;
 
 /**
  * The robot which chases after the VIP
@@ -94,7 +95,7 @@ public class KureshyBot extends BaseBot{
         //Calculate the priorityScore and then add to the priorityScore the two factors which require information about
         //the chaser itself or other chasers (which isn't stored in the record)
         for (int i=0; i<this.otherRecords.length; i++) {
-            int turnDistance = this.calculateTurnDistance(super.getDistances(this.otherRecords[i].getPosition()), super.getMOVES_PER_TURN());
+            double turnDistance = this.calculateTurnDistance(super.getDistances(this.otherRecords[i].getPosition()), super.getMOVES_PER_TURN());
             ((ChaserPlayerInfo) this.otherRecords[i]).calculatePriorityScore();
             ((ChaserPlayerInfo) this.otherRecords[i]).addTurnDistAndPressure(calculateChaserPressure(this.otherRecords[i].getPosition()), turnDistance);
         }
@@ -123,11 +124,8 @@ public class KureshyBot extends BaseBot{
      * @param movesPerTurn how many moves the chaser can make per turn
      * @return the amount of turns it would take to reach the target
      */
-    private int calculateTurnDistance(int targetDistance, int movesPerTurn) {
-        int turns = targetDistance/movesPerTurn;
-        if (targetDistance % movesPerTurn != 0){
-            turns++;
-        }
+    private double calculateTurnDistance(int targetDistance, int movesPerTurn) {
+        double turns = (double) targetDistance/movesPerTurn;
 
         return turns;
     }
@@ -176,7 +174,7 @@ public class KureshyBot extends BaseBot{
      * @return the distance to the closest wall
      */
     private int calcDistanceToWall() {
-        int distance = this.targetX; //distance between the left wall and target
+        int distance = this.targetX-1; //distance between the left wall and target
 
         //checks the distance between the right wall and the target and chooses the higher one
         if (this.WIDTH-this.targetX < distance) {
@@ -184,8 +182,8 @@ public class KureshyBot extends BaseBot{
         }
 
         //checks the distance between the top wall and the target
-        if (this.targetY < distance) {
-            distance = this.targetY;
+        if (this.targetY-1 < distance) {
+            distance = this.targetY-1;
         }
 
         //checks the distance between the bottom wall and the target
@@ -193,6 +191,8 @@ public class KureshyBot extends BaseBot{
             distance = this.HEIGHT-this.targetY;
         }
 
+        //for debugging
+        //System.out.format("The distance between Robot %d and the nearest wall is %d\n", this.targetID, distance);
         return distance;
     }
 
@@ -259,65 +259,115 @@ public class KureshyBot extends BaseBot{
             nearestCorner[1] = this.HEIGHT;
         }
 
+        //debug
+        //System.out.format("The nearest corner to Robot %d is %s\n", this.targetID, Arrays.toString(nearestCorner));
         return nearestCorner;
     }
 
     /**
-     * Finds the target position to travel towards to be able to corner the target using movement per turn
-     * @return the buffered target x,y coordinates
+     * Checks the feasability of cornering the target
+     * @param turns the number of turns it would take to get to the target
+     * @return whether to cut off and corner the target or not
      */
-    private int[] findTargetCorner() {
-        int[] goalPos = this.findNearestCorner();
-        int buffer = this.getMOVES_PER_TURN();
+    private boolean checkCutOff(int turns) {
+        //all used for calculating the specific conditions where to cut off is reasonable
+        int distanceToWall = this.calcDistanceToWall();
+        int[] nearestTargetCorner = this.findNearestCorner();
 
-        //gets a buffer position to let me corner the target with chaser's (usually) greater movement
-        if (goalPos[0] == 0) {
-            goalPos[0] = buffer;
+        int horizontalDistanceToCorner = Math.abs(this.targetX - nearestTargetCorner[0]);
+        int verticalDistanceToCorner = Math.abs(this.targetY - nearestTargetCorner[1]);
+        int myHorizontalDistanceToCorner = Math.abs(this.getMyPosition()[0] - nearestTargetCorner[0]);
+        int myVerticalDistanceToCorner = Math.abs(this.getMyPosition()[1] - nearestTargetCorner[1]);
+
+        //check that the target is within 2 turns, that it's distance to the closest wall is less than
+        //my speed-1, and that both the horizontal/vertical distance of the chaser to the nearest corner
+        //is greater than that of the target's
+        if (turns == 2 && distanceToWall <= (this.getMOVES_PER_TURN()-1) &&
+                myHorizontalDistanceToCorner > horizontalDistanceToCorner &&
+                myVerticalDistanceToCorner > verticalDistanceToCorner) {
+            return true;
         } else {
-            goalPos[0] = this.WIDTH-buffer;
+            return false;
         }
-
-        if (goalPos[0] == 0) {
-            goalPos[1] = buffer;
-        } else {
-            goalPos[1] = this.HEIGHT-buffer;
-        }
-
-        return goalPos;
     }
 
     /**
-     * Calculates the best, achievable position to move towards that corners the target
+     * Avoids attacking guards while low on health
+     */
+    private void checkSafety() {
+
+        int targetIndex = super.findRecordByID(this.targetID);
+        int index = 0;
+        //checks if the target is a confirmed guard
+        while (((ChaserPlayerInfo) this.otherRecords[targetIndex]).getRolePrediction() == 1 && this.myRecords.getHP()==1) {
+
+            //set target to the next safest target
+            this.targetID = this.otherRecords[index].getID();
+            this.targetX = this.otherRecords[index].getPosition()[0];
+            this.targetY = this.otherRecords[index].getPosition()[1];
+            targetIndex = super.findRecordByID(this.targetID);
+            index++;
+        }
+    }
+
+    /**
+     * Gets diagonal to the target and then moves diagonally to box them in until they get into the direct range
      * @return the x,y to go to
      */
     private int[] calcCutOffPath() {
         int[] myPos = this.getMyPosition();
-        int[] goalPos = this.findTargetCorner();
         int movesLeft = this.getMOVES_PER_TURN();
 
-        for (int i=0; i<movesLeft; i++) {
+        //used for deciding on where to cutoff
+        int distanceX = this.targetX - myPos[0];
+        int distanceY = this.targetY - myPos[1];
+        int absDistanceX = Math.abs(distanceX);
+        int absDistanceY = Math.abs(distanceY);
+        int horizontalMove = 0;
+        int verticalMove = 0;
 
-            //find the horizontal and vertical distance to the buffered corner position
-            int distanceX = goalPos[0] - myPos[0];
-            int distanceY = goalPos[1] - myPos[1];
+        //check whether to move right or left
+        if (distanceX > 0) {
+            horizontalMove = 1;
+        } else {
+            horizontalMove = -1;
+        }
+        //check whether to move up or down
+        if (distanceY > 0) {
+            verticalMove = 1;
+        } else {
+            verticalMove = -1;
+        }
 
-            //check whether the horizontal gap or vertical gap is bigger
-            if (Math.abs(distanceX) >= Math.abs(distanceY)) {
+        //get diagonal to the target to box them in
+        while (movesLeft>0 && absDistanceX != absDistanceY) {
 
-                //close the gap on the larger distance
-                if (distanceX > 0) {
-                    myPos[0]++;
-                } else if (distanceX < 0) {
-                    myPos[0]--;
-                }
+            //if horizontal gap is bigger,
+            if (absDistanceX > absDistanceY) {
+                myPos[0]++;
+                absDistanceX--;
             } else {
-                //close the gap on the larger distance
-                if (distanceY > 0 ) {
-                    myPos[1]++;
-                } else if (distanceY < 0) {
-                    myPos[1]--;
-                }
+                myPos[1] += verticalMove;
+                absDistanceY--;
             }
+            movesLeft--;
+        }
+
+        System.out.format("Diagonally aligned at %s! Moves left: %d\n", Arrays.toString(myPos), movesLeft);
+        //move diagonally (2 movements at a time) given chaser speed
+        while (movesLeft>=2) {
+
+            //never align on an axis with the target
+            if (myPos[0] + horizontalMove == this.targetX || myPos[1] + verticalMove == this.targetY) {
+                break;
+            }
+
+            myPos[0]+= horizontalMove;
+            myPos[1]+= verticalMove;
+
+            absDistanceX--;
+            absDistanceY--;
+            movesLeft -= 2; //subtract two movements
         }
 
         return myPos;
@@ -331,28 +381,45 @@ public class KureshyBot extends BaseBot{
     }
 
     /**
+     * Used by the application class to see if the robot is attempting a tag
+     * @return whether the robot is attempting a catch or not
+     */
+    public boolean getIsCatching() {
+        return this.isCatching;
+    }
+
+    /**
+     * Used by the application class to get the robot's target
+     * @return the ID of the target
+     */
+    public int getTargetID() {
+        return this.targetID;
+    }
+
+    /**
      * Decides how to go after the designated target: immediate tag if in range, corner the target, or just chase
      */
     private void executeStrat() {
+        this.isCatching = false;
         int targetIndex = super.findRecordByID(this.targetID); //finds the target's record index
-        int turns = ((ChaserPlayerInfo) this.otherRecords[targetIndex]).getTurnDistance(); //gets how many turns away it is
-
-        //used for deciding on whether to chase or cutoff
-        int distanceToWall = this.calcDistanceToWall();
-        int[] nearestTargetCorner = this.findNearestCorner();
-        int targetCornerDistance = this.getDistances(nearestTargetCorner, this.otherRecords[targetIndex].getPosition());
-        int chaserCornerDistance = this.getDistances(nearestTargetCorner);
+        //casts as an int to get how many turns away it is
+        int turns = (int) Math.ceil(((ChaserPlayerInfo) this.otherRecords[targetIndex]).getTurnDistance());
 
         //checks if the target can be caught within this turn
-        if (turns == 1) {
+        if (turns <= 1) {
+            checkSafety();
+            System.out.println("IN RANGE: " + this.targetX + "," + this.targetY);
             super.moveToPos(this.otherRecords[targetIndex].getPosition());
             this.attemptTag();
         //check if the target is close to a wall, the chaser, and closer to the nearest corner than the chaser
-        } else if (turns == 2 && distanceToWall <= (this.getMOVES_PER_TURN()-1) &&
-                    targetCornerDistance<chaserCornerDistance) {
-            super.moveToPos(this.calcCutOffPath());
+        } else if (checkCutOff(turns)) {
+            int[] nextPos = this.calcCutOffPath(); //for debugging statement
+            super.moveToPos(nextPos);
+            System.out.println("CUTTING OFF AT: " + Arrays.toString(nextPos));
         } else { //otherwise just chase in an open area
-            super.moveToPos(this.calcChasePath());
+            int[] nextPos = this.calcChasePath(); //also for debugging statement
+            super.moveToPos(nextPos);
+            System.out.println("CHASING AT" + Arrays.toString(nextPos));
         }
     }
 
@@ -365,9 +432,19 @@ public class KureshyBot extends BaseBot{
         this.targetID = this.otherRecords[0].getID();
         this.targetX = this.otherRecords[0].getPosition()[0];
         this.targetY = this.otherRecords[0].getPosition()[1];
-        System.out.format("My target is %d who has a priority score of %.2f\n", this.targetID, ((ChaserPlayerInfo) this.otherRecords[0]).getPriorityScore());
+        System.out.format("My target is %d who has a priority score of %.2f and is located at %s, which is %d turns away from me " +
+                        "while I am located at %s\n",
+                this.targetID, ((ChaserPlayerInfo) this.otherRecords[0]).getPriorityScore(),
+                Arrays.toString(((ChaserPlayerInfo) this.otherRecords[0]).getPosition()),
+                (int) Math.ceil(((ChaserPlayerInfo) this.otherRecords[0]).getTurnDistance()),
+                Arrays.toString(this.getMyPosition()));
         for (int i=1; i<this.otherRecords.length; i++) {
-            System.out.format("My next target is %d who has a priority score of %.2f\n", this.otherRecords[i].getID(), ((ChaserPlayerInfo) this.otherRecords[i]).getPriorityScore());
+            System.out.format("My target is %d who has a priority score of %.2f and is located at %s, which is %d turns away from me " +
+                            "while I am located at %s\n",
+                    this.otherRecords[i].getID(), ((ChaserPlayerInfo) this.otherRecords[i]).getPriorityScore(),
+                    Arrays.toString(((ChaserPlayerInfo) this.otherRecords[i]).getPosition()),
+                    (int) Math.ceil(((ChaserPlayerInfo) this.otherRecords[i]).getTurnDistance()),
+                    Arrays.toString(this.getMyPosition()));
         }
         System.out.println("==============================================");
         this.executeStrat();
