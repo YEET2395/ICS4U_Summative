@@ -39,7 +39,7 @@ public class App {
      * @param array the array of BaseBots
      * @param records the array of records to update
      */
-    public void updateRecords(BaseBot[] array, PlayerInfo[] records)
+    public static void updateRecords(BaseBot[] array, PlayerInfo[] records)
     {
         for (int i = 0; i < records.length; i++)
         {
@@ -58,7 +58,7 @@ public class App {
         return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
     }
 
-    private static void handleInteractions(BaseBot[] robots, PlayerInfo[] infos, Random rand, App app)
+    private static void handleInteractions(BaseBot[] robots, PlayerInfo[] infos, Random rand)
     {
         for (int i = 0; i < robots.length; i++)
         {
@@ -84,7 +84,7 @@ public class App {
             if (bestTarget != -1)
             {
                 checkDodge(chaser, robots[bestTarget], rand);
-                app.updateRecords(robots, infos);
+                App.updateRecords(robots, infos);
             }
         }
     }
@@ -152,7 +152,7 @@ public class App {
      * @param maxTurns the max number of turns
      * @param turn the current turn
      */
-    public void checkForWinCondition(PlayerInfo[] records, int maxTurns, int turn) {
+    public static void checkForWinCondition(PlayerInfo[] records, int maxTurns, int turn) {
         int numVIPs = 0;
         int numChasers = 0;
         int numVIPsCaught = 0;
@@ -315,6 +315,51 @@ public class App {
             );
             infos[i] = new PlayerInfo(i, 3, 3, dodgeDiff, robots[i].getMyPosition(), false);
         }
+
+        int maxTurns = 50;
+        for (int i = 4; i < 6; i++) {
+            ((KureshyBot) robots[i]).initTargeting(NUM_VIPS + NUM_GUARDS, NUM_CHASERS);
+        }
+
+        for (int turn = 1; turn <= maxTurns && !gameEnded; turn++) {
+
+            App.updateRecords(robots, infos);
+
+            for (BaseBot b : robots) {
+                b.updateOtherRecords(infos);
+            }
+
+            // ========= 1) VIP phase =========
+            for (int i = 0; i < 2; i++) {
+                if (!robots[i].myRecords.getState()) {
+                    robots[i].takeTurn();
+                    App.updateRecords(robots, infos);
+                    handleInteractions(robots, infos, rand);
+                }
+            }
+            App.checkForWinCondition(infos, maxTurns, turn);
+
+            // ========= 2) Chaser phase =========
+            for (int i = 4; i < 6; i++) {
+                if (!robots[i].myRecords.getState()) {
+                    robots[i].takeTurn();
+                    App.updateRecords(robots, infos);
+                    handleInteractions(robots, infos, rand);
+                }
+            }
+            App.checkForWinCondition(infos, maxTurns, turn);
+
+            // ========= 3) Guard phase =========
+            for (int i = 2; i < 4; i++) {
+                if (!robots[i].myRecords.getState()) {
+                    robots[i].takeTurn();
+                    App.updateRecords(robots, infos);
+                    handleInteractions(robots, infos, rand);
+                }
+            }
+            App.checkForWinCondition(infos, maxTurns, turn);
+        }
+
 
     }
 
