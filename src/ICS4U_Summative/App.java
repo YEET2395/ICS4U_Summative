@@ -22,15 +22,18 @@ public class App {
     /**
      * Set up the playground for the robots
      * @author Xinran Li
+     * @param playground the City object to set up
      */
     private static void setupPlayground(City playground)
     {
         playground.setSize(1500, 900);
+        // Build vertical walls
         for(int i = 1; i <= 13; i++)
         {
             new Wall(playground, i, 0, Direction.EAST);
             new Wall(playground, i, 25, Direction.WEST);
         }
+        // Build horizontal walls
         for(int i = 1; i <= 24; i++)
         {
             new Wall(playground, 0, i, Direction.SOUTH);
@@ -54,18 +57,15 @@ public class App {
                     array[i].myRecords.getState()
                     );
 
-            //sets caught players as black for
+            // Sets caught players as black for visualization
             if (array[i].myRecords.getState()) {
                 array[i].setColor(Color.BLACK);
             }
         }
-
-
     }
 
-
     /**
-     * Gets the distance between two points
+     * Gets the Manhattan distance between two points
      * @param a the first point
      * @param b the second point
      * @return the distance between them
@@ -75,16 +75,24 @@ public class App {
         return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
     }
 
+    /**
+     * Handles all chaser-target interactions for the current turn.
+     * @param robots array of all robots
+     * @param infos array of all player info
+     * @param rand random number generator
+     */
     private static void handleInteractions(BaseBot[] robots, PlayerInfo[] infos, Random rand)
     {
         for (int i = 0; i < robots.length; i++)
         {
+            // Skip if this robot is caught or not a chaser
             if (infos[i].getState()) continue;
             if (infos[i].getRole() != 3) continue;
             KureshyBot chaser = (KureshyBot) robots[i];
             int bestTarget = -1;
             int bestDist = 10000000;
 
+            // Find the closest uncaught VIP or Guard
             for (int j = 0; j < robots.length; j++)
             {
                 if (i == j)
@@ -107,6 +115,7 @@ public class App {
                     bestTarget = j;
                 }
             }
+            // If a valid target is found, resolve the dodge/tag interaction
             if (bestTarget != -1)
             {
                 checkDodge(chaser, robots[bestTarget], rand);
@@ -182,28 +191,26 @@ public class App {
         int numVIPsCaught = 0;
         int numChasersCaught = 0;
 
-        //iterate through the records
+        // Iterate through the records to count roles and caught players
         for (int i=0; i<records.length; i++) {
 
-            //check how many VIPs there are
+            // Count VIPs and check if caught
             if (records[i].getRole() == 1) {
                 numVIPs++;
 
-                //check if they are caught
                 if (records[i].getState())
                     numVIPsCaught++;
             }
 
-            //check how many Chasers there are
+            // Count Chasers and check if caught
             if (records[i].getRole() == 3) {
                 numChasers++;
 
-                //check if they are caught
                 if (records[i].getState())
                     numChasersCaught++;
             }
         }
-        //check if all VIPs have been caught
+        // End game if all VIPs or all Chasers are caught, or max turns reached
         if (numVIPsCaught==numVIPs) {
             gameEnded = true;
         }
@@ -215,6 +222,11 @@ public class App {
         }
     }
 
+    /**
+     * Main entry point for the application.
+     * Initializes the playground, robots, and runs the game loop.
+     * @param args command-line arguments (not used)
+     */
     public static void main(String[] args)
     {
         City playground = new City();
@@ -290,11 +302,13 @@ public class App {
         }
 
         int maxTurns = 50;
+        // Initialize chaser bots with player info
         for (int i = 4; i < 6; i++)
         {
             robots[i].initRecords(infos);
         }
 
+        // Main game loop
         for (int turn = 1; turn <= maxTurns && !gameEnded; turn++)
         {
             App.updateRecords(robots, infos);
@@ -347,9 +361,5 @@ public class App {
                 if (gameEnded) break;
             }
         }
-
-
-
     }
-
 }
