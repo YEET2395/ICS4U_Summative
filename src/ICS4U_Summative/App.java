@@ -318,7 +318,7 @@ public class App {
 
         int maxTurns = 50;
         for (int i = 4; i < 6; i++) {
-            ((KureshyBot) robots[i]).initTargeting(NUM_VIPS + NUM_GUARDS, NUM_CHASERS);
+            ((KureshyBot) robots[i]).initRecords(infos);
         }
 
         for (int turn = 1; turn <= maxTurns && !gameEnded; turn++) {
