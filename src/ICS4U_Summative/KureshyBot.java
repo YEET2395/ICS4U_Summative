@@ -400,13 +400,14 @@ public class KureshyBot extends BaseBot{
      */
     private void executeStrat() {
         this.isCatching = false;
-        int targetIndex = super.findRecordByID(this.targetID); //finds the target's record index
+        //avoids attacking confirmed guards ONLY when low on health, goes to the next best option
+        int targetIndex = checkSafety();
+
         //casts as an int to get how many turns away it is
         int turns = (int) Math.ceil(((ChaserPlayerInfo) this.otherRecords[targetIndex]).getTurnDistance());
 
         //checks if the target can be caught within this turn
         if (turns <= 1) {
-            targetIndex = checkSafety();
             System.out.println("IN RANGE: " + this.targetX + "," + this.targetY);
             super.moveToPos(this.otherRecords[targetIndex].getPosition());
             this.attemptTag();
