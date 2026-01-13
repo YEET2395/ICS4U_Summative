@@ -1,6 +1,7 @@
 package ICS4U_Summative;
 import becker.robots.*;
 
+import java.awt.*;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -49,10 +50,23 @@ public class App {
                     array[i].getMyPosition(),
                     array[i].myRecords.getState()
                     );
+
+            //sets caught players as black for
+            if (array[i].myRecords.getState()) {
+                array[i].setColor(Color.BLACK);
+            }
         }
+
+
     }
 
 
+    /**
+     * Gets the distance between two points
+     * @param a the first point
+     * @param b the second point
+     * @return the distance between them
+     */
     private static int manhattan(int[] a, int[] b)
     {
         return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
@@ -87,7 +101,7 @@ public class App {
                 if (d <= 1 && d < bestDist)
                 {
                     bestDist = d;
-                    bestTarget = chaser.getTargetID();
+                    bestTarget = j;
                 }
             }
             if (bestTarget != -1)
