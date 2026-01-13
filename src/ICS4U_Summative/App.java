@@ -66,13 +66,22 @@ public class App {
             if (infos[i].getRole() != 3) continue;
             KureshyBot chaser = (KureshyBot) robots[i];
             int bestTarget = -1;
-            int bestDist = Integer.MAX_VALUE;
+            int bestDist = 10000000;
 
             for (int j = 0; j < robots.length; j++)
             {
-                if (i == j) continue;
-                if (infos[j].getState()) continue;
-                if (infos[j].getRole() == 3) continue;
+                if (i == j)
+                {
+                    continue;
+                }
+                if (infos[j].getState())
+                {
+                    continue;
+                }
+                if (infos[j].getRole() == 3)
+                {
+                    continue;
+                }
 
                 int d = manhattan(infos[i].getPosition(), infos[j].getPosition());
                 if (d <= 1 && d < bestDist)
@@ -88,8 +97,6 @@ public class App {
             }
         }
     }
-
-
 
     /**
      * Performs a single "dodge vs. tag" interaction between a Chaser and a target robot.
@@ -145,7 +152,6 @@ public class App {
         }
     }
 
-
     /**
      * Checks if either the VIPs/Guards or Chasers has reached their win conditions
      * @param records the application records
@@ -178,69 +184,18 @@ public class App {
                 if (records[i].getState())
                     numChasersCaught++;
             }
-
         }
-
         //check if all VIPs have been caught
         if (numVIPsCaught==numVIPs) {
             gameEnded = true;
         }
-
         if (numChasersCaught==numChasers) {
             gameEnded = true;
         }
-
         if (turn >= maxTurns) {
             gameEnded = true;
         }
     }
-
-    /**
-     * Randomly generates a number and compares it to the chaser and target's dodging capability
-     * before applying damage and sending the results to the chaser
-//     * @param chaser the chaser initiating the catch
-//     * @param target the target of the chaser
-//     * @param r the Random object
-//     */
-//    public static void checkDodge(KureshyBot chaser, BaseBot target, Random r) {
-//        int diff = r.nextInt(101);
-//
-//        //check which robots dodged and which didn't
-//        if (chaser.getMyDodgeDifficulty() >= diff && target.getMyDodgeDifficulty() >= diff) {
-//            chaser.sendTagResult(target.getMyID(), false);
-//            //means both dodged
-//        } else if (chaser.getMyDodgeDifficulty() >= diff && target.getMyDodgeDifficulty() < diff) {
-//            chaser.sendTagResult(target.getMyID(), true);
-//            target.takeDamage(1);
-//            //means chaser dodged but target didn't
-//        } else {
-//            chaser.sendTagResult(target.getMyID(), true);
-//            chaser.takeDamage(1);
-//            target.takeDamage(1);
-//            //means both didn't dodge
-//        }
-//
-//    }
-
-//    public static void sendInfo(PlayerInfo[] records, BaseBot[] array, int turn) {
-//        //iterate through the robots
-//        for (int i=0; i<array.length; i++) {
-//            int role = array[i].myRecords.getRole();
-//            if (role == 1) { //for VIPs
-//                ((XiongBot) array[i]).setChaserPositions(getPosOfRole(records, NUM_CHASERS, 3));
-//            } else if (role == 2) { //for Guards
-//                ((LiBot) array[i]).sendVIPPosition(getPosOfRole(records, NUM_VIPS, 1));
-//                ((LiBot) array[i]).sendChaserPosition(getPosOfRole(records, NUM_CHASERS, 3));
-//            } else { //for Chasers
-//                if (turn==1) {
-//                    ((KureshyBot) array[i]).initTargeting(NUM_VIPS+NUM_GUARDS, NUM_CHASERS);
-//                }
-//                ((KureshyBot) array[i]).sendBotsPos(getPosOfRole(records, 4, 4));
-//                ((KureshyBot) array[i]).sendChasersPos(getPosOfRole(records, NUM_CHASERS, 3));
-//                ((KureshyBot) array[i]).sendStates(getStates(records, NUM_VIPS+NUM_GUARDS+NUM_CHASERS));
-//            }
-//        }
-//    }
 
     public static void main(String[] args)
     {
@@ -327,7 +282,8 @@ public class App {
 
             App.updateRecords(robots, infos);
 
-            for (BaseBot b : robots) {
+            for (BaseBot b : robots)
+            {
                 b.updateOtherRecords(infos);
             }
 
