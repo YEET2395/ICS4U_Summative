@@ -205,12 +205,15 @@ public class App {
         //check if all VIPs have been caught
         if (numVIPsCaught==numVIPs) {
             gameEnded = true;
+            System.out.println("CHASERS WIN!");
         }
         if (numChasersCaught==numChasers) {
             gameEnded = true;
+            System.out.println("VIP AND GUARDS WIN!");
         }
         if (turn >= maxTurns) {
             gameEnded = true;
+            System.out.println("IT'S A TIE!");
         }
     }
 
@@ -315,6 +318,7 @@ public class App {
                 // ----- VIP move -----
                 if (!robots[vipIndex].myRecords.getState())
                 {
+                    robots[vipIndex].updateOtherRecords(infos);
                     robots[vipIndex].takeTurn();
                     App.updateRecords(robots, infos);
                     handleInteractions(robots, infos, rand);
@@ -325,6 +329,7 @@ public class App {
                 // ----- Guard move -----
                 if (!robots[guardIndex].myRecords.getState())
                 {
+                    robots[guardIndex].updateOtherRecords(infos);
                     robots[guardIndex].takeTurn();
                     App.updateRecords(robots, infos);
                     handleInteractions(robots, infos, rand);
@@ -335,6 +340,7 @@ public class App {
                 // ----- Chaser move -----
                 if (!robots[chaserIndex].myRecords.getState())
                 {
+                    robots[chaserIndex].updateOtherRecords(infos);
                     robots[chaserIndex].takeTurn();
                     App.updateRecords(robots, infos);
                     handleInteractions(robots, infos, rand);

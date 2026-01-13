@@ -343,7 +343,7 @@ public class KureshyBot extends BaseBot{
 
             //if horizontal gap is bigger,
             if (absDistanceX > absDistanceY) {
-                myPos[0]++;
+                myPos[0] += horizontalMove;
                 absDistanceX--;
             } else {
                 myPos[1] += verticalMove;
