@@ -205,15 +205,12 @@ public class App {
         //check if all VIPs have been caught
         if (numVIPsCaught==numVIPs) {
             gameEnded = true;
-            System.out.println("CHASERS WIN!");
         }
         if (numChasersCaught==numChasers) {
             gameEnded = true;
-            System.out.println("VIP AND GUARDS WIN!");
         }
         if (turn >= maxTurns) {
             gameEnded = true;
-            System.out.println("IT'S A TIE!");
         }
     }
 
@@ -311,16 +308,16 @@ public class App {
             // VIP0 -> Guard0 -> Chaser0 -> VIP1 -> Guard1 -> Chaser1
             for (int k = 0; k < 2; k++)
             {
-                int vipIndex = k;       // VIPs are robots[0], robots[1]
+                int vipIndex = k; // VIPs are robots[0], robots[1]
                 int guardIndex = 2 + k; // Guards are robots[2], robots[3]
-                int chaserIndex = 4 + k;// Chasers are robots[4], robots[5]
+                int chaserIndex = 4 + k; // Chasers are robots[4], robots[5]
 
                 // ----- VIP move -----
                 if (!robots[vipIndex].myRecords.getState())
                 {
                     robots[vipIndex].updateOtherRecords(infos);
-                    robots[vipIndex].takeTurn();
                     App.updateRecords(robots, infos);
+                    robots[vipIndex].takeTurn();
                     handleInteractions(robots, infos, rand);
                 }
                 App.checkForWinCondition(infos, maxTurns, turn);
@@ -329,9 +326,9 @@ public class App {
                 // ----- Guard move -----
                 if (!robots[guardIndex].myRecords.getState())
                 {
+                    App.updateRecords(robots, infos);
                     robots[guardIndex].updateOtherRecords(infos);
                     robots[guardIndex].takeTurn();
-                    App.updateRecords(robots, infos);
                     handleInteractions(robots, infos, rand);
                 }
                 App.checkForWinCondition(infos, maxTurns, turn);
@@ -340,9 +337,9 @@ public class App {
                 // ----- Chaser move -----
                 if (!robots[chaserIndex].myRecords.getState())
                 {
+                    App.updateRecords(robots, infos);
                     robots[chaserIndex].updateOtherRecords(infos);
                     robots[chaserIndex].takeTurn();
-                    App.updateRecords(robots, infos);
                     handleInteractions(robots, infos, rand);
                 }
                 App.checkForWinCondition(infos, maxTurns, turn);
