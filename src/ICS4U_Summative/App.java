@@ -317,11 +317,13 @@ public class App {
         }
 
         int maxTurns = 50;
-        for (int i = 4; i < 6; i++) {
+        for (int i = 4; i < 6; i++)
+        {
             ((KureshyBot) robots[i]).initRecords(infos);
         }
 
-        for (int turn = 1; turn <= maxTurns && !gameEnded; turn++) {
+        for (int turn = 1; turn <= maxTurns && !gameEnded; turn++)
+        {
 
             App.updateRecords(robots, infos);
 
@@ -331,7 +333,8 @@ public class App {
 
             // ========= 1) VIP phase =========
             for (int i = 0; i < 2; i++) {
-                if (!robots[i].myRecords.getState()) {
+                if (!robots[i].myRecords.getState())
+                {
                     robots[i].takeTurn();
                     App.updateRecords(robots, infos);
                     handleInteractions(robots, infos, rand);
@@ -341,7 +344,8 @@ public class App {
 
             // ========= 2) Chaser phase =========
             for (int i = 4; i < 6; i++) {
-                if (!robots[i].myRecords.getState()) {
+                if (!robots[i].myRecords.getState())
+                {
                     robots[i].takeTurn();
                     App.updateRecords(robots, infos);
                     handleInteractions(robots, infos, rand);
@@ -351,7 +355,8 @@ public class App {
 
             // ========= 3) Guard phase =========
             for (int i = 2; i < 4; i++) {
-                if (!robots[i].myRecords.getState()) {
+                if (!robots[i].myRecords.getState())
+                {
                     robots[i].takeTurn();
                     App.updateRecords(robots, infos);
                     handleInteractions(robots, infos, rand);
