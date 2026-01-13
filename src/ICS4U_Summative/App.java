@@ -39,51 +39,112 @@ public class App {
      * @param array the array of BaseBots
      * @param records the array of records to update
      */
-    public void updateRecords(BaseBot[] array, PlayerInfo[] records) {
-        for (int i=0; i<records.length; i++) {
-            // Use getter method to retrieve info from BaseBot's PlayerInfo
-            records[i].updateRecords(
-                array[i].myRecords.getHP(),
-                array[i].myRecords.getPosition(),
-                array[i].myRecords.getState()
-            );
+    public void updateRecords(BaseBot[] array, PlayerInfo[] records)
+    {
+        for (int i = 0; i < records.length; i++)
+        {
+            records[i].updateRecords
+                    (
+                    array[i].myRecords.getHP(),
+                    array[i].getMyPosition(),
+                    array[i].myRecords.getState()
+                    );
         }
     }
 
+
+    private static int manhattan(int[] a, int[] b)
+    {
+        return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
+    }
+
+    private static void handleInteractions(BaseBot[] robots, PlayerInfo[] infos, Random rand, App app)
+    {
+        for (int i = 0; i < robots.length; i++)
+        {
+            if (infos[i].getState()) continue;
+            if (infos[i].getRole() != 3) continue;
+            KureshyBot chaser = (KureshyBot) robots[i];
+            int bestTarget = -1;
+            int bestDist = Integer.MAX_VALUE;
+
+            for (int j = 0; j < robots.length; j++)
+            {
+                if (i == j) continue;
+                if (infos[j].getState()) continue;
+                if (infos[j].getRole() == 3) continue;
+
+                int d = manhattan(infos[i].getPosition(), infos[j].getPosition());
+                if (d <= 1 && d < bestDist)
+                {
+                    bestDist = d;
+                    bestTarget = j;
+                }
+            }
+            if (bestTarget != -1)
+            {
+                checkDodge(chaser, robots[bestTarget], rand);
+                app.updateRecords(robots, infos);
+            }
+        }
+    }
+
+
+
     /**
-     * Randomly generates a number and compares it to the chaser and target's dodging capability
-     * before applying damage and sending the results to the chaser
-     * @param chaser the chaser initiating the catch
-     * @param target the target of the chaser
-     * @param r the Random object
+     * Performs a single "dodge vs. tag" interaction between a Chaser and a target robot.
+     * A random roll in the range [0.0, 1.0) is generated. Each participant "dodges" if their
+     * dodge difficulty is greater than or equal to the roll. Based on the outcomes, this
+     * method applies damage and notifies the chaser of the tag result.
+     * @param chaser initiating the tag attempt
+     * @param target being targeted (VIP or Guard)
+     * @param r  instance used to generate the roll
      */
     public static void checkDodge(KureshyBot chaser, BaseBot target, Random r) {
+        // Generate a random roll in [0.0, 1.0)
         double diff = r.nextDouble();
-        System.out.format("Chaser: %s -- Target %d: %s -- Difficulty: %.2f\n",
-                Arrays.toString(chaser.myRecords.getPosition()),
-                target.myRecords.getID(),
-                Arrays.toString(target.myRecords.getPosition()),
-                diff);
 
-        //check which robots dodged and which didn't
-        if (chaser.myRecords.getDodgeDifficulty() >= diff && target.myRecords.getDodgeDifficulty() >= diff) {
+        // Read dodge capabilities (expected range: 0.0 to 1.0)
+        double c = chaser.myRecords.getDodgeDifficulty();
+        double t = target.myRecords.getDodgeDifficulty();
+
+        // Debug output: positions and roll value
+        System.out.format(
+                "Chaser: %s -- Target %d: %s -- Roll: %.2f\n",
+                Arrays.toString(chaser.getMyPosition()),
+                target.myRecords.getID(),
+                Arrays.toString(target.getMyPosition()),
+                diff
+        );
+
+        // Determine dodge results for both participants
+        boolean chaserDodged = (c >= diff);
+        boolean targetDodged = (t >= diff);
+
+        // Apply outcome rules and notify the chaser of the tag attempt result
+        if (chaserDodged && targetDodged) {
+            // Both dodged: no one takes damage; tag attempt fails
             chaser.sendTagResult(target.myRecords.getID(), false);
             System.out.println("BOTH DODGED");
-            //means both dodged
-        } else if (chaser.myRecords.getDodgeDifficulty() >= diff && target.myRecords.getDodgeDifficulty() < diff) {
+        } else if (chaserDodged && !targetDodged) {
+            // Chaser dodged but target failed: target takes damage; tag attempt succeeds
             chaser.sendTagResult(target.myRecords.getID(), true);
             target.takeDamage(1);
-            System.out.println("CHASER DODGED");
-
-            //means chaser dodged but target didn't
+            System.out.println("CHASER DODGED, TARGET HIT");
+        } else if (!chaserDodged && targetDodged) {
+            // Target dodged but chaser failed: chaser takes damage; tag attempt fails
+            chaser.sendTagResult(target.myRecords.getID(), false);
+            chaser.takeDamage(1);
+            System.out.println("TARGET DODGED, CHASER HIT");
         } else {
+            // Neither dodged: both take damage; tag attempt succeeds
             chaser.sendTagResult(target.myRecords.getID(), true);
             chaser.takeDamage(1);
             target.takeDamage(1);
-            System.out.println("NONE DODGED");
-            //means both didn't dodge
+            System.out.println("NONE DODGED, BOTH HIT");
         }
     }
+
 
     /**
      * Checks if either the VIPs/Guards or Chasers has reached their win conditions
