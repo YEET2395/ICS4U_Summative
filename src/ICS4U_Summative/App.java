@@ -90,7 +90,7 @@ public class App {
                 if (d <= 1 && d < bestDist)
                 {
                     bestDist = d;
-                    bestTarget = chaser.getTargetID();
+                    bestTarget = j;
                 }
             }
             if (bestTarget != -1)
