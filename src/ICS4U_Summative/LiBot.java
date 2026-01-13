@@ -260,10 +260,12 @@ public class LiBot extends BaseBot {
         int[] targetPos = threatChaser.getPosition();
         int moves = getMOVES_PER_TURN();
 
-        for (int step = 0; step < moves; step++) {
+        for (int step = 0; step < moves; step++)
+        {
             int[] myPos = getMyPosition();
 
-            if (distance(myPos, targetPos) <= 1) {
+            if (distance(myPos, targetPos) <= 1)
+            {
                 break;
             }
             if (!moveTowardPos(targetPos)) break;

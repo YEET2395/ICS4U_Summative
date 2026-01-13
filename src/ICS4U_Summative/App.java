@@ -10,6 +10,9 @@ import java.util.Random;
  * @version 2025 12 30
  */
 public class App {
+    private static final int ROLE_VIP = 1;
+    private static final int ROLE_GUARD = 2;
+    private static final int ROLE_CHASER = 3;
     private static boolean gameEnded = false;
     private static final int NUM_VIPS = 2;
     private static final int NUM_GUARDS = 2;
@@ -221,7 +224,7 @@ public class App {
                     col,
                     Direction.SOUTH, // str, ave, dir
                     i, // id
-                    1, // role
+                    ROLE_VIP, // role
                     2, // hp
                     movesPerTurn,
                     dodgeDiff
@@ -242,7 +245,7 @@ public class App {
                     col,
                     Direction.NORTH, // str, ave, dir
                     i, // id
-                    2, // role
+                    ROLE_GUARD, // role
                     5, // hp
                     movesPerTurn,
                     dodgeDiff
@@ -263,7 +266,7 @@ public class App {
                     col,
                     Direction.NORTH, // str, ave, dir
                     i, // id
-                    3, // role
+                    ROLE_CHASER, // role
                     3, // hp
                     movesPerTurn,
                     dodgeDiff
