@@ -439,9 +439,9 @@ public class KureshyBotTest {
         infos[5] = new PlayerInfo(6, 3, 3, chDodgeDiff2, chPos2, false);
         */
 
-        /* Test Case #4
-        Chaser will automatically avoid confirmed guards (confirms using speedObs or the number of catches)
-        if low on health
+        /* Test Case #5
+        //Chaser will automatically avoid confirmed guards (in this case confirmed using number of catches)
+        //if low on health (set to 1), even if they have the best priorityScore
         // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
         for (int i=0; i<4; i++) {
             int movesPerTurn = rand.nextInt(3) + 1;
@@ -465,9 +465,9 @@ public class KureshyBotTest {
 
         //GUARD
         int movesPerTurn = rand.nextInt(3) + 2;
-        double dodgeDiff = 0.45 + rand.nextDouble() * 0.1;
-        int row = 13;
-        int col = 12;
+        double dodgeDiff = 0.01;
+        int row = 4;
+        int col = 18;
         int[] pos = {col, row};
         robots[4] = new LiBot(
                 playground,
@@ -484,6 +484,68 @@ public class KureshyBotTest {
 
         // Chasers: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
         int chMovesPerTurn = rand.nextInt(3) + 3;
+        double chDodgeDiff = 0.99;
+        int chRow = 4;
+        int chCol = 16;
+        int[] chPos = {chCol, chRow};
+        robots[5] = new KureshyBot(
+                    playground,
+                    chRow,
+                    chCol,
+                    Direction.NORTH, // str, ave, dir
+                    6, // id
+                    3, // role
+                    1, // hp
+                    chMovesPerTurn,
+                    chDodgeDiff
+            );
+        infos[5] = new PlayerInfo(6, 3, 3, chDodgeDiff, chPos, false);
+        */
+
+        /*Test Case #6
+        //Chaser can calculate the speed of targets and use that to deprioritize them if is  matches a guard's
+        // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
+        for (int i=0; i<4; i++) {
+            int movesPerTurn = rand.nextInt(3) + 1;
+            double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
+            int row = 4;
+            int col = 8;
+            int[] pos = {col, row};
+            robots[i] = new XiongBot(
+                    playground,
+                    row,
+                    col,
+                    Direction.SOUTH, // str, ave, dir
+                    i+1, // id
+                    1, // role
+                    2, // hp
+                    movesPerTurn,
+                    dodgeDiff
+            );
+            infos[i] = new PlayerInfo(i+1, 1, 2, dodgeDiff, pos, false);
+        }
+
+        //ACTUAL TEST VIP
+        int movesPerTurn = rand.nextInt(3)+1;
+        double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
+        int row = 4;
+        int col = 16;
+        int[] pos = {col, row};
+        robots[4] = new XiongBot(
+                playground,
+                row,
+                col,
+                Direction.SOUTH, // str, ave, dir
+                5, // id
+                1, // role
+                2, // hp
+                movesPerTurn,
+                dodgeDiff
+        );
+        infos[4] = new PlayerInfo(5, 1, 2, dodgeDiff, pos, false);
+
+        // Chasers: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
+        int chMovesPerTurn = rand.nextInt(3) + 3;
         double chDodgeDiff = 0.7 + rand.nextDouble() * 0.2;
         int chRow = 4;
         int chCol = 12;
@@ -495,7 +557,7 @@ public class KureshyBotTest {
                     Direction.NORTH, // str, ave, dir
                     6, // id
                     3, // role
-                    1, // hp
+                    3, // hp
                     chMovesPerTurn,
                     chDodgeDiff
             );
@@ -516,13 +578,24 @@ public class KureshyBotTest {
                 System.out.format(" TURN: %d Robot: %d \n", turns, robots[i].myRecords.getID());
                 robots[i].updateOtherRecords(infos);
 
+                //for Test Case 6
+                //if (!robots[i].myRecords.getState() && robots[i].myRecords.getID() == 5) {
+                //    int[] newPos = {14,6};
+                //    robots[i].moveToPos(newPos);
+                //}
+
                 if (!robots[i].myRecords.getState() && robots[i].myRecords.getRole()==3) {
                     //second condition for testing purposes
 
                     //for Test Case 3
                     //checkDodge((KureshyBot) robots[i], robots[i-1], rand);
 
+                    //for Test Case 5
+                    //checkDodge((KureshyBot) robots[i], robots[i-1], rand);
+                    //checkDodge((KureshyBot) robots[i], robots[i-1], rand);
+
                     robots[i].takeTurn();
+
                 }
                 checkForTags(robots, rand);
 
