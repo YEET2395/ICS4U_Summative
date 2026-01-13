@@ -87,7 +87,7 @@ public class App {
                 }
 
                 int d = manhattan(infos[i].getPosition(), infos[j].getPosition());
-                if (d <= 1 && d < bestDist)
+                if (d < 1 && d < bestDist)
                 {
                     bestDist = d;
                     bestTarget = j;
