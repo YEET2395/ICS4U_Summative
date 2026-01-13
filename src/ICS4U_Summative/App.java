@@ -134,7 +134,8 @@ public class App {
 
         // Debug output: positions and roll value
         System.out.format(
-                "Chaser: %s -- Target %d: %s -- Roll: %.2f\n",
+                "Chaser %d: %s -- Target %d: %s -- Roll: %.2f\n",
+                chaser.myRecords.getID(),
                 Arrays.toString(chaser.getMyPosition()),
                 target.myRecords.getID(),
                 Arrays.toString(target.getMyPosition()),
@@ -317,8 +318,8 @@ public class App {
                 {
                     robots[vipIndex].updateOtherRecords(infos);
                     robots[vipIndex].takeTurn();
-                    handleInteractions(robots, infos, rand);
                     App.updateRecords(robots, infos);
+                    handleInteractions(robots, infos, rand);
                 }
                 App.checkForWinCondition(infos, maxTurns, turn);
                 if (gameEnded) break;
@@ -328,8 +329,8 @@ public class App {
                 {
                     robots[guardIndex].updateOtherRecords(infos);
                     robots[guardIndex].takeTurn();
-                    handleInteractions(robots, infos, rand);
                     App.updateRecords(robots, infos);
+                    handleInteractions(robots, infos, rand);
                 }
                 App.checkForWinCondition(infos, maxTurns, turn);
                 if (gameEnded) break;
@@ -339,8 +340,8 @@ public class App {
                 {
                     robots[chaserIndex].updateOtherRecords(infos);
                     robots[chaserIndex].takeTurn();
-                    handleInteractions(robots, infos, rand);
                     App.updateRecords(robots, infos);
+                    handleInteractions(robots, infos, rand);
                 }
                 App.checkForWinCondition(infos, maxTurns, turn);
                 if (gameEnded) break;
