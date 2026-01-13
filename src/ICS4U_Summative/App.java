@@ -78,7 +78,7 @@ public class App {
                 if (d <= 1 && d < bestDist)
                 {
                     bestDist = d;
-                    bestTarget = j;
+                    bestTarget = chaser.getTargetID();
                 }
             }
             if (bestTarget != -1)
@@ -319,7 +319,7 @@ public class App {
         int maxTurns = 50;
         for (int i = 4; i < 6; i++)
         {
-            ((KureshyBot) robots[i]).initRecords(infos);
+            robots[i].initRecords(infos);
         }
 
         for (int turn = 1; turn <= maxTurns && !gameEnded; turn++)

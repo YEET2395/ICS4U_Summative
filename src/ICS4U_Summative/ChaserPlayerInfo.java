@@ -8,19 +8,19 @@ public class ChaserPlayerInfo extends PlayerInfo {
     private int speedObs = 1;
     private int numDodges = 0;
     private int numCatches = 0;
-    private final double DELTA = 0.15;
+    static final double DELTA = 0.15;
     private double rolePrediction = 0;
     private double priorityScore = 0;
-    private final double TURN_DIST_WEIGHT = 1;
-    private final double DODGE_EST_WEIGHT = 0.5;
-    private final double HP_EST_WEIGHT = 0.5;
-    private final double MAX_HP = 5.0;
-    private final double PRESSURE_WEIGHT = 0.3;
-    private final double ROLE_PREDICTION_WEIGHT = 0.3;
-    private final int MAX_VIP_SPEED = 3;
-    private final int MAX_GUARD_SPEED = 4;
-    private final int VIP_HP = 2;
-    private final int CHASER_ROLE = 3;
+    static final double TURN_DIST_WEIGHT = 1;
+    static final double DODGE_EST_WEIGHT = 0.5;
+    static final double HP_EST_WEIGHT = 0.5;
+    static final double MAX_HP = 5.0;
+    static final double PRESSURE_WEIGHT = 0.3;
+    static final double ROLE_PREDICTION_WEIGHT = 0.3;
+    static final int MAX_VIP_SPEED = 3;
+    static final int MAX_GUARD_SPEED = 4;
+    static final int VIP_HP = 2;
+    static final int CHASER_ROLE = 3;
 
 
 
@@ -64,9 +64,10 @@ public class ChaserPlayerInfo extends PlayerInfo {
      * @param turnDist the amount of turns it would take the chaser to get to the robot
      */
     public void addTurnDistAndPressure(double pressureScore, double turnDist) {
-        this.priorityScore += (this.PRESSURE_WEIGHT * pressureScore);
-        this.priorityScore += (this.TURN_DIST_WEIGHT * turnDist);
-        this.turnDistance = turnDist; //for deciding the strategy
+        this.priorityScore += (PRESSURE_WEIGHT * pressureScore);
+        this.priorityScore += (TURN_DIST_WEIGHT * turnDist);
+        this.turnDistance = turnDist;
+        System.out.format("PRESSURE: %.2f -- TURN DISTANCE: %.2f\n", pressureScore, turnDist);
     }
 
     /**
@@ -93,6 +94,10 @@ public class ChaserPlayerInfo extends PlayerInfo {
         return this.hpEst;
     }
 
+    /**
+     * Gets the estimated role of the robot
+     * @return A value between -1-1 where lower is more likely to be a VIP
+     */
     public double getRolePrediction() {
         return this.rolePrediction;
     }
@@ -116,35 +121,38 @@ public class ChaserPlayerInfo extends PlayerInfo {
 
         //calculate a priority score where a lower value is more likely to be a VIP
         this.priorityScore =
-                        (this.DODGE_EST_WEIGHT * this.getDodgeEst()) +
-                        (this.HP_EST_WEIGHT * (this.getHPEst()/this.MAX_HP)) +
-                        (this.ROLE_PREDICTION_WEIGHT * this.rolePrediction);
+                        (DODGE_EST_WEIGHT * this.getDodgeEst()) +
+                        (HP_EST_WEIGHT * (this.getHPEst()/MAX_HP)) +
+                        (ROLE_PREDICTION_WEIGHT * this.rolePrediction);
 
         //for debugging
-        System.out.format("ID: %d -- DODGE: %.3f -- HP: %.3f -- ROLE: %.2f\n", this.getID(),
-                        (this.DODGE_EST_WEIGHT * this.getDodgeEst()),
-                        (this.HP_EST_WEIGHT * (this.getHPEst()/this.MAX_HP)),
-                        (this.ROLE_PREDICTION_WEIGHT * this.rolePrediction));
+        System.out.format("ID: %d -- DODGE: %.3f -- HP: %.3f -- ROLE: %.2f -- ", this.getID(),
+                        (DODGE_EST_WEIGHT * this.getDodgeEst()),
+                        (HP_EST_WEIGHT * (this.getHPEst()/MAX_HP)),
+                        (ROLE_PREDICTION_WEIGHT * this.rolePrediction));
         //System.out.format("The robot %d has a priority score of %.2f\n", targetIndex[i], priorityScore[i]);
 
         //Completely deprioritize those already caught, or other chasers
-        if (this.getState() || this.getRole() == this.CHASER_ROLE) {
+        if (this.getState() || this.getRole() == CHASER_ROLE) {
             this.priorityScore = 1000;
         }
     }
 
     /**
-     * Predicts the role based on observed movement and how many times it's been caught (by the chaser using these records)
+     * Predicts the role based on observed movement and how many times it's been caught
+     * (by the chaser using these records)
      */
     private void calculateRolePrediction() {
 
         //updates the maximum observed speed of the robot
         this.calculateMaxSpeed();
 
-        if (this.speedObs > this.MAX_VIP_SPEED || this.numCatches >= this.VIP_HP) { //confirmed as a guard
-            this.rolePrediction = 1.0; //deprioritize
+        //checks speed and successful catches for confirmed guard
+        if (this.speedObs > MAX_VIP_SPEED || (this.numCatches >= VIP_HP && !this.getState())) {
+            this.rolePrediction = 1.0;
+            //deprioritize, will only go after it if chaser has enough health and other targets are further
         } else {
-            this.rolePrediction =  -(1.0 - ((double) this.speedObs/this.MAX_GUARD_SPEED));
+            this.rolePrediction =  -(1.0 - ((double) this.speedObs/MAX_GUARD_SPEED));
         }
     }
 
@@ -160,6 +168,8 @@ public class ChaserPlayerInfo extends PlayerInfo {
         if (((double) newMove) > this.speedObs) {
             this.speedObs =  newMove;
         }
+
+        System.out.println("Moved " + this.speedObs + " blocks!"); //debug
     }
 
     /**
@@ -169,7 +179,7 @@ public class ChaserPlayerInfo extends PlayerInfo {
     public void takeDamage(boolean isSuccess) {
 
         //decide how much to increase the dodge estimation (slowly decreases the amount over many attempts)
-        double delta = this.DELTA / (1+numCatches+numDodges);
+        double delta = DELTA / (1+numCatches+numDodges);
 
         //decrease stats
         if (isSuccess) {

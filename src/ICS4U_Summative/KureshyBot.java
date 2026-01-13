@@ -125,16 +125,15 @@ public class KureshyBot extends BaseBot{
      * @return the amount of turns it would take to reach the target
      */
     private double calculateTurnDistance(int targetDistance, int movesPerTurn) {
-        double turns = (double) targetDistance/movesPerTurn;
-
-        return turns;
+        return (double) targetDistance/movesPerTurn;
     }
 
     /**
-     * Gets the amount of chasers nearby (including itself) to a possible target and delivers a value between 0-1
+     * Gets the amount of chasers nearby to a possible target and delivers a value between 0-1
      * on how much "pressure" the target is under
      * @param targetPos the location of the target
      * @return a pressure value between 0-1 that tells how much pressure the target is under
+     * (higher means more chasers)
      */
     private double calculateChaserPressure(int[] targetPos) {
         int nearbyChasers = 0;
@@ -170,30 +169,26 @@ public class KureshyBot extends BaseBot{
     }
 
     /**
-     * Calculates the distance between the target and the nearest wall
-     * @return the distance to the closest wall
+     * Avoids attacking guards while low on health
+     * @return the location of the target's record in the record array
      */
-    private int calcDistanceToWall() {
-        int distance = this.targetX-1; //distance between the left wall and target
+    private int checkSafety() {
 
-        //checks the distance between the right wall and the target and chooses the higher one
-        if (this.WIDTH-this.targetX < distance) {
-            distance = this.WIDTH - this.targetX;
+        int targetIndex = super.findRecordByID(this.targetID);
+        int index = 0;
+        //checks if the target is a confirmed guard
+        while (((ChaserPlayerInfo) this.otherRecords[targetIndex]).getRolePrediction() == 1 && this.myRecords.getHP()==1) {
+            System.out.format("Avoiding robot %d since they're a Guard and I'm low \n", this.targetID); //debug
+            index++;
+            //set target to the next safest target
+            this.targetID = this.otherRecords[index].getID();
+            this.targetX = this.otherRecords[index].getPosition()[0];
+            this.targetY = this.otherRecords[index].getPosition()[1];
+            targetIndex = super.findRecordByID(this.targetID);
+            System.out.format("My new target is robot %d\n", this.targetID);
         }
 
-        //checks the distance between the top wall and the target
-        if (this.targetY-1 < distance) {
-            distance = this.targetY-1;
-        }
-
-        //checks the distance between the bottom wall and the target
-        if (this.HEIGHT-this.targetY < distance) {
-            distance = this.HEIGHT-this.targetY;
-        }
-
-        //for debugging
-        //System.out.format("The distance between Robot %d and the nearest wall is %d\n", this.targetID, distance);
-        return distance;
+        return targetIndex;
     }
 
     /**
@@ -265,6 +260,33 @@ public class KureshyBot extends BaseBot{
     }
 
     /**
+     * Calculates the distance between the target and the nearest wall
+     * @return the distance to the closest wall
+     */
+    private int calcDistanceToWall() {
+        int distance = this.targetX-1; //distance between the left wall and target
+
+        //checks the distance between the right wall and the target and chooses the higher one
+        if (this.WIDTH-this.targetX < distance) {
+            distance = this.WIDTH - this.targetX;
+        }
+
+        //checks the distance between the top wall and the target
+        if (this.targetY-1 < distance) {
+            distance = this.targetY-1;
+        }
+
+        //checks the distance between the bottom wall and the target
+        if (this.HEIGHT-this.targetY < distance) {
+            distance = this.HEIGHT-this.targetY;
+        }
+
+        //for debugging
+        //System.out.format("The distance between Robot %d and the nearest wall is %d\n", this.targetID, distance);
+        return distance;
+    }
+
+    /**
      * Checks the feasability of cornering the target
      * @param turns the number of turns it would take to get to the target
      * @return whether to cut off and corner the target or not
@@ -282,32 +304,9 @@ public class KureshyBot extends BaseBot{
         //check that the target is within 2 turns, that it's distance to the closest wall is less than
         //my speed-1, and that both the horizontal/vertical distance of the chaser to the nearest corner
         //is greater than that of the target's
-        if (turns == 2 && distanceToWall <= (this.getMOVES_PER_TURN()-1) &&
+        return turns == 2 && distanceToWall <= (this.getMOVES_PER_TURN() - 1) &&
                 myHorizontalDistanceToCorner > horizontalDistanceToCorner &&
-                myVerticalDistanceToCorner > verticalDistanceToCorner) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-
-    /**
-     * Avoids attacking guards while low on health
-     */
-    private void checkSafety() {
-
-        int targetIndex = super.findRecordByID(this.targetID);
-        int index = 0;
-        //checks if the target is a confirmed guard
-        while (((ChaserPlayerInfo) this.otherRecords[targetIndex]).getRolePrediction() == 1 && this.myRecords.getHP()==1) {
-
-            //set target to the next safest target
-            this.targetID = this.otherRecords[index].getID();
-            this.targetX = this.otherRecords[index].getPosition()[0];
-            this.targetY = this.otherRecords[index].getPosition()[1];
-            targetIndex = super.findRecordByID(this.targetID);
-            index++;
-        }
+                myVerticalDistanceToCorner > verticalDistanceToCorner;
     }
 
     /**
@@ -323,8 +322,8 @@ public class KureshyBot extends BaseBot{
         int distanceY = this.targetY - myPos[1];
         int absDistanceX = Math.abs(distanceX);
         int absDistanceY = Math.abs(distanceY);
-        int horizontalMove = 0;
-        int verticalMove = 0;
+        int horizontalMove ;
+        int verticalMove;
 
         //check whether to move right or left
         if (distanceX > 0) {
@@ -407,7 +406,7 @@ public class KureshyBot extends BaseBot{
 
         //checks if the target can be caught within this turn
         if (turns <= 1) {
-            checkSafety();
+            targetIndex = checkSafety();
             System.out.println("IN RANGE: " + this.targetX + "," + this.targetY);
             super.moveToPos(this.otherRecords[targetIndex].getPosition());
             this.attemptTag();
@@ -435,14 +434,14 @@ public class KureshyBot extends BaseBot{
         System.out.format("My target is %d who has a priority score of %.2f and is located at %s, which is %d turns away from me " +
                         "while I am located at %s\n",
                 this.targetID, ((ChaserPlayerInfo) this.otherRecords[0]).getPriorityScore(),
-                Arrays.toString(((ChaserPlayerInfo) this.otherRecords[0]).getPosition()),
+                Arrays.toString((this.otherRecords[0]).getPosition()),
                 (int) Math.ceil(((ChaserPlayerInfo) this.otherRecords[0]).getTurnDistance()),
                 Arrays.toString(this.getMyPosition()));
         for (int i=1; i<this.otherRecords.length; i++) {
             System.out.format("My target is %d who has a priority score of %.2f and is located at %s, which is %d turns away from me " +
                             "while I am located at %s\n",
                     this.otherRecords[i].getID(), ((ChaserPlayerInfo) this.otherRecords[i]).getPriorityScore(),
-                    Arrays.toString(((ChaserPlayerInfo) this.otherRecords[i]).getPosition()),
+                    Arrays.toString((this.otherRecords[i]).getPosition()),
                     (int) Math.ceil(((ChaserPlayerInfo) this.otherRecords[i]).getTurnDistance()),
                     Arrays.toString(this.getMyPosition()));
         }
