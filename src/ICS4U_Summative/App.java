@@ -282,47 +282,54 @@ public class App {
 
         for (int turn = 1; turn <= maxTurns && !gameEnded; turn++)
         {
-
             App.updateRecords(robots, infos);
 
+            // Broadcast the latest records to every bot at the start of the turn
             for (BaseBot b : robots)
             {
                 b.updateOtherRecords(infos);
             }
 
-            // ========= 1) VIP phase =========
-            for (int i = 0; i < 2; i++) {
-                if (!robots[i].myRecords.getState())
-                {
-                    robots[i].takeTurn();
-                    App.updateRecords(robots, infos);
-                    handleInteractions(robots, infos, rand);
-                }
-            }
-            App.checkForWinCondition(infos, maxTurns, turn);
+            // Interleaved turn order to reduce same-role symmetry:
+            // VIP0 -> Guard0 -> Chaser0 -> VIP1 -> Guard1 -> Chaser1
+            for (int k = 0; k < 2; k++)
+            {
+                int vipIndex = k;       // VIPs are robots[0], robots[1]
+                int guardIndex = 2 + k; // Guards are robots[2], robots[3]
+                int chaserIndex = 4 + k;// Chasers are robots[4], robots[5]
 
-            // ========= 2) Chaser phase =========
-            for (int i = 4; i < 6; i++) {
-                if (!robots[i].myRecords.getState())
+                // ----- VIP move -----
+                if (!robots[vipIndex].myRecords.getState())
                 {
-                    robots[i].takeTurn();
+                    robots[vipIndex].takeTurn();
                     App.updateRecords(robots, infos);
                     handleInteractions(robots, infos, rand);
                 }
-            }
-            App.checkForWinCondition(infos, maxTurns, turn);
+                App.checkForWinCondition(infos, maxTurns, turn);
+                if (gameEnded) break;
 
-            // ========= 3) Guard phase =========
-            for (int i = 2; i < 4; i++) {
-                if (!robots[i].myRecords.getState())
+                // ----- Guard move -----
+                if (!robots[guardIndex].myRecords.getState())
                 {
-                    robots[i].takeTurn();
+                    robots[guardIndex].takeTurn();
                     App.updateRecords(robots, infos);
                     handleInteractions(robots, infos, rand);
                 }
+                App.checkForWinCondition(infos, maxTurns, turn);
+                if (gameEnded) break;
+
+                // ----- Chaser move -----
+                if (!robots[chaserIndex].myRecords.getState())
+                {
+                    robots[chaserIndex].takeTurn();
+                    App.updateRecords(robots, infos);
+                    handleInteractions(robots, infos, rand);
+                }
+                App.checkForWinCondition(infos, maxTurns, turn);
+                if (gameEnded) break;
             }
-            App.checkForWinCondition(infos, maxTurns, turn);
         }
+
 
 
     }
