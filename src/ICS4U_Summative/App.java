@@ -315,9 +315,10 @@ public class App {
                 // ----- VIP move -----
                 if (!robots[vipIndex].myRecords.getState())
                 {
-                    robots[vipIndex].takeTurn();
                     App.updateRecords(robots, infos);
+                    robots[vipIndex].updateOtherRecords(infos);
                     handleInteractions(robots, infos, rand);
+                    robots[vipIndex].takeTurn();
                 }
                 App.checkForWinCondition(infos, maxTurns, turn);
                 if (gameEnded) break;
@@ -325,9 +326,10 @@ public class App {
                 // ----- Guard move -----
                 if (!robots[guardIndex].myRecords.getState())
                 {
-                    robots[guardIndex].takeTurn();
                     App.updateRecords(robots, infos);
+                    robots[guardIndex].updateOtherRecords(infos);
                     handleInteractions(robots, infos, rand);
+                    robots[guardIndex].takeTurn();
                 }
                 App.checkForWinCondition(infos, maxTurns, turn);
                 if (gameEnded) break;
@@ -335,9 +337,10 @@ public class App {
                 // ----- Chaser move -----
                 if (!robots[chaserIndex].myRecords.getState())
                 {
-                    robots[chaserIndex].takeTurn();
                     App.updateRecords(robots, infos);
+                    robots[chaserIndex].updateOtherRecords(infos);
                     handleInteractions(robots, infos, rand);
+                    robots[chaserIndex].takeTurn();
                 }
                 App.checkForWinCondition(infos, maxTurns, turn);
                 if (gameEnded) break;

@@ -226,6 +226,11 @@ public class XiongBot extends BaseBot {
     }
 
     public void takeTurn() {
+        // stop moving if already caught
+        if (this.myRecords.getState()) {
+            return;
+        }
+
         int movesAllowed = this.movesPerTurn;
         for (int step = 0; step < movesAllowed; step++) {
             // manage lastPos cooldown so we avoid allowing immediate reversal for one following step
@@ -286,177 +291,181 @@ public class XiongBot extends BaseBot {
 
             // Evaluate candidate directions and pick the one that maximizes the minimum distance to any chaser
             // We'll track the best and second-best candidates so we can apply probabilistic tie-breaking
-            Direction[] candidates = {Direction.NORTH, Direction.WEST, Direction.SOUTH, Direction.EAST};
-            Direction currentDirForChecks = this.getDirection();
-            int startIdx = 0;
-            for (int i = 0; i < candidates.length; i++) {
-                if (candidates[i] == currentDirForChecks) {
-                    startIdx = i;
-                    break;
-                }
-            }
-
-            // Sample frontIsClear once per direction by rotating through the four directions.
-            // Cache results and neighbor coordinates so we avoid repeated turning inside the candidate loop.
+            // Use clockwise order to sample using incremental turnRight() calls: NORTH, EAST, SOUTH, WEST
+            Direction[] candidates = {Direction.NORTH, Direction.EAST, Direction.SOUTH, Direction.WEST};
             int mDirs = candidates.length;
             boolean[] frontClearCache = new boolean[mDirs];
             int[] neighX = new int[mDirs];
             int[] neighY = new int[mDirs];
+
+            // Instead of calling turnDirection(d) repeatedly (which can produce multiple turns),
+            // do up to 4 incremental turnRight() checks. This keeps the total rotation bounded and predictable.
+            // We'll rotate through the four facings starting from currentDir and record frontIsClear for each.
+            Direction startFacing = this.getDirection();
             for (int t = 0; t < mDirs; t++) {
-                Direction d = candidates[t];
-                this.turnDirection(d);
-                frontClearCache[t] = this.frontIsClear();
-                neighX[t] = myX;
-                neighY[t] = myY;
-                if (d == Direction.NORTH) {
-                    neighY[t] = myY - 1;
-                } else if (d == Direction.SOUTH) {
-                    neighY[t] = myY + 1;
-                } else if (d == Direction.EAST) {
-                    neighX[t] = myX + 1;
-                } else if (d == Direction.WEST) {
-                    neighX[t] = myX - 1;
-                }
+                Direction d = this.getDirection();
+                int idx = 0;
+                if (d == Direction.NORTH) idx = 0;
+                else if (d == Direction.EAST) idx = 1;
+                else if (d == Direction.SOUTH) idx = 2;
+                else if (d == Direction.WEST) idx = 3;
+
+                frontClearCache[idx] = this.frontIsClear();
+                int nx = myX;
+                int ny = myY;
+                if (d == Direction.NORTH) ny = myY - 1;
+                else if (d == Direction.SOUTH) ny = myY + 1;
+                else if (d == Direction.EAST) nx = myX + 1;
+                else if (d == Direction.WEST) nx = myX - 1;
+                neighX[idx] = nx;
+                neighY[idx] = ny;
+
+                // rotate to next facing; after 4 rotations we'll be back to startFacing
+                this.turnRight();
             }
-            // restore original facing before evaluation
-            this.turnDirection(currentDirForChecks);
+            // robot has performed a full rotation (4 * turnRight) and is back to original facing
+            int startIdx = 0; // index of current facing in candidates
+            if (startFacing == Direction.NORTH) startIdx = 0;
+            else if (startFacing == Direction.EAST) startIdx = 1;
+            else if (startFacing == Direction.SOUTH) startIdx = 2;
+            else if (startFacing == Direction.WEST) startIdx = 3;
 
-            // Count free neighbors from cache
-            int freeCountCurr = 0;
-            for (int t = 0; t < mDirs; t++) {
-                if (frontClearCache[t]) {
-                    freeCountCurr = freeCountCurr + 1;
-                }
-            }
+             // Count free neighbors from cache
+             int freeCountCurr = 0;
+             for (int t = 0; t < mDirs; t++) {
+                 if (frontClearCache[t]) {
+                     freeCountCurr = freeCountCurr + 1;
+                 }
+             }
 
-            // helper to map a Direction to index in candidates array
-            // (N->0, W->1, S->2, E->3)
-            java.util.Map<Direction, Integer> dirToIndex = new java.util.HashMap<>();
-            dirToIndex.put(Direction.NORTH, 0);
-            dirToIndex.put(Direction.WEST, 1);
-            dirToIndex.put(Direction.SOUTH, 2);
-            dirToIndex.put(Direction.EAST, 3);
+             // helper to map a Direction to index in candidates array
+             // (N->0, E->1, S->2, W->3)
+             java.util.Map<Direction, Integer> dirToIndex = new java.util.HashMap<>();
+             dirToIndex.put(Direction.NORTH, 0);
+             dirToIndex.put(Direction.EAST, 1);
+             dirToIndex.put(Direction.SOUTH, 2);
+             dirToIndex.put(Direction.WEST, 3);
 
-            // Build candidate arrays and compute metrics for each valid candidate. We'll selection-sort them
-            // so we can pick the top choices without separate best/second variables.
-            int m = candidates.length;
-            int[] minDistArr = new int[m];
-            int[] increaseArr = new int[m];
-            boolean[] validArr = new boolean[m];
-            boolean[] reverseArr = new boolean[m];
-            Direction[] orderedDirs = new Direction[m];
+             // Build candidate arrays and compute metrics for each valid candidate. We'll selection-sort them
+             // so we can pick the top choices without separate best/second variables.
+             int m = candidates.length;
+             int[] minDistArr = new int[m];
+             int[] increaseArr = new int[m];
+             boolean[] validArr = new boolean[m];
+             boolean[] reverseArr = new boolean[m];
+             Direction[] orderedDirs = new Direction[m];
 
-            for (int k = 0; k < m; k++) {
-                // initialize
-                minDistArr[k] = Integer.MIN_VALUE;
-                increaseArr[k] = Integer.MIN_VALUE;
-                validArr[k] = false;
-                reverseArr[k] = false;
-                orderedDirs[k] = candidates[k];
-            }
+             for (int k = 0; k < m; k++) {
+                 // initialize
+                 minDistArr[k] = Integer.MIN_VALUE;
+                 increaseArr[k] = Integer.MIN_VALUE;
+                 validArr[k] = false;
+                 reverseArr[k] = false;
+                 orderedDirs[k] = candidates[k];
+             }
 
-            // Evaluate each candidate by rotating starting from current facing
-            for (int k = 0; k < m; k++) {
-                Direction d = candidates[(startIdx + k) % candidates.length];
+             // Evaluate each candidate by rotating starting from current facing
+             for (int k = 0; k < m; k++) {
+                 Direction d = candidates[(startIdx + k) % candidates.length];
 
-                // Use cached front-clear and neighbor coords to avoid extra rotation
-                int dirIdx = dirToIndex.get(d);
-                if (!frontClearCache[dirIdx]) {
-                    // mark as invalid and continue
-                    for (int p = 0; p < m; p++) {
-                        if (orderedDirs[p] == d) {
-                            validArr[p] = false;
-                            minDistArr[p] = Integer.MIN_VALUE;
-                            increaseArr[p] = Integer.MIN_VALUE;
-                            break;
-                        }
-                    }
-                    continue;
-                }
+                 // Use cached front-clear and neighbor coords to avoid extra rotation
+                 int dirIdx = dirToIndex.get(d);
+                 if (!frontClearCache[dirIdx]) {
+                     // mark as invalid and continue
+                     for (int p = 0; p < m; p++) {
+                         if (orderedDirs[p] == d) {
+                             validArr[p] = false;
+                             minDistArr[p] = Integer.MIN_VALUE;
+                             increaseArr[p] = Integer.MIN_VALUE;
+                             break;
+                         }
+                     }
+                     continue;
+                 }
 
-                int newX = neighX[dirIdx];
-                int newY = neighY[dirIdx];
+                 int newX = neighX[dirIdx];
+                 int newY = neighY[dirIdx];
 
-                // If we have an active avoidReverse flag, mark candidate as reverse when it moves back to lastPos
-                if (this.lastPos != null && avoidReverse) {
-                    if (newX == this.lastPos[0] && newY == this.lastPos[1]) {
-                        for (int p = 0; p < m; p++) {
-                            if (orderedDirs[p] == d) {
-                                reverseArr[p] = true;
-                                validArr[p] = false;
-                                minDistArr[p] = Integer.MIN_VALUE;
-                                increaseArr[p] = Integer.MIN_VALUE;
-                                break;
-                            }
-                        }
-                        // skip reverse in main pass
-                        continue;
-                    }
-                }
+                 // If we have an active avoidReverse flag, mark candidate as reverse when it moves back to lastPos
+                 if (this.lastPos != null && avoidReverse) {
+                     if (newX == this.lastPos[0] && newY == this.lastPos[1]) {
+                         for (int p = 0; p < m; p++) {
+                             if (orderedDirs[p] == d) {
+                                 reverseArr[p] = true;
+                                 validArr[p] = false;
+                                 minDistArr[p] = Integer.MIN_VALUE;
+                                 increaseArr[p] = Integer.MIN_VALUE;
+                                 break;
+                             }
+                         }
+                         // skip reverse in main pass
+                         continue;
+                     }
+                 }
 
-                // If moving here would reduce our distance to the most reachable chaser, skip it.
-                boolean reducesToMost = false;
-                if (mostReachableIndex >= 0 && mostReachableIndex < this.chaserPos.length) {
-                    int[] most = this.chaserPos[mostReachableIndex];
-                    int curDistToMost = mostReachableDist;
-                    int candDistToMost = Math.abs(newX - most[0]) + Math.abs(newY - most[1]);
-                    if (candDistToMost < curDistToMost) {
-                        reducesToMost = true;
-                    }
-                }
-                if (reducesToMost) {
-                    // mark as invalid
-                    for (int p = 0; p < m; p++) {
-                        if (orderedDirs[p] == d) {
-                            validArr[p] = false;
-                            minDistArr[p] = Integer.MIN_VALUE;
-                            increaseArr[p] = Integer.MIN_VALUE;
-                            break;
-                        }
-                    }
-                    continue;
-                }
+                 // If moving here would reduce our distance to the most reachable chaser, skip it.
+                 boolean reducesToMost = false;
+                 if (mostReachableIndex >= 0 && mostReachableIndex < this.chaserPos.length) {
+                     int[] most = this.chaserPos[mostReachableIndex];
+                     int curDistToMost = mostReachableDist;
+                     int candDistToMost = Math.abs(newX - most[0]) + Math.abs(newY - most[1]);
+                     if (candDistToMost < curDistToMost) {
+                         reducesToMost = true;
+                     }
+                 }
+                 if (reducesToMost) {
+                     // mark as invalid
+                     for (int p = 0; p < m; p++) {
+                         if (orderedDirs[p] == d) {
+                             validArr[p] = false;
+                             minDistArr[p] = Integer.MIN_VALUE;
+                             increaseArr[p] = Integer.MIN_VALUE;
+                             break;
+                         }
+                     }
+                     continue;
+                 }
 
-                // compute minimum distance to any chaser from the new position
-                int minDist = Integer.MAX_VALUE;
-                for (int j = 0; j < this.chaserPos.length; j++) {
-                    int[] c = this.chaserPos[j];
-                    int dist = Math.abs(newX - c[0]) + Math.abs(newY - c[1]);
-                    if (dist < minDist) {
-                        minDist = dist;
-                    }
-                }
+                 // compute minimum distance to any chaser from the new position
+                 int minDist = Integer.MAX_VALUE;
+                 for (int j = 0; j < this.chaserPos.length; j++) {
+                     int[] c = this.chaserPos[j];
+                     int dist = Math.abs(newX - c[0]) + Math.abs(newY - c[1]);
+                     if (dist < minDist) {
+                         minDist = dist;
+                     }
+                 }
 
-                int increase = minDist - currentMinDist;
+                 int increase = minDist - currentMinDist;
 
-                // store metrics in the slot corresponding to this direction
-                for (int p = 0; p < m; p++) {
-                    if (orderedDirs[p] == d) {
-                        minDistArr[p] = minDist;
-                        increaseArr[p] = increase;
-                        validArr[p] = true;
+                 // store metrics in the slot corresponding to this direction
+                 for (int p = 0; p < m; p++) {
+                     if (orderedDirs[p] == d) {
+                         minDistArr[p] = minDist;
+                         increaseArr[p] = increase;
+                         validArr[p] = true;
 
-                        // Apply corner penalty using cached frontClearCache for left/right
-                        Direction left = leftOf(d);
-                        Direction right = rightOf(d);
-                        int leftIdx = dirToIndex.get(left);
-                        int rightIdx = dirToIndex.get(right);
-                        boolean leftBlocked = !frontClearCache[leftIdx];
-                        boolean rightBlocked = !frontClearCache[rightIdx];
-                        if (leftBlocked && rightBlocked) {
-                            // reduce its effective min distance to deprioritize corners
-                            minDistArr[p] = minDistArr[p] - 5000;
-                        }
+                         // Apply corner penalty using cached frontClearCache for left/right
+                         Direction left = leftOf(d);
+                         Direction right = rightOf(d);
+                         int leftIdx = dirToIndex.get(left);
+                         int rightIdx = dirToIndex.get(right);
+                         boolean leftBlocked = !frontClearCache[leftIdx];
+                         boolean rightBlocked = !frontClearCache[rightIdx];
+                         if (leftBlocked && rightBlocked) {
+                             // reduce its effective min distance to deprioritize corners
+                             minDistArr[p] = minDistArr[p] - 5000;
+                         }
 
-                        // Additional penalty when current position itself is narrow (few free neighbors)
-                        if (freeCountCurr <= 2) {
-                            minDistArr[p] = minDistArr[p] - 2000;
-                        }
+                         // Additional penalty when current position itself is narrow (few free neighbors)
+                         if (freeCountCurr <= 2) {
+                             minDistArr[p] = minDistArr[p] - 2000;
+                         }
 
-                        break;
-                    }
-                }
-            }
+                         break;
+                     }
+                 }
+             }
 
             // After evaluating candidates, selection-sort them by minDist (descending), tie-breaker increase (descending)
             for (int i = 0; i < m - 1; i++) {
