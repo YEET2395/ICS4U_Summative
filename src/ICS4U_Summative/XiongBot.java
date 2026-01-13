@@ -7,7 +7,7 @@ import java.util.Random;
 import java.util.ArrayList;
 
 /**
- * @Todo: improve movement algorithm to better avoid chasers + fine tune speed tracking and prediction
+ * XiongBot with selection-sorted candidate choices, chaser tracking, and fallback to avoid corner-sticking.
  */
 public class XiongBot extends BaseBot {
     private int[] guardPos = {0, 0};
@@ -21,8 +21,13 @@ public class XiongBot extends BaseBot {
     // random generator for tie-breaking and probabilistic decisions
     private final Random rnd = new Random();
 
+    // track last position to avoid immediate back-and-forth movement
+    private int[] lastPos = null;
+    // cooldown (in steps) during which returning to lastPos is disallowed
+    private int lastPosCooldown = 0;
+
     // how many future turns the bot wants to be sure chasers can't reach it in
-    private int safetyTurns = 3;
+    private int safetyTurns = 1;
 
     /**
      * Constructor for BaseBot
@@ -46,7 +51,6 @@ public class XiongBot extends BaseBot {
     }
 
     public void updateOtherRecords(PlayerInfo[] records) {
-        System.out.println("Updating enemy records for XiongBot ");
         // Collect chaser positions from the global records and update internal tracking arrays
         ArrayList<int[]> chasers = new ArrayList<>();
         for (int i = 0; i < records.length; i++) {
@@ -222,18 +226,24 @@ public class XiongBot extends BaseBot {
     }
 
     public void takeTurn() {
-//        // If this bot has been caught, it should not move anymore.
-//        if (this.myRecords != null && this.myRecords.getState()) {
-//            // Optionally print debug info
-//            System.out.format("Robot %d is caught and will not move.\n", this.myRecords.getID());
-//            return;
-//        }
         int movesAllowed = this.movesPerTurn;
-
         for (int step = 0; step < movesAllowed; step++) {
-            int myX = this.getMyPosition()[0];
-            int myY = this.getMyPosition()[1];
-            Direction currentDir = this.getDirection();
+            // manage lastPos cooldown so we avoid allowing immediate reversal for one following step
+            boolean avoidReverse = false;
+            if (this.lastPos != null && this.lastPosCooldown > 0) {
+                avoidReverse = true;
+            }
+            // decrement cooldown at start of step so it applies to this step then expires
+            if (this.lastPosCooldown > 0) {
+                this.lastPosCooldown = this.lastPosCooldown - 1;
+                if (this.lastPosCooldown == 0) {
+                    this.lastPos = null;
+                }
+            }
+
+                int myX = this.getMyPosition()[0];
+                int myY = this.getMyPosition()[1];
+                Direction currentDir = this.getDirection();
 
             // If we have no chaser info, do nothing this turn
             if (this.chaserPos.length == 0) {
@@ -260,7 +270,7 @@ public class XiongBot extends BaseBot {
                 int[] c = this.chaserPos[i];
                 int dist = this.getDistances(c);
                 double s = minAssumedSpeed;
-                if (i >= 0 && i < this.chaserSpeeds.length) {
+                if (i < this.chaserSpeeds.length) {
                     s = this.chaserSpeeds[i];
                 }
                 if (s < minAssumedSpeed) {
@@ -286,12 +296,54 @@ public class XiongBot extends BaseBot {
                 }
             }
 
+            // Sample frontIsClear once per direction by rotating through the four directions.
+            // Cache results and neighbor coordinates so we avoid repeated turning inside the candidate loop.
+            int mDirs = candidates.length;
+            boolean[] frontClearCache = new boolean[mDirs];
+            int[] neighX = new int[mDirs];
+            int[] neighY = new int[mDirs];
+            for (int t = 0; t < mDirs; t++) {
+                Direction d = candidates[t];
+                this.turnDirection(d);
+                frontClearCache[t] = this.frontIsClear();
+                neighX[t] = myX;
+                neighY[t] = myY;
+                if (d == Direction.NORTH) {
+                    neighY[t] = myY - 1;
+                } else if (d == Direction.SOUTH) {
+                    neighY[t] = myY + 1;
+                } else if (d == Direction.EAST) {
+                    neighX[t] = myX + 1;
+                } else if (d == Direction.WEST) {
+                    neighX[t] = myX - 1;
+                }
+            }
+            // restore original facing before evaluation
+            this.turnDirection(currentDirForChecks);
+
+            // Count free neighbors from cache
+            int freeCountCurr = 0;
+            for (int t = 0; t < mDirs; t++) {
+                if (frontClearCache[t]) {
+                    freeCountCurr = freeCountCurr + 1;
+                }
+            }
+
+            // helper to map a Direction to index in candidates array
+            // (N->0, W->1, S->2, E->3)
+            java.util.Map<Direction, Integer> dirToIndex = new java.util.HashMap<>();
+            dirToIndex.put(Direction.NORTH, 0);
+            dirToIndex.put(Direction.WEST, 1);
+            dirToIndex.put(Direction.SOUTH, 2);
+            dirToIndex.put(Direction.EAST, 3);
+
             // Build candidate arrays and compute metrics for each valid candidate. We'll selection-sort them
             // so we can pick the top choices without separate best/second variables.
             int m = candidates.length;
             int[] minDistArr = new int[m];
             int[] increaseArr = new int[m];
             boolean[] validArr = new boolean[m];
+            boolean[] reverseArr = new boolean[m];
             Direction[] orderedDirs = new Direction[m];
 
             for (int k = 0; k < m; k++) {
@@ -299,6 +351,7 @@ public class XiongBot extends BaseBot {
                 minDistArr[k] = Integer.MIN_VALUE;
                 increaseArr[k] = Integer.MIN_VALUE;
                 validArr[k] = false;
+                reverseArr[k] = false;
                 orderedDirs[k] = candidates[k];
             }
 
@@ -306,12 +359,10 @@ public class XiongBot extends BaseBot {
             for (int k = 0; k < m; k++) {
                 Direction d = candidates[(startIdx + k) % candidates.length];
 
-                // turn to candidate to use frontIsClear
-                this.turnDirection(d);
-
-                if (!this.frontIsClear()) {
+                // Use cached front-clear and neighbor coords to avoid extra rotation
+                int dirIdx = dirToIndex.get(d);
+                if (!frontClearCache[dirIdx]) {
                     // mark as invalid and continue
-                    // find index in orderedDirs and set valid false (we will keep same index mapping)
                     for (int p = 0; p < m; p++) {
                         if (orderedDirs[p] == d) {
                             validArr[p] = false;
@@ -323,16 +374,24 @@ public class XiongBot extends BaseBot {
                     continue;
                 }
 
-                int newX = myX;
-                int newY = myY;
-                if (d == Direction.NORTH) {
-                    newY = myY - 1;
-                } else if (d == Direction.SOUTH) {
-                    newY = myY + 1;
-                } else if (d == Direction.EAST) {
-                    newX = myX + 1;
-                } else if (d == Direction.WEST) {
-                    newX = myX - 1;
+                int newX = neighX[dirIdx];
+                int newY = neighY[dirIdx];
+
+                // If we have an active avoidReverse flag, mark candidate as reverse when it moves back to lastPos
+                if (this.lastPos != null && avoidReverse) {
+                    if (newX == this.lastPos[0] && newY == this.lastPos[1]) {
+                        for (int p = 0; p < m; p++) {
+                            if (orderedDirs[p] == d) {
+                                reverseArr[p] = true;
+                                validArr[p] = false;
+                                minDistArr[p] = Integer.MIN_VALUE;
+                                increaseArr[p] = Integer.MIN_VALUE;
+                                break;
+                            }
+                        }
+                        // skip reverse in main pass
+                        continue;
+                    }
                 }
 
                 // If moving here would reduce our distance to the most reachable chaser, skip it.
@@ -376,6 +435,24 @@ public class XiongBot extends BaseBot {
                         minDistArr[p] = minDist;
                         increaseArr[p] = increase;
                         validArr[p] = true;
+
+                        // Apply corner penalty using cached frontClearCache for left/right
+                        Direction left = leftOf(d);
+                        Direction right = rightOf(d);
+                        int leftIdx = dirToIndex.get(left);
+                        int rightIdx = dirToIndex.get(right);
+                        boolean leftBlocked = !frontClearCache[leftIdx];
+                        boolean rightBlocked = !frontClearCache[rightIdx];
+                        if (leftBlocked && rightBlocked) {
+                            // reduce its effective min distance to deprioritize corners
+                            minDistArr[p] = minDistArr[p] - 5000;
+                        }
+
+                        // Additional penalty when current position itself is narrow (few free neighbors)
+                        if (freeCountCurr <= 2) {
+                            minDistArr[p] = minDistArr[p] - 2000;
+                        }
+
                         break;
                     }
                 }
@@ -414,6 +491,11 @@ public class XiongBot extends BaseBot {
                     validArr[i] = validArr[maxIdx];
                     validArr[maxIdx] = tmpVal;
 
+                    // swap reverseArr
+                    boolean tmpRev = reverseArr[i];
+                    reverseArr[i] = reverseArr[maxIdx];
+                    reverseArr[maxIdx] = tmpRev;
+
                     // swap orderedDirs
                     Direction tmpDir = orderedDirs[i];
                     orderedDirs[i] = orderedDirs[maxIdx];
@@ -433,8 +515,88 @@ public class XiongBot extends BaseBot {
                 }
             }
             if (chosenIdx == -1) {
-                // no valid moves
-                break;
+                // No strictly-valid non-reducing moves available. Try a relaxed fallback:
+                // choose a front-clear candidate that reduces distance to the most-reachable chaser the least.
+                int fallbackIdx = -1;
+                int bestFallbackCandDistToMost = Integer.MIN_VALUE; // larger is better (less reduction)
+                int bestFallbackMinDist = Integer.MIN_VALUE; // tie-breaker
+
+                // current distance to most-reachable chaser
+                int curDistToMost = Integer.MAX_VALUE;
+                if (mostReachableIndex >= 0 && mostReachableIndex < this.chaserPos.length) {
+                    int[] most = this.chaserPos[mostReachableIndex];
+                    curDistToMost = Math.abs(myX - most[0]) + Math.abs(myY - most[1]);
+                }
+
+                for (int i = 0; i < m; i++) {
+                    if (reverseArr[i]) {
+                        continue;
+                    }
+                    Direction d = orderedDirs[i];
+                    // skip if we already marked as valid (shouldn't happen) or if candidate was invalid due to blocked front
+                    if (validArr[i]) {
+                        continue;
+                    }
+
+                    // turn to check front
+                    this.turnDirection(d);
+                    if (!this.frontIsClear()) {
+                        continue;
+                    }
+
+                    int newX = myX;
+                    int newY = myY;
+                    if (d == Direction.NORTH) {
+                        newY = myY - 1;
+                    } else if (d == Direction.SOUTH) {
+                        newY = myY + 1;
+                    } else if (d == Direction.EAST) {
+                        newX = myX + 1;
+                    } else if (d == Direction.WEST) {
+                        newX = myX - 1;
+                    }
+
+                    // compute distance to the most-reachable chaser for this candidate (if available)
+                    int candDistToMost = Integer.MIN_VALUE;
+                    if (mostReachableIndex >= 0 && mostReachableIndex < this.chaserPos.length) {
+                        int[] most = this.chaserPos[mostReachableIndex];
+                        candDistToMost = Math.abs(newX - most[0]) + Math.abs(newY - most[1]);
+                    } else {
+                        // if no most-reachable info, treat as neutral
+                        candDistToMost = curDistToMost;
+                    }
+
+                    // avoid moving directly onto the chaser if possible
+                    if (candDistToMost == 0) {
+                        continue;
+                    }
+
+                    // compute minimum distance to any chaser from the new position
+                    int minDist = Integer.MAX_VALUE;
+                    for (int j = 0; j < this.chaserPos.length; j++) {
+                        int[] c = this.chaserPos[j];
+                        int dist = Math.abs(newX - c[0]) + Math.abs(newY - c[1]);
+                        if (dist < minDist) {
+                            minDist = dist;
+                        }
+                    }
+
+                    // prefer candidates that keep candDistToMost large (i.e., reduce least). Tie-break on minDist.
+                    if (fallbackIdx == -1
+                            || candDistToMost > bestFallbackCandDistToMost
+                            || (candDistToMost == bestFallbackCandDistToMost && minDist > bestFallbackMinDist)) {
+                        fallbackIdx = i;
+                        bestFallbackCandDistToMost = candDistToMost;
+                        bestFallbackMinDist = minDist;
+                    }
+                }
+
+                if (fallbackIdx == -1) {
+                    // truly no possible moves (all blocked or would land on a chaser) -> stay
+                    break;
+                }
+
+                chosenIdx = fallbackIdx;
             }
 
             Direction chosenDir = orderedDirs[chosenIdx];
@@ -460,7 +622,7 @@ public class XiongBot extends BaseBot {
                 } else if (currentMinDist >= maxRelevantDistance) {
                     pBest = 0.60;
                 } else {
-                    double ratio = (double)(maxRelevantDistance - currentMinDist) / (double)(maxRelevantDistance - minDistanceForMax);
+                    double ratio = (double) (maxRelevantDistance - currentMinDist) / (double) (maxRelevantDistance - minDistanceForMax);
                     pBest = 0.60 + Math.pow(0.39, ratio);
                 }
 
@@ -470,10 +632,15 @@ public class XiongBot extends BaseBot {
                 }
             }
 
-            // Attempt to move in the chosen direction. If failed, stop further movement.
+            int prevXForLastPos = myX;
+            int prevYForLastPos = myY;
             if (!attemptMove(chosenDir)) {
                 break;
             }
+
+            // record previous position so next step won't immediately move back; set cooldown for one step
+            this.lastPos = new int[]{prevXForLastPos, prevYForLastPos};
+            this.lastPosCooldown = 1;
         }
     }
 
@@ -661,5 +828,28 @@ public class XiongBot extends BaseBot {
             }
         }
         return maxReach;
+    }
+
+    // Helper: get the direction to the left
+    private Direction leftOf(Direction d) {
+        if (d == Direction.NORTH) return Direction.WEST;
+        if (d == Direction.WEST) return Direction.SOUTH;
+        if (d == Direction.SOUTH) return Direction.EAST;
+        return Direction.NORTH; // EAST -> NORTH
+    }
+
+    // Helper: get the direction to the right
+    private Direction rightOf(Direction d) {
+        if (d == Direction.NORTH) return Direction.EAST;
+        if (d == Direction.EAST) return Direction.SOUTH;
+        if (d == Direction.SOUTH) return Direction.WEST;
+        return Direction.NORTH; // WEST -> NORTH
+    }
+
+    // Test whether the adjacent cell in direction 'd' from current position is blocked (wall or obstacle)
+    // Note: this checks frontIsClear after turning to `d` from the robot's current facing.
+    private boolean isBlockedDir(Direction d) {
+        this.turnDirection(d);
+        return !this.frontIsClear();
     }
 }
