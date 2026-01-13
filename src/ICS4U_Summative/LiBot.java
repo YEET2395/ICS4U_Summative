@@ -16,6 +16,7 @@ public class LiBot extends BaseBot {
     private static final int ROLE_CHASER = 3;
     private static final int DANGER_RADIUS = 5;
     private static final int ESCORT_DISTANCE = 2;
+    private static final int ATTACK_LEASH = ESCORT_DISTANCE + 2; // attack leash radius
 
     /**
      * Constructor for XinranBot
@@ -53,8 +54,7 @@ public class LiBot extends BaseBot {
             return;
         }
 
-
-        int[] myPos = getMyPosition();
+        int[] myPos;
         int hp = myRecords.getHP();
 
         PlayerInfo[] vips = new PlayerInfo[2];
@@ -107,11 +107,16 @@ public class LiBot extends BaseBot {
                         - 10 * Math.max(0, 3 - distCV);
 
         int nextAct = insertionSortDescending(new double[] {protect, attack, run}, new int[] {0, 1, 2});
+
+        int distToVipNow = distance(getMyPosition(), vip.getPosition());
+        if (nextAct == 1 && distToVipNow > ATTACK_LEASH) {
+            nextAct = 0;
+        }
         if (nextAct == 0)
         {
             doProtect(vip, chaser, vips, vipCount, chasers, chaserCount);
         }
-        else if (nextAct == 1)
+        else if(nextAct == 1)
         {
             doAttack(chaser);
         }
@@ -119,6 +124,7 @@ public class LiBot extends BaseBot {
         {
             doRun(chaser);
         }
+
     }
 
     private int collectByRole(PlayerInfo[] records, int role, PlayerInfo[] out)
@@ -197,53 +203,57 @@ public class LiBot extends BaseBot {
     {
         int[] vipPos = vip.getPosition();
         int[] chPos  = threatChaser.getPosition();
-        int[] myPos  = getMyPosition();
 
         int moves = getMOVES_PER_TURN();
 
-        for (int step = 0; step < moves; step++) {
-            myPos = getMyPosition();
+        for (int step = 0; step < moves; step++)
+        {
+            int[] myPos = getMyPosition();
 
-            int distToVip = distance(myPos, vipPos);
-
-            if (distToVip > ESCORT_DISTANCE) {
+            if (distance(myPos, vipPos) > ESCORT_DISTANCE + 1)
+            {
                 if (!moveTowardPos(vipPos)) break;
                 continue;
             }
 
+            int distCV = distance(chPos, vipPos);
 
-            Direction bestDir = null;
-            int bestScore = Integer.MIN_VALUE;
-
-            for (Direction d : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
-                if (!canMove(d)) continue;
-
-                int[] next = nextPos(myPos, d);
-                int distNextToChaser = distance(next, chPos);
-                int distNextToVip    = distance(next, vipPos);
-                if (distNextToVip > ESCORT_DISTANCE + 1)
-                {
-                    continue;
-                }
-                int score = 10 * distNextToChaser - 8 * distNextToVip;
-
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestDir = d;
-                }
-            }
-
-            if (bestDir != null)
+            if (distCV <= 1)
             {
-                if (!tryMove(bestDir)) break;
-            }
-            else
-            {
-                break;
+                Direction bestDir = null;
+                int bestScore = Integer.MIN_VALUE;
+
+                for (Direction d : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
+                    if (!canMove(d)) continue;
+
+                    int[] next = nextPos(myPos, d);
+
+                    if (distance(next, vipPos) > ESCORT_DISTANCE + 1) continue;
+
+                    int distNextToChaser = distance(next, chPos);
+                    int distNextToVip    = distance(next, vipPos);
+
+                    int score = 10 * distNextToChaser - 8 * distNextToVip;
+
+                    if (score > bestScore)
+                    {
+                        bestScore = score;
+                        bestDir = d;
+                    }
+                }
+
+                if (bestDir == null || !tryMove(bestDir)) break;
+                continue;
             }
 
+            int[] blockPos = computeBlockPos(vipPos, chPos);
+
+            if (distance(myPos, blockPos) == 0) break;
+
+            if (!moveTowardPos(blockPos)) break;
         }
     }
+
 
     private void doAttack(PlayerInfo threatChaser)
     {
@@ -370,6 +380,26 @@ public class LiBot extends BaseBot {
         }
         return false;
     }
+
+    private int[] computeBlockPos(int[] vipPos, int[] chPos) {
+        int dx = chPos[0] - vipPos[0];
+        int dy = chPos[1] - vipPos[1];
+
+        int bx = vipPos[0];
+        int by = vipPos[1];
+
+        if (Math.abs(dx) >= Math.abs(dy))
+        {
+            if (dx != 0) bx += (dx > 0 ? 1 : -1);
+        }
+        else
+        {
+            if (dy != 0) by += (dy > 0 ? 1 : -1);
+        }
+
+        return new int[]{bx, by};
+    }
+
 
 
     private boolean canMove(Direction d) {
