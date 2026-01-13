@@ -595,7 +595,6 @@ public class KureshyBotTest {
                     //checkDodge((KureshyBot) robots[i], robots[i-1], rand);
 
                     robots[i].takeTurn();
-
                 }
                 checkForTags(robots, rand);
 
