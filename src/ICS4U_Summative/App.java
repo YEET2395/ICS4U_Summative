@@ -19,6 +19,9 @@ public class App {
     private static final int NUM_GUARDS = 2;
     private static final int NUM_CHASERS = 2;
 
+    // Debug toggle for test output
+    private static final boolean DEBUG = true;
+
     /**
      * Set up the playground for the robots
      * @author Xinran Li
@@ -50,16 +53,39 @@ public class App {
     {
         for (int i = 0; i < records.length; i++)
         {
+            // Capture previous values for lightweight change logging
+            int oldHP = records[i].getHP();
+            boolean oldState = records[i].getState();
+            int[] oldPos = records[i].getPosition();
+
             records[i].updateRecords
                     (
-                    array[i].myRecords.getHP(),
-                    array[i].getMyPosition(),
-                    array[i].myRecords.getState()
+                            array[i].myRecords.getHP(),
+                            array[i].getMyPosition(),
+                            array[i].myRecords.getState()
                     );
 
             // Sets caught players as black for visualization
             if (array[i].myRecords.getState()) {
                 array[i].setColor(Color.BLACK);
+            }
+
+            // Print only meaningful state changes to avoid spam
+            if (DEBUG) {
+                int newHP = records[i].getHP();
+                boolean newState = records[i].getState();
+
+                if (oldHP != newHP || oldState != newState) {
+                    System.out.format(
+                            "RECORD UPDATE: id=%d role=%s pos %s -> %s | HP %d -> %d | caught %b -> %b%n",
+                            array[i].myRecords.getID(),
+                            roleName(records[i].getRole()),
+                            Arrays.toString(oldPos),
+                            Arrays.toString(records[i].getPosition()),
+                            oldHP, newHP,
+                            oldState, newState
+                    );
+                }
             }
         }
     }
@@ -118,6 +144,17 @@ public class App {
             // If a valid target is found, resolve the dodge/tag interaction
             if (bestTarget != -1)
             {
+                if (DEBUG) {
+                    System.out.format(
+                            "INTERACTION DETECTED: Chaser id=%d pos=%s overlaps Target id=%d role=%s pos=%s%n",
+                            chaser.myRecords.getID(),
+                            Arrays.toString(chaser.getMyPosition()),
+                            robots[bestTarget].myRecords.getID(),
+                            roleName(robots[bestTarget].myRecords.getRole()),
+                            Arrays.toString(robots[bestTarget].getMyPosition())
+                    );
+                }
+
                 checkDodge(chaser, robots[bestTarget], rand);
                 App.updateRecords(robots, infos);
             }
@@ -143,13 +180,23 @@ public class App {
 
         // Debug output: positions and roll value
         System.out.format(
-                "Chaser %d: %s -- Target %d: %s -- Roll: %.2f\n",
+                "Chaser %d: %s -- Target %d: %s -- Roll: %.2f%n",
                 chaser.myRecords.getID(),
                 Arrays.toString(chaser.getMyPosition()),
                 target.myRecords.getID(),
                 Arrays.toString(target.getMyPosition()),
                 diff
         );
+
+        // Extra debug output: dodge caps + HP before resolution
+        if (DEBUG) {
+            System.out.format(
+                    "DODGE CAPS: chaser=%.2f target=%.2f | HP BEFORE: chaser=%d target=%d%n",
+                    c, t,
+                    chaser.myRecords.getHP(),
+                    target.myRecords.getHP()
+            );
+        }
 
         // Determine dodge results for both participants
         boolean chaserDodged = (c >= diff);
@@ -176,6 +223,17 @@ public class App {
             chaser.takeDamage(1);
             target.takeDamage(1);
             System.out.println("NONE DODGED, BOTH HIT");
+        }
+
+        // Extra debug output: HP after resolution (immediate state on the bot objects)
+        if (DEBUG) {
+            System.out.format(
+                    "HP AFTER: chaser=%d (caught=%b) target=%d (caught=%b)%n",
+                    chaser.myRecords.getHP(),
+                    chaser.myRecords.getState(),
+                    target.myRecords.getHP(),
+                    target.myRecords.getState()
+            );
         }
     }
 
@@ -211,13 +269,30 @@ public class App {
             }
         }
         // End game if all VIPs or all Chasers are caught, or max turns reached
+        boolean endedNow = false;
+        String reason = null;
+
         if (numVIPsCaught==numVIPs) {
-            gameEnded = true;
+            endedNow = true;
+            reason = "All VIPs have been caught";
         }
         if (numChasersCaught==numChasers) {
-            gameEnded = true;
+            endedNow = true;
+            reason = "All Chasers have been caught";
         }
         if (turn >= maxTurns) {
+            endedNow = true;
+            reason = "Max turns reached";
+        }
+
+        if (endedNow && !gameEnded && DEBUG) {
+            System.out.format(
+                    "GAME ENDED at turn %d: %s (VIPs caught %d/%d, Chasers caught %d/%d)%n",
+                    turn, reason, numVIPsCaught, numVIPs, numChasersCaught, numChasers
+            );
+        }
+
+        if (endedNow) {
             gameEnded = true;
         }
     }
@@ -308,9 +383,31 @@ public class App {
             robots[i].initRecords(infos);
         }
 
+        // Initial roster printout for quick verification
+        if (DEBUG) {
+            System.out.println("===== INITIAL ROBOT ROSTER =====");
+            for (int i = 0; i < robots.length; i++) {
+                System.out.format(
+                        "INIT: id=%d role=%s pos=%s hp=%d dodge=%.2f caught=%b%n",
+                        robots[i].myRecords.getID(),
+                        roleName(robots[i].myRecords.getRole()),
+                        Arrays.toString(robots[i].getMyPosition()),
+                        robots[i].myRecords.getHP(),
+                        robots[i].myRecords.getDodgeDifficulty(),
+                        robots[i].myRecords.getState()
+                );
+            }
+            System.out.println("================================");
+        }
+
         // Main game loop
         for (int turn = 1; turn <= maxTurns && !gameEnded; turn++)
         {
+            if (DEBUG) {
+                System.out.println();
+                System.out.println("========== TURN " + turn + " ==========");
+            }
+
             App.updateRecords(robots, infos);
 
             // Broadcast the latest records to every bot at the start of the turn
@@ -330,10 +427,31 @@ public class App {
                 // ----- VIP move -----
                 if (!robots[vipIndex].myRecords.getState())
                 {
+                    if (DEBUG) {
+                        System.out.format(
+                                "[Turn %d] VIP acting: id=%d pos=%s hp=%d%n",
+                                turn,
+                                robots[vipIndex].myRecords.getID(),
+                                Arrays.toString(robots[vipIndex].getMyPosition()),
+                                robots[vipIndex].myRecords.getHP()
+                        );
+                    }
+
                     robots[vipIndex].updateOtherRecords(infos);
                     robots[vipIndex].takeTurn();
                     App.updateRecords(robots, infos);
                     handleInteractions(robots, infos, rand);
+
+                    if (DEBUG) {
+                        System.out.format(
+                                "[Turn %d] VIP done:   id=%d pos=%s hp=%d caught=%b%n",
+                                turn,
+                                robots[vipIndex].myRecords.getID(),
+                                Arrays.toString(robots[vipIndex].getMyPosition()),
+                                robots[vipIndex].myRecords.getHP(),
+                                robots[vipIndex].myRecords.getState()
+                        );
+                    }
                 }
                 App.checkForWinCondition(infos, maxTurns, turn);
                 if (gameEnded) break;
@@ -341,10 +459,31 @@ public class App {
                 // ----- Guard move -----
                 if (!robots[guardIndex].myRecords.getState())
                 {
+                    if (DEBUG) {
+                        System.out.format(
+                                "[Turn %d] Guard acting: id=%d pos=%s hp=%d%n",
+                                turn,
+                                robots[guardIndex].myRecords.getID(),
+                                Arrays.toString(robots[guardIndex].getMyPosition()),
+                                robots[guardIndex].myRecords.getHP()
+                        );
+                    }
+
                     robots[guardIndex].updateOtherRecords(infos);
                     robots[guardIndex].takeTurn();
                     App.updateRecords(robots, infos);
                     handleInteractions(robots, infos, rand);
+
+                    if (DEBUG) {
+                        System.out.format(
+                                "[Turn %d] Guard done:   id=%d pos=%s hp=%d caught=%b%n",
+                                turn,
+                                robots[guardIndex].myRecords.getID(),
+                                Arrays.toString(robots[guardIndex].getMyPosition()),
+                                robots[guardIndex].myRecords.getHP(),
+                                robots[guardIndex].myRecords.getState()
+                        );
+                    }
                 }
                 App.checkForWinCondition(infos, maxTurns, turn);
                 if (gameEnded) break;
@@ -352,14 +491,59 @@ public class App {
                 // ----- Chaser move -----
                 if (!robots[chaserIndex].myRecords.getState())
                 {
+                    if (DEBUG) {
+                        System.out.format(
+                                "[Turn %d] Chaser acting: id=%d pos=%s hp=%d%n",
+                                turn,
+                                robots[chaserIndex].myRecords.getID(),
+                                Arrays.toString(robots[chaserIndex].getMyPosition()),
+                                robots[chaserIndex].myRecords.getHP()
+                        );
+                    }
+
                     robots[chaserIndex].updateOtherRecords(infos);
                     robots[chaserIndex].takeTurn();
                     App.updateRecords(robots, infos);
                     handleInteractions(robots, infos, rand);
+
+                    if (DEBUG) {
+                        System.out.format(
+                                "[Turn %d] Chaser done:   id=%d pos=%s hp=%d caught=%b%n",
+                                turn,
+                                robots[chaserIndex].myRecords.getID(),
+                                Arrays.toString(robots[chaserIndex].getMyPosition()),
+                                robots[chaserIndex].myRecords.getHP(),
+                                robots[chaserIndex].myRecords.getState()
+                        );
+                    }
                 }
                 App.checkForWinCondition(infos, maxTurns, turn);
                 if (gameEnded) break;
             }
+
+            // End-of-turn snapshot (compact status line for all robots)
+            if (DEBUG) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("TURN ").append(turn).append(" SUMMARY: ");
+                for (int i = 0; i < robots.length; i++) {
+                    sb.append(String.format(
+                        "[%s id=%d hp=%d pos=%s caught=%b] ",
+                        roleName(robots[i].myRecords.getRole()),
+                        robots[i].myRecords.getID(),
+                        robots[i].myRecords.getHP(),
+                        Arrays.toString(robots[i].getMyPosition()),
+                        robots[i].myRecords.getState()
+                    ));
+                }
+                System.out.println(sb);
+            }
         }
+    }
+
+    private static String roleName(int role) {
+        if (role == ROLE_VIP) return "VIP";
+        if (role == ROLE_GUARD) return "GUARD";
+        if (role == ROLE_CHASER) return "CHASER";
+        return "UNKNOWN";
     }
 }
