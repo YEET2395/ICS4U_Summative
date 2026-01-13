@@ -135,6 +135,8 @@ public class XiongBot extends BaseBot {
                 // keep existing chaserPrevPos as-is so trackChaserSpeeds can compute a one-round delta
                 // chaserSpeeds will be updated by trackChaserSpeeds
             }
+            // Keep arrays consistent and sorted by distance
+            this.sortChasersByDistance();
             return;
         }
 
@@ -149,6 +151,64 @@ public class XiongBot extends BaseBot {
             this.chaserSpeeds[i] = 5;
             this.chaserPrevPos[i][0] = coords[i][0];
             this.chaserPrevPos[i][1] = coords[i][1];
+        }
+
+        // Keep arrays sorted by distance after initialization
+        this.sortChasersByDistance();
+    }
+
+    // Selection sort the chaser arrays by Manhattan distance to this bot (closest first).
+    // This keeps chaserPos, chaserSpeeds, and chaserPrevPos in sync.
+    private void sortChasersByDistance() {
+        if (this.chaserPos == null) {
+            return;
+        }
+        int n = this.chaserPos.length;
+        if (n <= 1) {
+            return;
+        }
+
+        for (int i = 0; i < n - 1; i++) {
+            int minIdx = i;
+            int minDist = Integer.MAX_VALUE;
+            // compute distance for minIdx initially
+            int[] minPos = this.chaserPos[minIdx];
+            if (minPos != null) {
+                minDist = this.getDistances(minPos);
+            }
+
+            for (int j = i + 1; j < n; j++) {
+                int[] posJ = this.chaserPos[j];
+                if (posJ == null) {
+                    continue;
+                }
+                int distJ = this.getDistances(posJ);
+                if (distJ < minDist) {
+                    minDist = distJ;
+                    minIdx = j;
+                }
+            }
+
+            if (minIdx != i) {
+                // swap chaserPos
+                int[] tmpPos = this.chaserPos[i];
+                this.chaserPos[i] = this.chaserPos[minIdx];
+                this.chaserPos[minIdx] = tmpPos;
+
+                // swap chaserSpeeds if present
+                if (this.chaserSpeeds != null && this.chaserSpeeds.length > 0) {
+                    double tmpSpeed = this.chaserSpeeds[i];
+                    this.chaserSpeeds[i] = this.chaserSpeeds[minIdx];
+                    this.chaserSpeeds[minIdx] = tmpSpeed;
+                }
+
+                // swap chaserPrevPos
+                if (this.chaserPrevPos != null && this.chaserPrevPos.length > 0) {
+                    int[] tmpPrev = this.chaserPrevPos[i];
+                    this.chaserPrevPos[i] = this.chaserPrevPos[minIdx];
+                    this.chaserPrevPos[minIdx] = tmpPrev;
+                }
+            }
         }
     }
 
@@ -217,15 +277,6 @@ public class XiongBot extends BaseBot {
             // Evaluate candidate directions and pick the one that maximizes the minimum distance to any chaser
             // We'll track the best and second-best candidates so we can apply probabilistic tie-breaking
             Direction[] candidates = {Direction.NORTH, Direction.WEST, Direction.SOUTH, Direction.EAST};
-            Direction bestDir = null;
-            int bestMinDistance = Integer.MIN_VALUE;
-            int bestIncrease = Integer.MIN_VALUE;
-
-            Direction secondBestDir = null;
-            int secondBestMinDistance = Integer.MIN_VALUE;
-            int secondBestIncrease = Integer.MIN_VALUE;
-
-            // Determine index of current direction so we can iterate candidates starting from current facing
             Direction currentDirForChecks = this.getDirection();
             int startIdx = 0;
             for (int i = 0; i < candidates.length; i++) {
@@ -235,22 +286,45 @@ public class XiongBot extends BaseBot {
                 }
             }
 
-            // Iterate through directions once (rotate through them) instead of turning back-and-forth for each check
-            for (int k = 0; k < candidates.length; k++) {
+            // Build candidate arrays and compute metrics for each valid candidate. We'll selection-sort them
+            // so we can pick the top choices without separate best/second variables.
+            int m = candidates.length;
+            int[] minDistArr = new int[m];
+            int[] increaseArr = new int[m];
+            boolean[] validArr = new boolean[m];
+            Direction[] orderedDirs = new Direction[m];
+
+            for (int k = 0; k < m; k++) {
+                // initialize
+                minDistArr[k] = Integer.MIN_VALUE;
+                increaseArr[k] = Integer.MIN_VALUE;
+                validArr[k] = false;
+                orderedDirs[k] = candidates[k];
+            }
+
+            // Evaluate each candidate by rotating starting from current facing
+            for (int k = 0; k < m; k++) {
                 Direction d = candidates[(startIdx + k) % candidates.length];
 
-                // Turn to the candidate direction (this rotates sequentially and avoids back-and-forth spinning)
+                // turn to candidate to use frontIsClear
                 this.turnDirection(d);
 
-                // If front is blocked, skip this candidate
                 if (!this.frontIsClear()) {
+                    // mark as invalid and continue
+                    // find index in orderedDirs and set valid false (we will keep same index mapping)
+                    for (int p = 0; p < m; p++) {
+                        if (orderedDirs[p] == d) {
+                            validArr[p] = false;
+                            minDistArr[p] = Integer.MIN_VALUE;
+                            increaseArr[p] = Integer.MIN_VALUE;
+                            break;
+                        }
+                    }
                     continue;
                 }
 
-                // compute the coordinates if we move one step in this direction
                 int newX = myX;
                 int newY = myY;
-
                 if (d == Direction.NORTH) {
                     newY = myY - 1;
                 } else if (d == Direction.SOUTH) {
@@ -262,14 +336,26 @@ public class XiongBot extends BaseBot {
                 }
 
                 // If moving here would reduce our distance to the most reachable chaser, skip it.
+                boolean reducesToMost = false;
                 if (mostReachableIndex >= 0 && mostReachableIndex < this.chaserPos.length) {
                     int[] most = this.chaserPos[mostReachableIndex];
                     int curDistToMost = mostReachableDist;
                     int candDistToMost = Math.abs(newX - most[0]) + Math.abs(newY - most[1]);
                     if (candDistToMost < curDistToMost) {
-                        // This candidate would move us closer to the most reachable chaser — disallow it.
-                        continue;
+                        reducesToMost = true;
                     }
+                }
+                if (reducesToMost) {
+                    // mark as invalid
+                    for (int p = 0; p < m; p++) {
+                        if (orderedDirs[p] == d) {
+                            validArr[p] = false;
+                            minDistArr[p] = Integer.MIN_VALUE;
+                            increaseArr[p] = Integer.MIN_VALUE;
+                            break;
+                        }
+                    }
+                    continue;
                 }
 
                 // compute minimum distance to any chaser from the new position
@@ -284,40 +370,87 @@ public class XiongBot extends BaseBot {
 
                 int increase = minDist - currentMinDist;
 
-                // Update best/second-best accordingly
-                if (minDist > bestMinDistance || (minDist == bestMinDistance && increase > bestIncrease)) {
-                    // shift current best to second-best
-                    secondBestDir = bestDir;
-                    secondBestMinDistance = bestMinDistance;
-                    secondBestIncrease = bestIncrease;
-
-                    bestDir = d;
-                    bestMinDistance = minDist;
-                    bestIncrease = increase;
-                } else if (minDist > secondBestMinDistance || (minDist == secondBestMinDistance && increase > secondBestIncrease)) {
-                    secondBestDir = d;
-                    secondBestMinDistance = minDist;
-                    secondBestIncrease = increase;
+                // store metrics in the slot corresponding to this direction
+                for (int p = 0; p < m; p++) {
+                    if (orderedDirs[p] == d) {
+                        minDistArr[p] = minDist;
+                        increaseArr[p] = increase;
+                        validArr[p] = true;
+                        break;
+                    }
                 }
             }
 
-            // After checks, restore original facing direction
+            // After evaluating candidates, selection-sort them by minDist (descending), tie-breaker increase (descending)
+            for (int i = 0; i < m - 1; i++) {
+                int maxIdx = i;
+                for (int j = i + 1; j < m; j++) {
+                    // choose element j if it is better than current max
+                    boolean replace = false;
+                    if (minDistArr[j] > minDistArr[maxIdx]) {
+                        replace = true;
+                    } else if (minDistArr[j] == minDistArr[maxIdx]) {
+                        if (increaseArr[j] > increaseArr[maxIdx]) {
+                            replace = true;
+                        }
+                    }
+                    if (replace) {
+                        maxIdx = j;
+                    }
+                }
+                if (maxIdx != i) {
+                    // swap minDistArr
+                    int tmpMin = minDistArr[i];
+                    minDistArr[i] = minDistArr[maxIdx];
+                    minDistArr[maxIdx] = tmpMin;
+
+                    // swap increaseArr
+                    int tmpInc = increaseArr[i];
+                    increaseArr[i] = increaseArr[maxIdx];
+                    increaseArr[maxIdx] = tmpInc;
+
+                    // swap validArr
+                    boolean tmpVal = validArr[i];
+                    validArr[i] = validArr[maxIdx];
+                    validArr[maxIdx] = tmpVal;
+
+                    // swap orderedDirs
+                    Direction tmpDir = orderedDirs[i];
+                    orderedDirs[i] = orderedDirs[maxIdx];
+                    orderedDirs[maxIdx] = tmpDir;
+                }
+            }
+
+            // Restore original facing before making the chosen move
             this.turnDirection(currentDir);
 
-            // If no valid move was found, stop trying further steps
-            if (bestDir == null) {
+            // Find the first valid candidate in the sorted list
+            int chosenIdx = -1;
+            for (int i = 0; i < m; i++) {
+                if (validArr[i]) {
+                    chosenIdx = i;
+                    break;
+                }
+            }
+            if (chosenIdx == -1) {
+                // no valid moves
                 break;
             }
 
-            // Choose between best and second-best with a dynamic probability:
-            // The closer we are to the nearest chaser (smaller currentMinDist), the higher
-            // the probability of choosing the most optimal (best) direction.
-            Direction chosenDir = bestDir;
-            if (secondBestDir != null) {
+            Direction chosenDir = orderedDirs[chosenIdx];
+
+            // If there is a second valid candidate, probabilistically choose between top two
+            int secondIdx = -1;
+            for (int i = chosenIdx + 1; i < m; i++) {
+                if (validArr[i]) {
+                    secondIdx = i;
+                    break;
+                }
+            }
+
+            if (secondIdx != -1) {
                 // configure thresholds for mapping distance -> probability
                 int minDistanceForMax = 1; // at or below this distance, pick best almost always
-                // Dynamically compute a maxRelevantDistance so that if the bot's currentMinDist
-                // exceeds this value, no chaser could reach the bot within `safetyTurns` turns.
                 int dynamicReach = computeMaxChaserReach(this.safetyTurns);
                 int maxRelevantDistance = dynamicReach + 1; // add small cushion
 
@@ -327,26 +460,13 @@ public class XiongBot extends BaseBot {
                 } else if (currentMinDist >= maxRelevantDistance) {
                     pBest = 0.60;
                 } else {
-                    // exponentioal interpolate between 0.99 (close) and 0.60 (far)
                     double ratio = (double)(maxRelevantDistance - currentMinDist) / (double)(maxRelevantDistance - minDistanceForMax);
-                    pBest = 0.60 + Math.pow(0.39, ratio); // exponential curve for smoother transition
+                    pBest = 0.60 + Math.pow(0.39, ratio);
                 }
 
-                // If both candidates have equal min-distance, still bias toward best depending on proximity
-                if (bestMinDistance == secondBestMinDistance) {
-                    double r = rnd.nextDouble();
-                    if (r < pBest) {
-                        chosenDir = bestDir;
-                    } else {
-                        chosenDir = secondBestDir;
-                    }
-                } else {
-                    double r = rnd.nextDouble();
-                    if (r < pBest) {
-                        chosenDir = bestDir;
-                    } else {
-                        chosenDir = secondBestDir;
-                    }
+                double r = rnd.nextDouble();
+                if (r >= pBest) {
+                    chosenDir = orderedDirs[secondIdx];
                 }
             }
 
@@ -409,6 +529,10 @@ public class XiongBot extends BaseBot {
             this.chaserPrevPos[i][0] = curX;
             this.chaserPrevPos[i][1] = curY;
         }
+
+        // Keep chaser arrays sorted by proximity after updating speeds/prev positions
+        this.sortChasersByDistance();
+
     }
 
     /**
