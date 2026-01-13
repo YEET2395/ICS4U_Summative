@@ -66,16 +66,19 @@ public class App {
                     );
 
             // Sets caught players as black for visualization
-            if (array[i].myRecords.getState()) {
+            if (array[i].myRecords.getState())
+            {
                 array[i].setColor(Color.BLACK);
             }
 
             // Print only meaningful state changes to avoid spam
-            if (DEBUG) {
+            if (DEBUG)
+            {
                 int newHP = records[i].getHP();
                 boolean newState = records[i].getState();
 
-                if (oldHP != newHP || oldState != newState) {
+                if (oldHP != newHP || oldState != newState)
+                {
                     System.out.format(
                             "RECORD UPDATE: id=%d role=%s pos %s -> %s | HP %d -> %d | caught %b -> %b%n",
                             array[i].myRecords.getID(),
@@ -102,7 +105,7 @@ public class App {
     }
 
     /**
-     * Handles all chaser-target interactions for the current turn.
+     * Handles all chaser target interactions for the current turn.
      * @param robots array of all robots
      * @param infos array of all player info
      * @param rand random number generator
@@ -203,21 +206,28 @@ public class App {
         boolean targetDodged = (t >= diff);
 
         // Apply outcome rules and notify the chaser of the tag attempt result
-        if (chaserDodged && targetDodged) {
+        if (chaserDodged && targetDodged)
+        {
             // Both dodged: no one takes damage; tag attempt fails
             chaser.sendTagResult(target.myRecords.getID(), false);
             System.out.println("BOTH DODGED");
-        } else if (chaserDodged && !targetDodged) {
+        }
+        else if (chaserDodged && !targetDodged)
+        {
             // Chaser dodged but target failed: target takes damage; tag attempt succeeds
             chaser.sendTagResult(target.myRecords.getID(), true);
             target.takeDamage(1);
             System.out.println("CHASER DODGED, TARGET HIT");
-        } else if (!chaserDodged && targetDodged) {
+        }
+        else if (!chaserDodged && targetDodged)
+        {
             // Target dodged but chaser failed: chaser takes damage; tag attempt fails
             chaser.sendTagResult(target.myRecords.getID(), false);
             chaser.takeDamage(1);
             System.out.println("TARGET DODGED, CHASER HIT");
-        } else {
+        }
+        else
+        {
             // Neither dodged: both take damage; tag attempt succeeds
             chaser.sendTagResult(target.myRecords.getID(), true);
             chaser.takeDamage(1);
@@ -226,7 +236,8 @@ public class App {
         }
 
         // Extra debug output: HP after resolution (immediate state on the bot objects)
-        if (DEBUG) {
+        if (DEBUG)
+        {
             System.out.format(
                     "HP AFTER: chaser=%d (caught=%b) target=%d (caught=%b)%n",
                     chaser.myRecords.getHP(),
@@ -250,10 +261,12 @@ public class App {
         int numChasersCaught = 0;
 
         // Iterate through the records to count roles and caught players
-        for (int i=0; i<records.length; i++) {
+        for (int i=0; i<records.length; i++)
+        {
 
             // Count VIPs and check if caught
-            if (records[i].getRole() == 1) {
+            if (records[i].getRole() == 1)
+            {
                 numVIPs++;
 
                 if (records[i].getState())
@@ -261,7 +274,8 @@ public class App {
             }
 
             // Count Chasers and check if caught
-            if (records[i].getRole() == 3) {
+            if (records[i].getRole() == 3)
+            {
                 numChasers++;
 
                 if (records[i].getState())
@@ -272,27 +286,32 @@ public class App {
         boolean endedNow = false;
         String reason = null;
 
-        if (numVIPsCaught==numVIPs) {
+        if (numVIPsCaught==numVIPs)
+        {
             endedNow = true;
             reason = "All VIPs have been caught";
         }
-        if (numChasersCaught==numChasers) {
+        if (numChasersCaught==numChasers)
+        {
             endedNow = true;
             reason = "All Chasers have been caught";
         }
-        if (turn >= maxTurns) {
+        if (turn >= maxTurns)
+        {
             endedNow = true;
             reason = "Max turns reached";
         }
 
-        if (endedNow && !gameEnded && DEBUG) {
+        if (endedNow && !gameEnded && DEBUG)
+        {
             System.out.format(
                     "GAME ENDED at turn %d: %s (VIPs caught %d/%d, Chasers caught %d/%d)%n",
                     turn, reason, numVIPsCaught, numVIPs, numChasersCaught, numChasers
             );
         }
 
-        if (endedNow) {
+        if (endedNow)
+        {
             gameEnded = true;
         }
     }
@@ -314,12 +333,12 @@ public class App {
         Random rand = new Random();
 
         // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
-        for (int i=0; i<2; i++) {
+        for (int i=0; i<2; i++)
+        {
             int movesPerTurn = rand.nextInt(3) + 1;
             double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
             int row = rand.nextInt(13) + 1;
             int col = rand.nextInt(24) + 1;
-            int[] pos = {row, col};
             robots[i] = new XiongBot(
                     playground,
                     row,
@@ -335,12 +354,12 @@ public class App {
         }
 
         // Guards: movesPerTurn [2,4], dodgeDiff [0.45, 0.55]
-        for (int i=2; i<4; i++) {
+        for (int i=2; i<4; i++)
+        {
             int movesPerTurn = rand.nextInt(3) + 2;
             double dodgeDiff = 0.45 + rand.nextDouble() * 0.1;
             int row = rand.nextInt(13) + 1;
             int col = rand.nextInt(24) + 1;
-            int[] pos = {row, col};
             robots[i] = new LiBot(
                     playground,
                     row,
@@ -356,12 +375,12 @@ public class App {
         }
 
         // Chasers: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
-        for (int i=4; i<6; i++) {
+        for (int i=4; i<6; i++)
+        {
             int movesPerTurn = rand.nextInt(3) + 3;
             double dodgeDiff = 0.7 + rand.nextDouble() * 0.2;
             int row = rand.nextInt(13) + 1;
             int col = rand.nextInt(24) + 1;
-            int[] pos = {row, col};
             robots[i] = new KureshyBot(
                     playground,
                     row,
@@ -384,9 +403,11 @@ public class App {
         }
 
         // Initial roster printout for quick verification
-        if (DEBUG) {
+        if (DEBUG)
+        {
             System.out.println("===== INITIAL ROBOT ROSTER =====");
-            for (int i = 0; i < robots.length; i++) {
+            for (int i = 0; i < robots.length; i++)
+            {
                 System.out.format(
                         "INIT: id=%d role=%s pos=%s hp=%d dodge=%.2f caught=%b%n",
                         robots[i].myRecords.getID(),
@@ -403,7 +424,8 @@ public class App {
         // Main game loop
         for (int turn = 1; turn <= maxTurns && !gameEnded; turn++)
         {
-            if (DEBUG) {
+            if (DEBUG)
+            {
                 System.out.println();
                 System.out.println("========== TURN " + turn + " ==========");
             }
@@ -411,8 +433,9 @@ public class App {
             App.updateRecords(robots, infos);
 
             // Broadcast the latest records to every bot at the start of the turn
-            for (BaseBot b : robots)
+            for(int i = 0; i < robots.length; i++)
             {
+                BaseBot b = robots[i];
                 b.updateOtherRecords(infos);
             }
 
@@ -427,7 +450,8 @@ public class App {
                 // ----- VIP move -----
                 if (!robots[vipIndex].myRecords.getState())
                 {
-                    if (DEBUG) {
+                    if (DEBUG)
+                    {
                         System.out.format(
                                 "[Turn %d] VIP acting: id=%d pos=%s hp=%d%n",
                                 turn,
@@ -436,13 +460,13 @@ public class App {
                                 robots[vipIndex].myRecords.getHP()
                         );
                     }
-
                     robots[vipIndex].updateOtherRecords(infos);
                     robots[vipIndex].takeTurn();
                     App.updateRecords(robots, infos);
                     handleInteractions(robots, infos, rand);
 
-                    if (DEBUG) {
+                    if (DEBUG)
+                    {
                         System.out.format(
                                 "[Turn %d] VIP done:   id=%d pos=%s hp=%d caught=%b%n",
                                 turn,
@@ -459,7 +483,8 @@ public class App {
                 // ----- Guard move -----
                 if (!robots[guardIndex].myRecords.getState())
                 {
-                    if (DEBUG) {
+                    if (DEBUG)
+                    {
                         System.out.format(
                                 "[Turn %d] Guard acting: id=%d pos=%s hp=%d%n",
                                 turn,
@@ -474,7 +499,8 @@ public class App {
                     App.updateRecords(robots, infos);
                     handleInteractions(robots, infos, rand);
 
-                    if (DEBUG) {
+                    if (DEBUG)
+                    {
                         System.out.format(
                                 "[Turn %d] Guard done:   id=%d pos=%s hp=%d caught=%b%n",
                                 turn,
@@ -491,7 +517,8 @@ public class App {
                 // ----- Chaser move -----
                 if (!robots[chaserIndex].myRecords.getState())
                 {
-                    if (DEBUG) {
+                    if (DEBUG)
+                    {
                         System.out.format(
                                 "[Turn %d] Chaser acting: id=%d pos=%s hp=%d%n",
                                 turn,
@@ -506,7 +533,8 @@ public class App {
                     App.updateRecords(robots, infos);
                     handleInteractions(robots, infos, rand);
 
-                    if (DEBUG) {
+                    if (DEBUG)
+                    {
                         System.out.format(
                                 "[Turn %d] Chaser done:   id=%d pos=%s hp=%d caught=%b%n",
                                 turn,
@@ -522,10 +550,12 @@ public class App {
             }
 
             // End-of-turn snapshot (compact status line for all robots)
-            if (DEBUG) {
+            if (DEBUG)
+            {
                 StringBuilder sb = new StringBuilder();
                 sb.append("TURN ").append(turn).append(" SUMMARY: ");
-                for (int i = 0; i < robots.length; i++) {
+                for(int i = 0; i < robots.length; i++)
+                {
                     sb.append(String.format(
                         "[%s id=%d hp=%d pos=%s caught=%b] ",
                         roleName(robots[i].myRecords.getRole()),
@@ -540,7 +570,8 @@ public class App {
         }
     }
 
-    private static String roleName(int role) {
+    private static String roleName(int role)
+    {
         if (role == ROLE_VIP) return "VIP";
         if (role == ROLE_GUARD) return "GUARD";
         if (role == ROLE_CHASER) return "CHASER";
