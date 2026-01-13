@@ -98,8 +98,6 @@ public class App {
         }
     }
 
-
-
     /**
      * Performs a single "dodge vs. tag" interaction between a Chaser and a target robot.
      * A random roll in the range [0.0, 1.0) is generated. Each participant "dodges" if their
@@ -154,7 +152,6 @@ public class App {
         }
     }
 
-
     /**
      * Checks if either the VIPs/Guards or Chasers has reached their win conditions
      * @param records the application records
@@ -187,18 +184,14 @@ public class App {
                 if (records[i].getState())
                     numChasersCaught++;
             }
-
         }
-
         //check if all VIPs have been caught
         if (numVIPsCaught==numVIPs) {
             gameEnded = true;
         }
-
         if (numChasersCaught==numChasers) {
             gameEnded = true;
         }
-
         if (turn >= maxTurns) {
             gameEnded = true;
         }
@@ -289,7 +282,8 @@ public class App {
 
             App.updateRecords(robots, infos);
 
-            for (BaseBot b : robots) {
+            for (BaseBot b : robots)
+            {
                 b.updateOtherRecords(infos);
             }
 

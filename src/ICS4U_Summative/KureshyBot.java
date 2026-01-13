@@ -34,7 +34,7 @@ public class KureshyBot extends BaseBot{
         super(city, str, ave, dir, id, role, hp, movesPerTurn, dodgeDiff);
         //for debugging
         super.setColor(Color.RED);
-        super.setLabel("Robot " + id);
+        super.setLabel("Chaser " + id);
         this.otherRecords = new PlayerInfo[5]; //changed length since chasers need to keep track of each other
     }
 

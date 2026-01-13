@@ -47,7 +47,7 @@ public class XiongBot extends BaseBot {
 
         //for debugging
         super.setColor(Color.GREEN);
-        super.setLabel("Robot " + super.myRecords.getID());
+        super.setLabel("VIP " + super.myRecords.getID());
     }
 
     public void updateOtherRecords(PlayerInfo[] records) {
