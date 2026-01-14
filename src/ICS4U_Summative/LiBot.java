@@ -20,7 +20,6 @@ public class LiBot extends BaseBot {
 
     /**
      * Constructor for XinranBot
-     *
      * @param city         City the robot is in
      * @param str          Street number
      * @param ave          Avenue number
