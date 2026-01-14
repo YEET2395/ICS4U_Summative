@@ -478,7 +478,10 @@ public class App {
                     }
                 }
                 App.checkForWinCondition(infos, maxTurns, turn);
-                if (gameEnded) break;
+                if (gameEnded)
+                {
+                    break;
+                }
 
                 // ----- Guard move -----
                 if (!robots[guardIndex].myRecords.getState())
@@ -552,20 +555,21 @@ public class App {
             // End-of-turn snapshot (compact status line for all robots)
             if (DEBUG)
             {
-                StringBuilder sb = new StringBuilder();
-                sb.append("TURN ").append(turn).append(" SUMMARY: ");
+                String summary = "TURN " + turn + " SUMMARY: ";
+
                 for(int i = 0; i < robots.length; i++)
                 {
-                    sb.append(String.format(
-                        "[%s id=%d hp=%d pos=%s caught=%b] ",
-                        roleName(robots[i].myRecords.getRole()),
-                        robots[i].myRecords.getID(),
-                        robots[i].myRecords.getHP(),
-                        Arrays.toString(robots[i].getMyPosition()),
-                        robots[i].myRecords.getState()
-                    ));
+                    summary = summary + String.format(
+                            "[%s id=%d hp=%d pos=%s caught=%b] ",
+                            roleName(robots[i].myRecords.getRole()),
+                            robots[i].myRecords.getID(),
+                            robots[i].myRecords.getHP(),
+                            Arrays.toString(robots[i].getMyPosition()),
+                            robots[i].myRecords.getState()
+                    );
                 }
-                System.out.println(sb);
+
+                System.out.println(summary);
             }
         }
     }
