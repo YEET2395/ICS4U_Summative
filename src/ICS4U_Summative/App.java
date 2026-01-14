@@ -15,9 +15,6 @@ public class App {
     private static final int ROLE_GUARD = 2;
     private static final int ROLE_CHASER = 3;
     private static boolean gameEnded = false;
-    private static final int NUM_VIPS = 2;
-    private static final int NUM_GUARDS = 2;
-    private static final int NUM_CHASERS = 2;
 
     // Debug toggle for test output
     private static final boolean DEBUG = true;
@@ -346,13 +343,13 @@ public class App {
                     row,
                     col,
                     Direction.SOUTH, // str, ave, dir
-                    i, // id
+                    i+1, // id
                     ROLE_VIP, // role
                     2, // hp
                     movesPerTurn,
                     dodgeDiff
             );
-            infos[i] = new PlayerInfo(i, 1, 2, dodgeDiff, robots[i].getMyPosition(), false);
+            infos[i] = new PlayerInfo(i+1, 1, 2, dodgeDiff, robots[i].getMyPosition(), false);
         }
 
         // Guards: movesPerTurn [2,4], dodgeDiff [0.45, 0.55]
@@ -367,13 +364,13 @@ public class App {
                     row,
                     col,
                     Direction.NORTH, // str, ave, dir
-                    i, // id
+                    i+1, // id
                     ROLE_GUARD, // role
                     5, // hp
                     movesPerTurn,
                     dodgeDiff
             );
-            infos[i] = new PlayerInfo(i, 2, 5, dodgeDiff, robots[i].getMyPosition(), false);
+            infos[i] = new PlayerInfo(i+1, 2, 5, dodgeDiff, robots[i].getMyPosition(), false);
         }
 
         // Chasers: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
@@ -388,16 +385,16 @@ public class App {
                     row,
                     col,
                     Direction.NORTH, // str, ave, dir
-                    i, // id
+                    i+1, // id
                     ROLE_CHASER, // role
                     3, // hp
                     movesPerTurn,
                     dodgeDiff
             );
-            infos[i] = new PlayerInfo(i, 3, 3, dodgeDiff, robots[i].getMyPosition(), false);
+            infos[i] = new PlayerInfo(i+1, 3, 3, dodgeDiff, robots[i].getMyPosition(), false);
         }
 
-        int maxTurns = 50;
+        int maxTurns = 20;
         // Initialize chaser bots with player info
         for (int i = 4; i < 6; i++)
         {

@@ -375,29 +375,6 @@ public class KureshyBot extends BaseBot{
         return myPos;
     }
 
-//    /**
-//     * Only activates once it's directly on a target
-//     */
-//    private void attemptTag() {
-//        this.isCatching = true;
-//    }
-
-//    /**
-//     * Used by the application class to see if the robot is attempting a tag
-//     * @return whether the robot is attempting a catch or not
-//     */
-//    public boolean getIsCatching() {
-//        return this.isCatching;
-//    }
-
-    /**
-     * Used by the application class to get the robot's target
-     * @return the ID of the target
-     */
-    public int getTargetID() {
-        return this.targetID;
-    }
-
     /**
      * Decides how to go after the designated target: immediate tag if in range, corner the target, or just chase
      */
@@ -437,6 +414,7 @@ public class KureshyBot extends BaseBot{
         this.targetID = this.otherRecords[0].getID();
         this.targetX = this.otherRecords[0].getPosition()[0];
         this.targetY = this.otherRecords[0].getPosition()[1];
+        System.out.println("=============================================="); //debug organisation
         System.out.format("My target is %d who has a priority score of %.2f and is located at %s, which is %d turns away from me " +
                         "while I am located at %s\n",
                 this.targetID, ((ChaserPlayerInfo) this.otherRecords[0]).getPriorityScore(),
@@ -444,7 +422,7 @@ public class KureshyBot extends BaseBot{
                 (int) Math.ceil(((ChaserPlayerInfo) this.otherRecords[0]).getTurnDistance()),
                 Arrays.toString(this.getMyPosition())); //debug
         for (int i=1; i<this.otherRecords.length; i++) {
-            System.out.format("My target is %d who has a priority score of %.2f and is located at %s, which is %d turns away from me " +
+            System.out.format("My next target is %d who has a priority score of %.2f and is located at %s, which is %d turns away from me " +
                             "while I am located at %s\n",
                     this.otherRecords[i].getID(), ((ChaserPlayerInfo) this.otherRecords[i]).getPriorityScore(),
                     Arrays.toString((this.otherRecords[i]).getPosition()),
@@ -452,6 +430,8 @@ public class KureshyBot extends BaseBot{
                     Arrays.toString(this.getMyPosition())); //debug
         }
         System.out.println("=============================================="); //debug organisation
+        //the above debug statements are inaccurate if the chaser decides to change its target because of low health
+        //and a confirmed guard as a target
         this.executeStrat();
     }
 }
