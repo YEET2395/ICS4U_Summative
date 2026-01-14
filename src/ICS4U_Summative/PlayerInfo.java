@@ -56,19 +56,7 @@ public class PlayerInfo {
     }
 
     /**
-     * REDUNDANT METHOD BECAUSE OF updateRecords()
-     * Sets the new health of the robot and updates the state of the robot
-     */
-    public void setHP(int newHP) {
-        this.hp = newHP;
-        //for redundancy
-        if (this.hp == 0) {
-            this.isCaught = true;
-        }
-    }
-
-    /**
-     * The catch/dodge capability of the robot (higher is better)
+     * The catch/dodge capability of the robot set between 0-1 (higher is better)
      * @return the dodge capability of the robot
      */
     public double getDodgeDifficulty() {
@@ -92,7 +80,7 @@ public class PlayerInfo {
     }
 
     /**
-     * Updates the position, health, and state of the robot
+     * Overloaded method updates the position, health, and state of the robot
      * @param hp the health of the robot
      * @param pos the x,y coordinates of the robot
      * @param isCaught the state of the robot
@@ -104,7 +92,7 @@ public class PlayerInfo {
     }
 
     /**
-     * Updates only the position and state of the robot
+     * Overloaded method updates only the position and state of the robot
      * @param pos the x,y coordinates of the robot
      * @param isCaught the state of the robot
      */

@@ -8,13 +8,13 @@ import java.util.*;
 /**
  * The robot which chases after the VIP
  * @author Aadil Kureshy
- * @version Janurary 6, 2025
+ * @version Janurary 15, 2025
  */
 public class KureshyBot extends BaseBot{
     private final int WIDTH = 24;
     private final int HEIGHT = 13;
     private int targetID; //the current target
-    private boolean isCatching; //to be used by application to know when to check dodge
+    //private boolean isCatching; //to be used by application to know when to check dodge
     private int targetX;
     private int targetY;
 
@@ -38,20 +38,25 @@ public class KureshyBot extends BaseBot{
         this.otherRecords = new PlayerInfo[5]; //changed length since chasers need to keep track of each other
     }
 
+    /**
+     * Updates the records of the chaser given the application classes with the position, previous
+     * position, and state as well health for the chaser itself
+     * @param records the records to get information from
+     */
     public void updateOtherRecords(PlayerInfo[] records)
     {
-        System.out.println("Updating enemy locations and states for KureshyBot ");
-        for ( int i=0; i<records.length; i++) {
+        //System.out.println("Updating enemy locations and states for KureshyBot "); debug
+        for (PlayerInfo record : records) {
 
             //find the position of the record in otherRecords to update
-            int index = super.findRecordByID(records[i].getID());
+            int index = super.findRecordByID(record.getID());
 
             //checks if it's my records by checking if it got a result
             if (index==-1) {
-                this.myRecords.updateRecords(records[i].getHP(), records[i].getPosition(), records[i].getState());
+                this.myRecords.updateRecords(record.getHP(), record.getPosition(), record.getState());
             } else {
                 int[] prevPos = this.otherRecords[index].getPosition(); //gets the old enemy position
-                ((ChaserPlayerInfo) this.otherRecords[index]).updateRecords(records[i].getPosition(), prevPos, records[i].getState());
+                ((ChaserPlayerInfo) this.otherRecords[index]).updateRecords(record.getPosition(), prevPos, record.getState());
             }
         }
     }
@@ -69,17 +74,17 @@ public class KureshyBot extends BaseBot{
         int otherRecordsIndex = 0;
 
         //go through the records
-        for (int i=0; i<records.length; i++) {
+        for (PlayerInfo record : records) {
 
             //make sure it's not this chaser since it already has its personal records
-            if (records[i].getID() != this.myRecords.getID()) {
+            if (record.getID() != this.myRecords.getID()) {
 
                 //checks if it's another chaser since it needs to know where the other chasers are
-                if(records[i].getRole() == 3) {
-                    this.otherRecords[otherRecordsIndex] = new ChaserPlayerInfo(records[i].getID(), 3, -1, -1, records[i].getPosition(), records[i].getState());
+                if(record.getRole() == 3) {
+                    this.otherRecords[otherRecordsIndex] = new ChaserPlayerInfo(record.getID(), 3, -1, -1, record.getPosition(), record.getState());
                     otherRecordsIndex++;
                 } else {
-                    this.otherRecords[otherRecordsIndex] = new ChaserPlayerInfo(records[i].getID(), -1, -1, -1, records[i].getPosition(), records[i].getState());
+                    this.otherRecords[otherRecordsIndex] = new ChaserPlayerInfo(record.getID(), -1, -1, -1, record.getPosition(), record.getState());
                     otherRecordsIndex++;
                 }
             }
@@ -94,10 +99,10 @@ public class KureshyBot extends BaseBot{
 
         //Calculate the priorityScore and then add to the priorityScore the two factors which require information about
         //the chaser itself or other chasers (which isn't stored in the record)
-        for (int i=0; i<this.otherRecords.length; i++) {
-            double turnDistance = this.calculateTurnDistance(super.getDistances(this.otherRecords[i].getPosition()), super.getMOVES_PER_TURN());
-            ((ChaserPlayerInfo) this.otherRecords[i]).calculatePriorityScore();
-            ((ChaserPlayerInfo) this.otherRecords[i]).addTurnDistAndPressure(calculateChaserPressure(this.otherRecords[i].getPosition()), turnDistance);
+        for (PlayerInfo record : this.otherRecords) {
+            double turnDistance = this.calculateTurnDistance(super.getDistances(record.getPosition()), super.getMOVES_PER_TURN());
+            ((ChaserPlayerInfo) record).calculatePriorityScore();
+            ((ChaserPlayerInfo) record).addTurnDistAndPressure(calculateChaserPressure(record.getPosition()), turnDistance);
         }
 
         //iterate through the records
@@ -140,11 +145,11 @@ public class KureshyBot extends BaseBot{
         double pressureScore;
 
         //iterate through the records
-        for (int i=0; i<this.otherRecords.length; i++) {
+        for (PlayerInfo record : this.otherRecords) {
 
             //checks for chasers and gets the distance between the target and chaser
-            if (this.otherRecords[i].getRole()==3) {
-                int distance = super.getDistances(targetPos, this.otherRecords[i].getPosition());
+            if (record.getRole()==3) {
+                int distance = super.getDistances(targetPos, record.getPosition());
 
                 //increases the amount of nearby chasers if it detects that they are within
                 //two turns of a chaser's possible max movement
@@ -170,7 +175,7 @@ public class KureshyBot extends BaseBot{
 
     /**
      * Avoids attacking guards while low on health
-     * @return the location of the target's record in the record array
+     * @return the location of the closest, safest target's record in the record array
      */
     private int checkSafety() {
 
@@ -185,7 +190,7 @@ public class KureshyBot extends BaseBot{
             this.targetX = this.otherRecords[index].getPosition()[0];
             this.targetY = this.otherRecords[index].getPosition()[1];
             targetIndex = super.findRecordByID(this.targetID);
-            System.out.format("My new target is robot %d\n", this.targetID);
+            System.out.format("My new target is robot %d\n", this.targetID); //debug
         }
 
         return targetIndex;
@@ -254,8 +259,7 @@ public class KureshyBot extends BaseBot{
             nearestCorner[1] = this.HEIGHT;
         }
 
-        //debug
-        //System.out.format("The nearest corner to Robot %d is %s\n", this.targetID, Arrays.toString(nearestCorner));
+        //System.out.format("The nearest corner to Robot %d is %s\n", this.targetID, Arrays.toString(nearestCorner)); debug
         return nearestCorner;
     }
 
@@ -281,13 +285,12 @@ public class KureshyBot extends BaseBot{
             distance = this.HEIGHT-this.targetY;
         }
 
-        //for debugging
-        //System.out.format("The distance between Robot %d and the nearest wall is %d\n", this.targetID, distance);
+        //System.out.format("The distance between Robot %d and the nearest wall is %d\n", this.targetID, distance); debug
         return distance;
     }
 
     /**
-     * Checks the feasability of cornering the target
+     * Checks the feasibility of cornering the target
      * @param turns the number of turns it would take to get to the target
      * @return whether to cut off and corner the target or not
      */
@@ -310,7 +313,8 @@ public class KureshyBot extends BaseBot{
     }
 
     /**
-     * Gets diagonal to the target and then moves diagonally to box them in until they get into the direct range
+     * Gets diagonal to the target and then moves diagonally to box them in until they get into
+     * the direct range
      * @return the x,y to go to
      */
     private int[] calcCutOffPath() {
@@ -352,7 +356,7 @@ public class KureshyBot extends BaseBot{
             movesLeft--;
         }
 
-        System.out.format("Diagonally aligned at %s! Moves left: %d\n", Arrays.toString(myPos), movesLeft);
+        //System.out.format("Diagonally aligned at %s! Moves left: %d\n", Arrays.toString(myPos), movesLeft); debug
         //move diagonally (2 movements at a time) given chaser speed
         while (movesLeft>=2) {
 
@@ -372,20 +376,20 @@ public class KureshyBot extends BaseBot{
         return myPos;
     }
 
-    /**
-     * Only activates once it's directly on a target
-     */
-    private void attemptTag() {
-        this.isCatching = true;
-    }
+//    /**
+//     * Only activates once it's directly on a target
+//     */
+//    private void attemptTag() {
+//        this.isCatching = true;
+//    }
 
-    /**
-     * Used by the application class to see if the robot is attempting a tag
-     * @return whether the robot is attempting a catch or not
-     */
-    public boolean getIsCatching() {
-        return this.isCatching;
-    }
+//    /**
+//     * Used by the application class to see if the robot is attempting a tag
+//     * @return whether the robot is attempting a catch or not
+//     */
+//    public boolean getIsCatching() {
+//        return this.isCatching;
+//    }
 
     /**
      * Used by the application class to get the robot's target
@@ -399,7 +403,7 @@ public class KureshyBot extends BaseBot{
      * Decides how to go after the designated target: immediate tag if in range, corner the target, or just chase
      */
     private void executeStrat() {
-        this.isCatching = false;
+        //this.isCatching = false;
         //avoids attacking confirmed guards ONLY when low on health, goes to the next best option
         int targetIndex = checkSafety();
 
@@ -408,18 +412,20 @@ public class KureshyBot extends BaseBot{
 
         //checks if the target can be caught within this turn
         if (turns <= 1) {
-            System.out.println("IN RANGE: " + this.targetX + "," + this.targetY);
+            System.out.println("IN RANGE: " + this.targetX + "," + this.targetY); //debug
             super.moveToPos(this.otherRecords[targetIndex].getPosition());
-            this.attemptTag();
+            //this.attemptTag();
+
         //check if the target is close to a wall, the chaser, and closer to the nearest corner than the chaser
         } else if (checkCutOff(turns)) {
             int[] nextPos = this.calcCutOffPath(); //for debugging statement
             super.moveToPos(nextPos);
-            System.out.println("CUTTING OFF AT: " + Arrays.toString(nextPos));
+            System.out.println("CUTTING OFF AT: " + Arrays.toString(nextPos)); //debug
+
         } else { //otherwise just chase in an open area
             int[] nextPos = this.calcChasePath(); //also for debugging statement
             super.moveToPos(nextPos);
-            System.out.println("CHASING AT" + Arrays.toString(nextPos));
+            System.out.println("CHASING AT" + Arrays.toString(nextPos)); //debug
         }
     }
 
@@ -437,16 +443,16 @@ public class KureshyBot extends BaseBot{
                 this.targetID, ((ChaserPlayerInfo) this.otherRecords[0]).getPriorityScore(),
                 Arrays.toString((this.otherRecords[0]).getPosition()),
                 (int) Math.ceil(((ChaserPlayerInfo) this.otherRecords[0]).getTurnDistance()),
-                Arrays.toString(this.getMyPosition()));
+                Arrays.toString(this.getMyPosition())); //debug
         for (int i=1; i<this.otherRecords.length; i++) {
             System.out.format("My target is %d who has a priority score of %.2f and is located at %s, which is %d turns away from me " +
                             "while I am located at %s\n",
                     this.otherRecords[i].getID(), ((ChaserPlayerInfo) this.otherRecords[i]).getPriorityScore(),
                     Arrays.toString((this.otherRecords[i]).getPosition()),
                     (int) Math.ceil(((ChaserPlayerInfo) this.otherRecords[i]).getTurnDistance()),
-                    Arrays.toString(this.getMyPosition()));
+                    Arrays.toString(this.getMyPosition())); //debug
         }
-        System.out.println("==============================================");
+        System.out.println("=============================================="); //debug organisation
         this.executeStrat();
     }
 }
