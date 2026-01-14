@@ -173,7 +173,8 @@ public class App {
      * @param target being targeted (VIP or Guard)
      * @param r  instance used to generate the roll
      */
-    public static void checkDodge(KureshyBot chaser, BaseBot target, Random r) {
+    public static void checkDodge(KureshyBot chaser, BaseBot target, Random r)
+    {
         // Generate a random roll in [0.0, 1.0)
         double diff = r.nextDouble();
 
@@ -254,7 +255,8 @@ public class App {
      * @param maxTurns the max number of turns
      * @param turn the current turn
      */
-    public static void checkForWinCondition(PlayerInfo[] records, int maxTurns, int turn) {
+    public static void checkForWinCondition(PlayerInfo[] records, int maxTurns, int turn)
+    {
         int numVIPs = 0;
         int numChasers = 0;
         int numVIPsCaught = 0;
@@ -357,7 +359,7 @@ public class App {
         for (int i=2; i<4; i++)
         {
             int movesPerTurn = rand.nextInt(3) + 2;
-            double dodgeDiff = 0.45 + rand.nextDouble() * 0.1;
+            double dodgeDiff = 0.6 + rand.nextDouble() * 0.1;
             int row = rand.nextInt(13) + 1;
             int col = rand.nextInt(24) + 1;
             robots[i] = new LiBot(
