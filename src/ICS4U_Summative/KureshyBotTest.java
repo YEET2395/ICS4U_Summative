@@ -7,6 +7,8 @@ import java.util.*;
 
 /**
  * Testing class for KureshyBot to test targeting and movement
+ * @author Aadil Kureshy
+ * @version January 16, 2025
  */
 public class KureshyBotTest {
     public static boolean gameEnded = false;
@@ -96,7 +98,7 @@ public class KureshyBotTest {
                 for (BaseBot targets : array) {
 
                     //check if the chaser is actually catching and if it's position is the same as its target
-                    if (((KureshyBot) bot).getIsCatching() && Arrays.equals(bot.getMyPosition(), targets.getMyPosition())) {
+                    if (Arrays.equals(bot.getMyPosition(), targets.getMyPosition())) {
                         int target = ((KureshyBot) bot).getTargetID();
 
                         //deals the damage
@@ -120,23 +122,23 @@ public class KureshyBotTest {
         int numChasersCaught = 0;
 
         //iterate through the records
-        for (int i=0; i<records.length; i++) {
+        for (PlayerInfo record : records) {
 
             //check how many VIPs there are
-            if (records[i].getRole() == 1) {
+            if (record.getRole() == 1) {
                 numVIPs++;
 
                 //check if they are caught
-                if (records[i].getState())
+                if (record.getState())
                     numVIPsCaught++;
             }
 
             //check how many Chasers there are
-            if (records[i].getRole() == 3) {
+            if (record.getRole() == 3) {
                 numChasers++;
 
                 //check if they are caught
-                if (records[i].getState())
+                if (record.getState())
                     numChasersCaught++;
             }
 
@@ -564,6 +566,70 @@ public class KureshyBotTest {
         infos[5] = new PlayerInfo(6, 3, 3, chDodgeDiff, chPos, false);
         */
 
+        /*Test Case #7
+        //Chaser will cutoff targets under certain conditions, whether it be a vertical cutoff or a horizontal cutoff
+        // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
+        for (int i=0; i<4; i++) {
+            int movesPerTurn = rand.nextInt(3) + 1;
+            double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
+            int row = 13;
+            int col = 1;
+            int[] pos = {col, row};
+            robots[i] = new XiongBot(
+                    playground,
+                    row,
+                    col,
+                    Direction.SOUTH, // str, ave, dir
+                    i, // id
+                    1, // role
+                    2, // hp
+                    movesPerTurn,
+                    dodgeDiff
+            );
+            infos[i] = new PlayerInfo(i, 1, 2, dodgeDiff, pos, false);
+        }
+
+        //ACTUAL TEST VIP
+        int movesPerTurn = rand.nextInt(3)+1;
+        double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
+        int row = 3; //for vertical cutoff set: 4
+        int col = 20; //for vertical cutoff set: 22
+        int[] pos = {col, row};
+        robots[4] = new XiongBot(
+                playground,
+                row,
+                col,
+                Direction.SOUTH, // str, ave, dir
+                4, // id
+                1, // role
+                2, // hp
+                movesPerTurn,
+                dodgeDiff
+        );
+        infos[4] = new PlayerInfo(4, 1, 2, dodgeDiff, pos, false);
+
+        // Chasers: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
+        int chMovesPerTurn = 4;
+        double chDodgeDiff = 0.7 + rand.nextDouble() * 0.2;
+        int chRow = 6; //for vertical cutoff set: 7
+        int chCol = 17; //for vertical cutoff set: 19
+        int[] chPos = {chCol, chRow};
+        robots[5] = new KureshyBot(
+                    playground,
+                    chRow,
+                    chCol,
+                    Direction.NORTH, // str, ave, dir
+                    5, // id
+                    3, // role
+                    3, // hp
+                    chMovesPerTurn,
+                    chDodgeDiff
+            );
+        infos[5] = new PlayerInfo(5, 3, 3, chDodgeDiff, chPos, false);
+        */
+
+
+        
 
         //init records
         for (BaseBot bot : robots) {
@@ -573,10 +639,10 @@ public class KureshyBotTest {
         int turns = 0;
         while (!gameEnded) {
 
-            for (int i=0; i<robots.length; i++) {
+            for (BaseBot bot: robots) {
 
-                System.out.format(" TURN: %d Robot: %d \n", turns, robots[i].myRecords.getID());
-                robots[i].updateOtherRecords(infos);
+                System.out.format(" TURN: %d Robot: %d \n", turns, bot.myRecords.getID());
+                bot.updateOtherRecords(infos);
 
                 //for Test Case 6
                 //if (!robots[i].myRecords.getState() && robots[i].myRecords.getID() == 5) {
@@ -584,8 +650,8 @@ public class KureshyBotTest {
                 //    robots[i].moveToPos(newPos);
                 //}
 
-                if (!robots[i].myRecords.getState() && robots[i].myRecords.getRole()==3) {
-                    //second condition for testing purposes
+                if (!bot.myRecords.getState() && (bot.myRecords.getRole()==3 || bot.myRecords.getID() == 4)) {
+                    //second and third condition for testing purposes
 
                     //for Test Case 3
                     //checkDodge((KureshyBot) robots[i], robots[i-1], rand);
@@ -594,11 +660,11 @@ public class KureshyBotTest {
                     //checkDodge((KureshyBot) robots[i], robots[i-1], rand);
                     //checkDodge((KureshyBot) robots[i], robots[i-1], rand);
 
-                    robots[i].takeTurn();
+                    bot.takeTurn();
                 }
                 checkForTags(robots, rand);
 
-                checkForWinCondition(infos, 1, turns);
+                checkForWinCondition(infos, 5, turns);
 
                 updateRecords(robots, infos); //update application records
             }
