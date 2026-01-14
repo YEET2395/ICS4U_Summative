@@ -572,9 +572,18 @@ public class App {
 
     private static String roleName(int role)
     {
-        if (role == ROLE_VIP) return "VIP";
-        if (role == ROLE_GUARD) return "GUARD";
-        if (role == ROLE_CHASER) return "CHASER";
+        if (role == ROLE_VIP)
+        {
+            return "VIP";
+        }
+        if (role == ROLE_GUARD)
+        {
+            return "GUARD";
+        }
+        if (role == ROLE_CHASER)
+        {
+            return "CHASER";
+        }
         return "UNKNOWN";
     }
 }
