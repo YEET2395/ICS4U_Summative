@@ -3,6 +3,7 @@ package ICS4U_Summative;
 import becker.robots.*;
 
 public abstract class BaseBot extends RobotSE {
+    // Records of other players
     public PlayerInfo[] otherRecords = new PlayerInfo[5];
     public PlayerInfo myRecords;
     public final int movesPerTurn;
@@ -158,6 +159,7 @@ public abstract class BaseBot extends RobotSE {
         //check for robot's Direction then does the proper turn based on the desired Direction
         for(int i = 0; i < 4; i++)
         {
+            // If facing desired direction, break
             if(this.getDirection() == dir)
             {
                 break;
@@ -172,15 +174,21 @@ public abstract class BaseBot extends RobotSE {
      */
     public void takeDamage(int amount)
     {
+        // Calculate new hp after damage
         int hp = this.myRecords.getHP() - amount;
         if (hp < 0)
         {
             hp = 0;
         }
         boolean caught = (hp <= 0);
+        // Update records
         this.myRecords.updateRecords(hp, this.getMyPosition(), caught);
     }
 
+    /**
+     * Gets the number of moves this bot can make in a turn
+     * @return the number of moves per turn
+     */
     public int getMOVES_PER_TURN()
     {
         return movesPerTurn;
