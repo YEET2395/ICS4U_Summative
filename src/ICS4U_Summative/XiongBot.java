@@ -6,6 +6,7 @@ import java.awt.*;
 import java.util.Random;
 import java.util.ArrayList;
 
+//@TODO: make sure move dont crash into walls
 /**
  * XiongBot with selection-sorted candidate choices, chaser tracking, and fallback to avoid corner-sticking.
  */
@@ -227,421 +228,110 @@ public class XiongBot extends BaseBot {
 
     public void takeTurn() {
         int movesAllowed = this.movesPerTurn;
-        for (int step = 0; step < movesAllowed; step++) {
-            // manage lastPos cooldown so we avoid allowing immediate reversal for one following step
-            boolean avoidReverse = false;
-            if (this.lastPos != null && this.lastPosCooldown > 0) {
-                avoidReverse = true;
+        // single-per-turn planning: compute the best destination reachable within `movesAllowed` steps
+        int myX = this.getMyPosition()[0];
+        int myY = this.getMyPosition()[1];
+
+        // decrement lastPos cooldown once per turn (was previously per-step)
+        if (this.lastPosCooldown > 0) {
+            this.lastPosCooldown = this.lastPosCooldown - 1;
+            if (this.lastPosCooldown == 0) {
+                this.lastPos = null;
             }
-            // decrement cooldown at start of step so it applies to this step then expires
-            if (this.lastPosCooldown > 0) {
-                this.lastPosCooldown = this.lastPosCooldown - 1;
-                if (this.lastPosCooldown == 0) {
-                    this.lastPos = null;
-                }
-            }
+        }
 
-                int myX = this.getMyPosition()[0];
-                int myY = this.getMyPosition()[1];
-                Direction currentDir = this.getDirection();
+        if (this.chaserPos == null || this.chaserPos.length == 0) {
+            return; // nothing to plan against
+        }
 
-            // If we have no chaser info, do nothing this turn
-            if (this.chaserPos.length == 0) {
-                break;
-            }
+        // Build set of reachable coordinates within Manhattan radius = movesAllowed (ignore obstacles for planning)
+        int bestX = myX;
+        int bestY = myY;
+        int bestArea = Integer.MAX_VALUE;
+        int bestThreat = Integer.MAX_VALUE;
+        int bestMinDist = Integer.MIN_VALUE;
 
-            // Current minimum distance to any chaser (used for tie-breaker)
-            int currentMinDist = Integer.MAX_VALUE;
-            for (int i = 0; i < this.chaserPos.length; i++) {
-                int[] c = this.chaserPos[i];
-                int d = this.getDistances(c);
-                if (d < currentMinDist) {
-                    currentMinDist = d;
-                }
-            }
+        for (int dx = -movesAllowed; dx <= movesAllowed; dx++) {
+            for (int dy = -movesAllowed; dy <= movesAllowed; dy++) {
+                int man = Math.abs(dx) + Math.abs(dy);
+                if (man == 0 || man > movesAllowed) continue;
+                int cx = myX + dx;
+                int cy = myY + dy;
 
-            // Determine which chaser is "most reachable" (can reach us in the fewest turns)
-            // We compute time-to-reach = ceil(distance / max(speed, 1)) using tracked chaserSpeeds.
-            int mostReachableIndex = -1;
-            int mostReachableTime = Integer.MAX_VALUE;
-            int mostReachableDist = Integer.MAX_VALUE; // tie-breaker: smaller distance
-            double minAssumedSpeed = 1.0;
-            for (int i = 0; i < this.chaserPos.length; i++) {
-                int[] c = this.chaserPos[i];
-                int dist = this.getDistances(c);
-                double s = minAssumedSpeed;
-                if (i < this.chaserSpeeds.length) {
-                    s = this.chaserSpeeds[i];
-                }
-                if (s < minAssumedSpeed) {
-                    s = minAssumedSpeed;
-                }
-                int timeToReach = (int) Math.ceil((double) dist / s);
-                if (timeToReach < mostReachableTime || (timeToReach == mostReachableTime && dist < mostReachableDist)) {
-                    mostReachableTime = timeToReach;
-                    mostReachableIndex = i;
-                    mostReachableDist = dist;
-                }
-            }
-
-            // Evaluate candidate directions and pick the one that maximizes the minimum distance to any chaser
-            // We'll track the best and second-best candidates so we can apply probabilistic tie-breaking
-            Direction[] candidates = {Direction.NORTH, Direction.WEST, Direction.SOUTH, Direction.EAST};
-            Direction currentDirForChecks = this.getDirection();
-            int startIdx = 0;
-            for (int i = 0; i < candidates.length; i++) {
-                if (candidates[i] == currentDirForChecks) {
-                    startIdx = i;
-                    break;
-                }
-            }
-
-            // Sample frontIsClear once per direction by rotating through the four directions.
-            // Cache results and neighbor coordinates so we avoid repeated turning inside the candidate loop.
-            int mDirs = candidates.length;
-            boolean[] frontClearCache = new boolean[mDirs];
-            int[] neighX = new int[mDirs];
-            int[] neighY = new int[mDirs];
-            for (int t = 0; t < mDirs; t++) {
-                Direction d = candidates[t];
-                this.turnDirection(d);
-                frontClearCache[t] = this.frontIsClear();
-                neighX[t] = myX;
-                neighY[t] = myY;
-                if (d == Direction.NORTH) {
-                    neighY[t] = myY - 1;
-                } else if (d == Direction.SOUTH) {
-                    neighY[t] = myY + 1;
-                } else if (d == Direction.EAST) {
-                    neighX[t] = myX + 1;
-                } else if (d == Direction.WEST) {
-                    neighX[t] = myX - 1;
-                }
-            }
-            // restore original facing before evaluation
-            this.turnDirection(currentDirForChecks);
-
-            // Count free neighbors from cache
-            int freeCountCurr = 0;
-            for (int t = 0; t < mDirs; t++) {
-                if (frontClearCache[t]) {
-                    freeCountCurr = freeCountCurr + 1;
-                }
-            }
-
-            // helper to map a Direction to index in candidates array
-            // (N->0, W->1, S->2, E->3)
-            java.util.Map<Direction, Integer> dirToIndex = new java.util.HashMap<>();
-            dirToIndex.put(Direction.NORTH, 0);
-            dirToIndex.put(Direction.WEST, 1);
-            dirToIndex.put(Direction.SOUTH, 2);
-            dirToIndex.put(Direction.EAST, 3);
-
-            // Build candidate arrays and compute metrics for each valid candidate. We'll selection-sort them
-            // so we can pick the top choices without separate best/second variables.
-            int m = candidates.length;
-            int[] minDistArr = new int[m];
-            int[] increaseArr = new int[m];
-            boolean[] validArr = new boolean[m];
-            boolean[] reverseArr = new boolean[m];
-            Direction[] orderedDirs = new Direction[m];
-
-            for (int k = 0; k < m; k++) {
-                // initialize
-                minDistArr[k] = Integer.MIN_VALUE;
-                increaseArr[k] = Integer.MIN_VALUE;
-                validArr[k] = false;
-                reverseArr[k] = false;
-                orderedDirs[k] = candidates[k];
-            }
-
-            // Evaluate each candidate by rotating starting from current facing
-            for (int k = 0; k < m; k++) {
-                Direction d = candidates[(startIdx + k) % candidates.length];
-
-                // Use cached front-clear and neighbor coords to avoid extra rotation
-                int dirIdx = dirToIndex.get(d);
-                if (!frontClearCache[dirIdx]) {
-                    // mark as invalid and continue
-                    for (int p = 0; p < m; p++) {
-                        if (orderedDirs[p] == d) {
-                            validArr[p] = false;
-                            minDistArr[p] = Integer.MIN_VALUE;
-                            increaseArr[p] = Integer.MIN_VALUE;
-                            break;
-                        }
-                    }
-                    continue;
-                }
-
-                int newX = neighX[dirIdx];
-                int newY = neighY[dirIdx];
-
-                // If we have an active avoidReverse flag, mark candidate as reverse when it moves back to lastPos
-                if (this.lastPos != null && avoidReverse) {
-                    if (newX == this.lastPos[0] && newY == this.lastPos[1]) {
-                        for (int p = 0; p < m; p++) {
-                            if (orderedDirs[p] == d) {
-                                reverseArr[p] = true;
-                                validArr[p] = false;
-                                minDistArr[p] = Integer.MIN_VALUE;
-                                increaseArr[p] = Integer.MIN_VALUE;
-                                break;
-                            }
-                        }
-                        // skip reverse in main pass
-                        continue;
-                    }
-                }
-
-                // If moving here would reduce our distance to the most reachable chaser, skip it.
-                boolean reducesToMost = false;
-                if (mostReachableIndex >= 0 && mostReachableIndex < this.chaserPos.length) {
-                    int[] most = this.chaserPos[mostReachableIndex];
-                    int curDistToMost = mostReachableDist;
-                    int candDistToMost = Math.abs(newX - most[0]) + Math.abs(newY - most[1]);
-                    if (candDistToMost < curDistToMost) {
-                        reducesToMost = true;
-                    }
-                }
-                if (reducesToMost) {
-                    // mark as invalid
-                    for (int p = 0; p < m; p++) {
-                        if (orderedDirs[p] == d) {
-                            validArr[p] = false;
-                            minDistArr[p] = Integer.MIN_VALUE;
-                            increaseArr[p] = Integer.MIN_VALUE;
-                            break;
-                        }
-                    }
-                    continue;
-                }
-
-                // compute minimum distance to any chaser from the new position
+                // avoid candidate squares occupied by chasers
                 int minDist = Integer.MAX_VALUE;
                 for (int j = 0; j < this.chaserPos.length; j++) {
                     int[] c = this.chaserPos[j];
-                    int dist = Math.abs(newX - c[0]) + Math.abs(newY - c[1]);
-                    if (dist < minDist) {
-                        minDist = dist;
-                    }
+                    int dist = Math.abs(cx - c[0]) + Math.abs(cy - c[1]);
+                    if (dist < minDist) minDist = dist;
                 }
+                if (minDist == 0) continue; // don't plan to move onto a chaser
 
-                int increase = minDist - currentMinDist;
+                int threat = computeThreatForSquare(cx, cy);
+                int area = computeAreaThreat(cx, cy, computeMaxChaserReach(this.safetyTurns));
 
-                // store metrics in the slot corresponding to this direction
-                for (int p = 0; p < m; p++) {
-                    if (orderedDirs[p] == d) {
-                        minDistArr[p] = minDist;
-                        increaseArr[p] = increase;
-                        validArr[p] = true;
-
-                        // Apply corner penalty using cached frontClearCache for left/right
-                        Direction left = leftOf(d);
-                        Direction right = rightOf(d);
-                        int leftIdx = dirToIndex.get(left);
-                        int rightIdx = dirToIndex.get(right);
-                        boolean leftBlocked = !frontClearCache[leftIdx];
-                        boolean rightBlocked = !frontClearCache[rightIdx];
-                        if (leftBlocked && rightBlocked) {
-                            // reduce its effective min distance to deprioritize corners
-                            minDistArr[p] = minDistArr[p] - 5000;
-                        }
-
-                        // Additional penalty when current position itself is narrow (few free neighbors)
-                        if (freeCountCurr <= 2) {
-                            minDistArr[p] = minDistArr[p] - 2000;
-                        }
-
-                        break;
-                    }
+                // choose by lowest area, then lowest immediate threat, then highest minDist
+                if (area < bestArea || (area == bestArea && (threat < bestThreat || (threat == bestThreat && minDist > bestMinDist)))) {
+                    bestArea = area;
+                    bestThreat = threat;
+                    bestMinDist = minDist;
+                    bestX = cx;
+                    bestY = cy;
                 }
             }
-
-            // After evaluating candidates, selection-sort them by minDist (descending), tie-breaker increase (descending)
-            for (int i = 0; i < m - 1; i++) {
-                int maxIdx = i;
-                for (int j = i + 1; j < m; j++) {
-                    // choose element j if it is better than current max
-                    boolean replace = false;
-                    if (minDistArr[j] > minDistArr[maxIdx]) {
-                        replace = true;
-                    } else if (minDistArr[j] == minDistArr[maxIdx]) {
-                        if (increaseArr[j] > increaseArr[maxIdx]) {
-                            replace = true;
-                        }
-                    }
-                    if (replace) {
-                        maxIdx = j;
-                    }
-                }
-                if (maxIdx != i) {
-                    // swap minDistArr
-                    int tmpMin = minDistArr[i];
-                    minDistArr[i] = minDistArr[maxIdx];
-                    minDistArr[maxIdx] = tmpMin;
-
-                    // swap increaseArr
-                    int tmpInc = increaseArr[i];
-                    increaseArr[i] = increaseArr[maxIdx];
-                    increaseArr[maxIdx] = tmpInc;
-
-                    // swap validArr
-                    boolean tmpVal = validArr[i];
-                    validArr[i] = validArr[maxIdx];
-                    validArr[maxIdx] = tmpVal;
-
-                    // swap reverseArr
-                    boolean tmpRev = reverseArr[i];
-                    reverseArr[i] = reverseArr[maxIdx];
-                    reverseArr[maxIdx] = tmpRev;
-
-                    // swap orderedDirs
-                    Direction tmpDir = orderedDirs[i];
-                    orderedDirs[i] = orderedDirs[maxIdx];
-                    orderedDirs[maxIdx] = tmpDir;
-                }
-            }
-
-            // Restore original facing before making the chosen move
-            this.turnDirection(currentDir);
-
-            // Find the first valid candidate in the sorted list
-            int chosenIdx = -1;
-            for (int i = 0; i < m; i++) {
-                if (validArr[i]) {
-                    chosenIdx = i;
-                    break;
-                }
-            }
-            if (chosenIdx == -1) {
-                // No strictly-valid non-reducing moves available. Try a relaxed fallback:
-                // choose a front-clear candidate that reduces distance to the most-reachable chaser the least.
-                int fallbackIdx = -1;
-                int bestFallbackCandDistToMost = Integer.MIN_VALUE; // larger is better (less reduction)
-                int bestFallbackMinDist = Integer.MIN_VALUE; // tie-breaker
-
-                // current distance to most-reachable chaser
-                int curDistToMost = Integer.MAX_VALUE;
-                if (mostReachableIndex >= 0 && mostReachableIndex < this.chaserPos.length) {
-                    int[] most = this.chaserPos[mostReachableIndex];
-                    curDistToMost = Math.abs(myX - most[0]) + Math.abs(myY - most[1]);
-                }
-
-                for (int i = 0; i < m; i++) {
-                    if (reverseArr[i]) {
-                        continue;
-                    }
-                    Direction d = orderedDirs[i];
-                    // skip if we already marked as valid (shouldn't happen) or if candidate was invalid due to blocked front
-                    if (validArr[i]) {
-                        continue;
-                    }
-
-                    // turn to check front
-                    this.turnDirection(d);
-                    if (!this.frontIsClear()) {
-                        continue;
-                    }
-
-                    int newX = myX;
-                    int newY = myY;
-                    if (d == Direction.NORTH) {
-                        newY = myY - 1;
-                    } else if (d == Direction.SOUTH) {
-                        newY = myY + 1;
-                    } else if (d == Direction.EAST) {
-                        newX = myX + 1;
-                    } else if (d == Direction.WEST) {
-                        newX = myX - 1;
-                    }
-
-                    // compute distance to the most-reachable chaser for this candidate (if available)
-                    int candDistToMost = Integer.MIN_VALUE;
-                    if (mostReachableIndex >= 0 && mostReachableIndex < this.chaserPos.length) {
-                        int[] most = this.chaserPos[mostReachableIndex];
-                        candDistToMost = Math.abs(newX - most[0]) + Math.abs(newY - most[1]);
-                    } else {
-                        // if no most-reachable info, treat as neutral
-                        candDistToMost = curDistToMost;
-                    }
-
-                    // avoid moving directly onto the chaser if possible
-                    if (candDistToMost == 0) {
-                        continue;
-                    }
-
-                    // compute minimum distance to any chaser from the new position
-                    int minDist = Integer.MAX_VALUE;
-                    for (int j = 0; j < this.chaserPos.length; j++) {
-                        int[] c = this.chaserPos[j];
-                        int dist = Math.abs(newX - c[0]) + Math.abs(newY - c[1]);
-                        if (dist < minDist) {
-                            minDist = dist;
-                        }
-                    }
-
-                    // prefer candidates that keep candDistToMost large (i.e., reduce least). Tie-break on minDist.
-                    if (fallbackIdx == -1
-                            || candDistToMost > bestFallbackCandDistToMost
-                            || (candDistToMost == bestFallbackCandDistToMost && minDist > bestFallbackMinDist)) {
-                        fallbackIdx = i;
-                        bestFallbackCandDistToMost = candDistToMost;
-                        bestFallbackMinDist = minDist;
-                    }
-                }
-
-                if (fallbackIdx == -1) {
-                    // truly no possible moves (all blocked or would land on a chaser) -> stay
-                    break;
-                }
-
-                chosenIdx = fallbackIdx;
-            }
-
-            Direction chosenDir = orderedDirs[chosenIdx];
-
-            // If there is a second valid candidate, probabilistically choose between top two
-            int secondIdx = -1;
-            for (int i = chosenIdx + 1; i < m; i++) {
-                if (validArr[i]) {
-                    secondIdx = i;
-                    break;
-                }
-            }
-
-            if (secondIdx != -1) {
-                // configure thresholds for mapping distance -> probability
-                int minDistanceForMax = 1; // at or below this distance, pick best almost always
-                int dynamicReach = computeMaxChaserReach(this.safetyTurns);
-                int maxRelevantDistance = dynamicReach + 1; // add small cushion
-
-                double pBest;
-                if (currentMinDist <= minDistanceForMax) {
-                    pBest = 0.99;
-                } else if (currentMinDist >= maxRelevantDistance) {
-                    pBest = 0.60;
-                } else {
-                    double ratio = (double) (maxRelevantDistance - currentMinDist) / (double) (maxRelevantDistance - minDistanceForMax);
-                    pBest = 0.60 + Math.pow(0.39, ratio);
-                }
-
-                double r = rnd.nextDouble();
-                if (r >= pBest) {
-                    chosenDir = orderedDirs[secondIdx];
-                }
-            }
-
-            int prevXForLastPos = myX;
-            int prevYForLastPos = myY;
-            if (!attemptMove(chosenDir)) {
-                break;
-            }
-
-            // record previous position so next step won't immediately move back; set cooldown for one step
-            this.lastPos = new int[]{prevXForLastPos, prevYForLastPos};
-            this.lastPosCooldown = 1;
         }
+
+        // If best is current position (no better found), stay
+        if (bestX == myX && bestY == myY) {
+            return;
+        }
+
+        // Attempt to move directly to the planned best position (may traverse multiple steps)
+        int prevXForLastPos = myX;
+        int prevYForLastPos = myY;
+        this.moveToPos(new int[]{bestX, bestY});
+        // record last pos to avoid immediate backtracking
+        this.lastPos = new int[]{prevXForLastPos, prevYForLastPos};
+        this.lastPosCooldown = 1;
+    }
+
+    /**
+     * Compute a simple threat score for a square: how many chasers can reach (Manhattan) that square within safetyTurns
+     * Uses tracked chaserSpeeds but assumes minimum 1 step/turn when speed is not observed.
+     */
+    private int computeThreatForSquare(int x, int y) {
+        if (this.chaserPos == null || this.chaserPos.length == 0) return 0;
+        int count = 0;
+        for (int i = 0; i < this.chaserPos.length; i++) {
+            int[] c = this.chaserPos[i];
+            int dist = Math.abs(x - c[0]) + Math.abs(y - c[1]);
+            double s = 1.0;
+            if (i < this.chaserSpeeds.length) {
+                s = this.chaserSpeeds[i];
+            }
+            if (s < 1.0) s = 1.0; // conservative minimum
+            int turnsNeeded = (int) Math.ceil((double) dist / s);
+            if (turnsNeeded <= this.safetyTurns) count++;
+        }
+        return count;
+    }
+
+    /**
+     * Compute aggregated area threat for a square by summing threats for each cell within Manhattan radius `reach`.
+     * This produces a simple score where lower is safer. It is intentionally inexpensive since `reach` is small.
+     */
+    private int computeAreaThreat(int x, int y, int reach) {
+        if (reach < 0) reach = 0;
+        int sum = 0;
+        for (int dx = -reach; dx <= reach; dx++) {
+            int rem = reach - Math.abs(dx);
+            for (int dy = -rem; dy <= rem; dy++) {
+                int nx = x + dx;
+                int ny = y + dy;
+                sum += computeThreatForSquare(nx, ny);
+            }
+        }
+        return sum;
     }
 
     /**
