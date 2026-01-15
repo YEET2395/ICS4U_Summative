@@ -258,6 +258,11 @@ public class XiongBot extends BaseBot {
                 int cx = myX + dx;
                 int cy = myY + dy;
 
+                // avoid moving back to immediate last position if cooldown active (prevents back-and-forth across turns)
+                if (this.lastPos != null && this.lastPosCooldown > 0) {
+                    if (cx == this.lastPos[0] && cy == this.lastPos[1]) continue;
+                }
+
                 // avoid candidate squares occupied by chasers
                 int minDist = Integer.MAX_VALUE;
                 for (int j = 0; j < this.chaserPos.length; j++) {
@@ -289,7 +294,8 @@ public class XiongBot extends BaseBot {
         // Attempt to move directly to the planned best position (may traverse multiple steps)
         int prevXForLastPos = myX;
         int prevYForLastPos = myY;
-        this.moveToPos(new int[]{bestX, bestY});
+        // Use XiongBot's own stepwise mover (avoids using BaseBot.moveToPos which can drive through walls)
+        this.moveTowards(bestX, bestY, movesAllowed);
         // record last pos to avoid immediate backtracking
         this.lastPos = new int[]{prevXForLastPos, prevYForLastPos};
         this.lastPosCooldown = 1;
@@ -541,5 +547,96 @@ public class XiongBot extends BaseBot {
     private boolean isBlockedDir(Direction d) {
         this.turnDirection(d);
         return !this.frontIsClear();
+    }
+
+    /**
+     * Move up to maxSteps toward (tx,ty) using stepwise moves.
+     * Uses greedy dominant-axis preference and avoids revisiting cells during this movement
+     * to prevent up/down oscillation near walls. Does not recompute threat while moving.
+     */
+    private void moveTowards(int tx, int ty, int maxSteps) {
+        ArrayList<int[]> visited = new ArrayList<>();
+        int curX = this.getX();
+        int curY = this.getY();
+        visited.add(new int[]{curX, curY});
+
+        for (int step = 0; step < maxSteps; step++) {
+            curX = this.getX();
+            curY = this.getY();
+            if (curX == tx && curY == ty) break;
+
+            int dx = tx - curX;
+            int dy = ty - curY;
+            boolean moved = false;
+
+            // Prefer dominant axis
+            if (Math.abs(dx) >= Math.abs(dy) && dx != 0) {
+                Direction d = dx > 0 ? Direction.EAST : Direction.WEST;
+                int[] np = nextPos(new int[]{curX, curY}, d);
+                if (!isVisited(visited, np) && attemptMove(d)) {
+                    visited.add(np);
+                    moved = true;
+                }
+                // fallback to other axis
+                if (!moved && dy != 0) {
+                    d = dy > 0 ? Direction.SOUTH : Direction.NORTH;
+                    np = nextPos(new int[]{curX, curY}, d);
+                    if (!isVisited(visited, np) && attemptMove(d)) {
+                        visited.add(np);
+                        moved = true;
+                    }
+                }
+            } else if (dy != 0) {
+                Direction d = dy > 0 ? Direction.SOUTH : Direction.NORTH;
+                int[] np = nextPos(new int[]{curX, curY}, d);
+                if (!isVisited(visited, np) && attemptMove(d)) {
+                    visited.add(np);
+                    moved = true;
+                }
+                if (!moved && dx != 0) {
+                    d = dx > 0 ? Direction.EAST : Direction.WEST;
+                    np = nextPos(new int[]{curX, curY}, d);
+                    if (!isVisited(visited, np) && attemptMove(d)) {
+                        visited.add(np);
+                        moved = true;
+                    }
+                }
+            }
+
+            // Try any other direction (N,S,E,W) if still stuck, avoiding visited
+            if (!moved) {
+                Direction[] dirs = new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
+                for (Direction d : dirs) {
+                    int[] np = nextPos(new int[]{curX, curY}, d);
+                    if (isVisited(visited, np)) continue;
+                    if (attemptMove(d)) {
+                        visited.add(np);
+                        moved = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!moved) {
+                // No legal move possible without revisiting; stop to avoid oscillation
+                break;
+            }
+        }
+    }
+
+    private boolean isVisited(ArrayList<int[]> visited, int[] pos) {
+        for (int[] v : visited) {
+            if (v[0] == pos[0] && v[1] == pos[1]) return true;
+        }
+        return false;
+    }
+
+    private int[] nextPos(int[] cur, Direction d) {
+        int x = cur[0], y = cur[1];
+        if (d == Direction.EAST)  x++;
+        if (d == Direction.WEST)  x--;
+        if (d == Direction.SOUTH) y++;
+        if (d == Direction.NORTH) y--;
+        return new int[]{x, y};
     }
 }
