@@ -18,6 +18,12 @@ public class LiBot extends BaseBot {
     private static final int ESCORT_DISTANCE = 2;
     private static final int ATTACK_LEASH = ESCORT_DISTANCE + 2; // attack leash radius
 
+    // Records of speed
+    private final int[] chaserIds = new int[]{-1, -1};
+    private final int[][] chaserPrevPos = new int[][]{{0, 0}, {0, 0}};
+    private final double[] chaserSpeeds = new double[]{0.0, 0.0};
+
+
     /**
      * Constructor for XinranBot
      * @param city         City the robot is in
@@ -30,7 +36,8 @@ public class LiBot extends BaseBot {
      * @param movesPerTurn moves per turn
      * @param dodgeDiff    dodging difficulty (double)
      */
-    public LiBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, double dodgeDiff) {
+    public LiBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, double dodgeDiff)
+    {
         super(city, str, ave, dir, id, role, hp, movesPerTurn, dodgeDiff);
 
         //for debugging
@@ -43,8 +50,10 @@ public class LiBot extends BaseBot {
      *
      * @param records the records to get information from
      */
-    public void updateOtherRecords(PlayerInfo[] records) {
+    public void updateOtherRecords(PlayerInfo[] records)
+    {
         this.otherRecords = records;
+        updateChaserTracking(records);
     }
 
     /**
@@ -52,7 +61,8 @@ public class LiBot extends BaseBot {
      *
      * @param records the records to get information from
      */
-    public void initRecords(PlayerInfo[] records) {
+    public void initRecords(PlayerInfo[] records)
+    {
         System.out.println("Initializing records");
     }
 
@@ -62,7 +72,8 @@ public class LiBot extends BaseBot {
     public void takeTurn()
     {
         // Validate records
-        if (otherRecords == null || otherRecords.length == 0) {
+        if (otherRecords == null || otherRecords.length == 0)
+        {
             return;
         }
 
@@ -79,21 +90,26 @@ public class LiBot extends BaseBot {
         int chaserCount = collectByRole(otherRecords, ROLE_CHASER, chasers);
 
         // Validate presence of VIPs and Chasers
-        if (vipCount == 0 || chaserCount == 0) {
+        if (vipCount == 0 || chaserCount == 0)
+        {
             System.out.println("LiBot: vip or chaser missing");
             return;
         }
 
         // Pick the most threatened VIP
         PlayerInfo vip = pickMostThreatenedVIP(vips, vipCount, chasers, chaserCount);
-        if (vip == null) {
+        if (vip == null)
+        {
             System.out.println("LiBot: vip or chaser missing after pickMostThreatenedVIP");
             return;
         }
 
-        // Pick the nearest chaser to that VIP
-        PlayerInfo chaser = pickNearestToPos(vip.getPosition(), chasers, chaserCount);
-        if (chaser == null) {
+        // Sort chasers, then pick the most urgent threat
+        sortChasersByEta(vip.getPosition(), chasers, chaserCount);
+        PlayerInfo chaser = chasers[0];
+
+        if (chaser == null)
+        {
             System.out.println("LiBot: vip or chaser missing after pick");
             return;
         }
@@ -104,7 +120,9 @@ public class LiBot extends BaseBot {
         int distGV = distance(myPos, vip.getPosition()); // dist(guard, vip)
         int distGC = distance(myPos, chaser.getPosition()); // dist(guard, chaser)
 
-        double cSpeed = 0;
+        double cSpeed = getTrackedChaserSpeed(chaser.getID());
+        if (cSpeed <= 0) cSpeed = 4.0;
+
 
         // Chose action based on scoring
         double protect =
@@ -127,19 +145,24 @@ public class LiBot extends BaseBot {
                         - 10 * Math.max(0, 3 - distCV);
 
         // Choose action with highest score
-        int nextAct = insertionSortDescending(new double[]{protect, attack, run}, new int[]{0, 1, 2});
+        int nextAct = insertionSort(new double[]{protect, attack, run}, new int[]{0, 1, 2});
 
         // Enforce leash for attack
         int distToVipNow = distance(getMyPosition(), vip.getPosition());
-        if (nextAct == 1 && distToVipNow > ATTACK_LEASH) {
+        if (nextAct == 1 && distToVipNow > ATTACK_LEASH)
+        {
             nextAct = 0;
         }
         // Execute chosen action
         if (nextAct == 0) {
             doProtect(vip, chaser, vips, vipCount, chasers, chaserCount);
-        } else if (nextAct == 1) {
+        }
+        else if (nextAct == 1)
+        {
             doAttack(chaser);
-        } else {
+        }
+        else
+        {
             doRun(chaser);
         }
 
@@ -147,28 +170,32 @@ public class LiBot extends BaseBot {
 
     /**
      * Collect PlayerInfo records by role
-     *
      * @param records the array of PlayerInfo records
      * @param role    the role to filter by
      * @param out     the output array to store collected records
      * @return the number of records collected
      */
-    private int collectByRole(PlayerInfo[] records, int role, PlayerInfo[] out) {
+    private int collectByRole(PlayerInfo[] records, int role, PlayerInfo[] out)
+    {
         // Reset output array
         int k = 0;
-        for (int i = 0; i < records.length; i++) {
+        for (int i = 0; i < records.length; i++)
+        {
             PlayerInfo r = records[i];
-            if (r == null) {
+            if (r == null)
+            {
                 continue;
             }
-            if (r.getState()) {
+            if (r.getState())
+            {
                 continue;
             }
-            if (r.getRole() != role) {
+            if (r.getRole() != role)
+            {
                 continue;
             }
-
-            if (k < out.length) {
+            if (k < out.length)
+            {
                 out[k] = r;
                 k++;
             }
@@ -178,7 +205,6 @@ public class LiBot extends BaseBot {
 
     /**
      * Pick the most threatened VIP
-     *
      * @param vips        array of VIP PlayerInfo
      * @param vipCount    number of VIPs in the array
      * @param chasers     array of Chaser PlayerInfo
@@ -188,29 +214,34 @@ public class LiBot extends BaseBot {
     private PlayerInfo pickMostThreatenedVIP(PlayerInfo[] vips, int vipCount,
                                              PlayerInfo[] chasers, int chaserCount)
     {
-        // Find the VIP with the smallest distance to any chaser
+        // Find the VIP with the smallest distance to chaser
         PlayerInfo bestVIP = null;
         int bestThreat = Integer.MAX_VALUE;
 
         // Evaluate each VIP
-        for (int i = 0; i < vipCount; i++) {
+        for (int i = 0; i < vipCount; i++)
+        {
             PlayerInfo v = vips[i];
             if (v == null) continue;
 
             // Find the closest chaser to this VIP
             int threat = Integer.MAX_VALUE;
-            for (int j = 0; j < chaserCount; j++) {
+            for (int j = 0; j < chaserCount; j++)
+            {
                 PlayerInfo c = chasers[j];
                 if (c == null) continue;
                 int d = distance(v.getPosition(), c.getPosition());
                 if (d < threat) threat = d;
             }
 
-            // Update best VIP based on threat level
-            if (threat < bestThreat) {
+            // Update the best VIP based on threat
+            if (threat < bestThreat)
+            {
                 bestThreat = threat;
                 bestVIP = v;
-            } else if (threat == bestThreat && bestVIP != null) {
+            }
+            else if (threat == bestThreat && bestVIP != null)
+            {
                 if (v.getHP() < bestVIP.getHP()) bestVIP = v;
             }
         }
@@ -218,32 +249,148 @@ public class LiBot extends BaseBot {
     }
 
     /**
-     * Pick the nearest PlayerInfo to a given position
-     *
-     * @param pos   the reference position
-     * @param arr   array of PlayerInfo
-     * @param count number of PlayerInfo in the array
-     * @return the nearest PlayerInfo to the given position
+     * Update observed speed for each chaser by comparing current position vs previously seen position.
+     * Speed is measured as Manhattan distance moved since last time this Guard received records.
      */
-    private PlayerInfo pickNearestToPos(int[] pos, PlayerInfo[] arr, int count)
+    private void updateChaserTracking(PlayerInfo[] records)
     {
-        // Find the nearest PlayerInfo to the given position
-        PlayerInfo best = null;
-        int bestDist = Integer.MAX_VALUE;
+        if (records == null) return;
 
-        // Evaluate each PlayerInfo
-        for (int i = 0; i < count; i++)
+        for (int i = 0; i < records.length; i++)
         {
-            PlayerInfo r = arr[i];
-            if (r == null) continue;
-            int d = distance(pos, r.getPosition());
-            if (d < bestDist)
+            PlayerInfo r = records[i];
+            if (r == null)
             {
-                bestDist = d;
-                best = r;
+                continue;
+            }
+            if (r.getState())
+            {
+                continue;
+            }
+            if (r.getRole() != ROLE_CHASER)
+            {
+                continue;
+            }
+
+            int id = r.getID();
+            int[] pos = r.getPosition();
+            if (pos == null)
+            {
+                continue;
+            }
+
+            int slot = findChaser(id);
+            if (slot < 0)
+            {
+                continue;
+            }
+
+            // first time see this chaser
+            if (chaserIds[slot] == -1)
+            {
+                chaserIds[slot] = id;
+                chaserPrevPos[slot][0] = pos[0];
+                chaserPrevPos[slot][1] = pos[1];
+                chaserSpeeds[slot] = 0.0;
+            }
+            else
+            {
+                // observed speed since last time
+                double s = Math.abs(pos[0] - chaserPrevPos[slot][0]) + Math.abs(pos[1] - chaserPrevPos[slot][1]);
+                chaserSpeeds[slot] = s;
+                chaserPrevPos[slot][0] = pos[0];
+                chaserPrevPos[slot][1] = pos[1];
             }
         }
-        return best;
+    }
+
+    /**
+     * Find existing  slot for tracking a chaser by id.
+     * @param id  chaser id
+     * @return  slot index, or -1 if no space
+     */
+    private int findChaser(int id)
+    {
+        // already tracked or not
+        for (int i = 0; i < chaserIds.length; i++)
+        {
+            if (chaserIds[i] == id)
+            {
+                return i;
+            }
+        }
+        // allocate empty
+        for (int i = 0; i < chaserIds.length; i++)
+        {
+            if (chaserIds[i] == -1)
+            {
+                return i;
+            }
+        }
+        // no space (shouldn't happen with 2 chasers)
+        return -1;
+    }
+
+    /** Get last observed speed for a given chaser id.
+     * @param chaserId  chaser id
+     * @return  observed speed, or 0.0 if not tracked
+     */
+    private double getTrackedChaserSpeed(int chaserId)
+    {
+        for (int i = 0; i < chaserIds.length; i++)
+        {
+            if (chaserIds[i] == chaserId)
+            {
+                return chaserSpeeds[i];
+            }
+        }
+        return 0.0;
+    }
+
+    /** ETA = distance / max(1, observedSpeed). Smaller ETA means more urgent threat.
+     * @param targetPos  target position
+     * @param chaser    the chaser PlayerInfo
+     * @return  Estimated time to arrive to target position
+     * */
+    private double etaToPos(int[] targetPos, PlayerInfo chaser)
+    {
+        if (chaser == null || targetPos == null || chaser.getPosition() == null)
+        {
+            return Double.MAX_VALUE;
+        }
+        double s = getTrackedChaserSpeed(chaser.getID());
+        if (s < 1.0)
+        {
+            s = 1.0; // avoid division by zero / tiny values
+        }
+        return (double) distance(targetPos, chaser.getPosition()) / s;
+    }
+
+    /**
+     * Insertion sort chasers by ETA to a target position (ascending).
+     * @param targetPos  target position
+     * @param chasers    array of chaser PlayerInfo
+     * @param count      number of chasers in the array
+     */
+    private void sortChasersByEta(int[] targetPos, PlayerInfo[] chasers, int count)
+    {
+        if (chasers == null || count <= 1)
+        {
+            return;
+        }
+        for (int i = 1; i < count; i++)
+        {
+            PlayerInfo key = chasers[i];
+            double keyEta = etaToPos(targetPos, key);
+            int j = i - 1;
+
+            while (j >= 0 && etaToPos(targetPos, chasers[j]) > keyEta)
+            {
+                chasers[j + 1] = chasers[j];
+                j--;
+            }
+            chasers[j + 1] = key;
+        }
     }
 
     /**
@@ -267,18 +414,24 @@ public class LiBot extends BaseBot {
         int moves = getMOVES_PER_TURN();
 
         // Main loop
-        for (int step = 0; step < moves; step++) {
+        for (int step = 0; step < moves; step++)
+        {
             int[] myPos = getMyPosition();
 
-            if (distance(myPos, vipPos) > ESCORT_DISTANCE + 1) {
-                if (!moveTowardPos(vipPos)) break;
+            if (distance(myPos, vipPos) > ESCORT_DISTANCE + 1)
+            {
+                if (!moveTowardPos(vipPos))
+                {
+                    break;
+                }
                 continue;
             }
 
             int distCV = distance(chPos, vipPos);
 
             // If chaser is very close to VIP, try to block
-            if (distCV <= 1) {
+            if (distCV <= 1)
+            {
                 Direction bestDir = null;
                 int bestScore = Integer.MIN_VALUE;
 
@@ -671,7 +824,7 @@ public class LiBot extends BaseBot {
      * @param scores  an array of scores
      * @param actions an array of actions
      */
-    public static int insertionSortDescending(double[] scores, int[] actions)
+    public static int insertionSort(double[] scores, int[] actions)
     {
         // Insertion sort algorithm to sort scores in descending order
         for(int i = 1; i < scores.length; i++)
