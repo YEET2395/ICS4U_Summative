@@ -15,9 +15,6 @@ public class App {
     private static final int ROLE_GUARD = 2;
     private static final int ROLE_CHASER = 3;
     private static boolean gameEnded = false;
-    private static final int NUM_VIPS = 2;
-    private static final int NUM_GUARDS = 2;
-    private static final int NUM_CHASERS = 2;
 
     // Debug toggle for test output
     private static final boolean DEBUG = true;
@@ -173,7 +170,8 @@ public class App {
      * @param target being targeted (VIP or Guard)
      * @param r  instance used to generate the roll
      */
-    public static void checkDodge(KureshyBot chaser, BaseBot target, Random r) {
+    public static void checkDodge(KureshyBot chaser, BaseBot target, Random r)
+    {
         // Generate a random roll in [0.0, 1.0)
         double diff = r.nextDouble();
 
@@ -254,7 +252,8 @@ public class App {
      * @param maxTurns the max number of turns
      * @param turn the current turn
      */
-    public static void checkForWinCondition(PlayerInfo[] records, int maxTurns, int turn) {
+    public static void checkForWinCondition(PlayerInfo[] records, int maxTurns, int turn)
+    {
         int numVIPs = 0;
         int numChasers = 0;
         int numVIPsCaught = 0;
@@ -344,20 +343,20 @@ public class App {
                     row,
                     col,
                     Direction.SOUTH, // str, ave, dir
-                    i, // id
+                    i+1, // id
                     ROLE_VIP, // role
                     2, // hp
                     movesPerTurn,
                     dodgeDiff
             );
-            infos[i] = new PlayerInfo(i, 1, 2, dodgeDiff, robots[i].getMyPosition(), false);
+            infos[i] = new PlayerInfo(i+1, 1, 2, dodgeDiff, robots[i].getMyPosition(), false);
         }
 
         // Guards: movesPerTurn [2,4], dodgeDiff [0.45, 0.55]
         for (int i=2; i<4; i++)
         {
             int movesPerTurn = rand.nextInt(3) + 2;
-            double dodgeDiff = 0.45 + rand.nextDouble() * 0.1;
+            double dodgeDiff = 0.6 + rand.nextDouble() * 0.1;
             int row = rand.nextInt(13) + 1;
             int col = rand.nextInt(24) + 1;
             robots[i] = new LiBot(
@@ -365,13 +364,13 @@ public class App {
                     row,
                     col,
                     Direction.NORTH, // str, ave, dir
-                    i, // id
+                    i+1, // id
                     ROLE_GUARD, // role
                     5, // hp
                     movesPerTurn,
                     dodgeDiff
             );
-            infos[i] = new PlayerInfo(i, 2, 5, dodgeDiff, robots[i].getMyPosition(), false);
+            infos[i] = new PlayerInfo(i+1, 2, 5, dodgeDiff, robots[i].getMyPosition(), false);
         }
 
         // Chasers: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
@@ -386,16 +385,16 @@ public class App {
                     row,
                     col,
                     Direction.NORTH, // str, ave, dir
-                    i, // id
+                    i+1, // id
                     ROLE_CHASER, // role
                     3, // hp
                     movesPerTurn,
                     dodgeDiff
             );
-            infos[i] = new PlayerInfo(i, 3, 3, dodgeDiff, robots[i].getMyPosition(), false);
+            infos[i] = new PlayerInfo(i+1, 3, 3, dodgeDiff, robots[i].getMyPosition(), false);
         }
 
-        int maxTurns = 50;
+        int maxTurns = 20;
         // Initialize chaser bots with player info
         for (int i = 4; i < 6; i++)
         {
@@ -478,7 +477,10 @@ public class App {
                     }
                 }
                 App.checkForWinCondition(infos, maxTurns, turn);
-                if (gameEnded) break;
+                if (gameEnded)
+                {
+                    break;
+                }
 
                 // ----- Guard move -----
                 if (!robots[guardIndex].myRecords.getState())
@@ -552,29 +554,39 @@ public class App {
             // End-of-turn snapshot (compact status line for all robots)
             if (DEBUG)
             {
-                StringBuilder sb = new StringBuilder();
-                sb.append("TURN ").append(turn).append(" SUMMARY: ");
+                String summary = "TURN " + turn + " SUMMARY: ";
+
                 for(int i = 0; i < robots.length; i++)
                 {
-                    sb.append(String.format(
-                        "[%s id=%d hp=%d pos=%s caught=%b] ",
-                        roleName(robots[i].myRecords.getRole()),
-                        robots[i].myRecords.getID(),
-                        robots[i].myRecords.getHP(),
-                        Arrays.toString(robots[i].getMyPosition()),
-                        robots[i].myRecords.getState()
-                    ));
+                    summary = summary + String.format(
+                            "[%s id=%d hp=%d pos=%s caught=%b] ",
+                            roleName(robots[i].myRecords.getRole()),
+                            robots[i].myRecords.getID(),
+                            robots[i].myRecords.getHP(),
+                            Arrays.toString(robots[i].getMyPosition()),
+                            robots[i].myRecords.getState()
+                    );
                 }
-                System.out.println(sb);
+
+                System.out.println(summary);
             }
         }
     }
 
     private static String roleName(int role)
     {
-        if (role == ROLE_VIP) return "VIP";
-        if (role == ROLE_GUARD) return "GUARD";
-        if (role == ROLE_CHASER) return "CHASER";
+        if (role == ROLE_VIP)
+        {
+            return "VIP";
+        }
+        if (role == ROLE_GUARD)
+        {
+            return "GUARD";
+        }
+        if (role == ROLE_CHASER)
+        {
+            return "CHASER";
+        }
         return "UNKNOWN";
     }
 }

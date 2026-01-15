@@ -59,7 +59,8 @@ public class LiBot extends BaseBot {
     /**
      * The main logic for the bot's turn
      */
-    public void takeTurn() {
+    public void takeTurn()
+    {
         // Validate records
         if (otherRecords == null || otherRecords.length == 0) {
             return;
@@ -185,7 +186,8 @@ public class LiBot extends BaseBot {
      * @return the most threatened VIP PlayerInfo
      */
     private PlayerInfo pickMostThreatenedVIP(PlayerInfo[] vips, int vipCount,
-                                             PlayerInfo[] chasers, int chaserCount) {
+                                             PlayerInfo[] chasers, int chaserCount)
+    {
         // Find the VIP with the smallest distance to any chaser
         PlayerInfo bestVIP = null;
         int bestThreat = Integer.MAX_VALUE;
@@ -223,17 +225,20 @@ public class LiBot extends BaseBot {
      * @param count number of PlayerInfo in the array
      * @return the nearest PlayerInfo to the given position
      */
-    private PlayerInfo pickNearestToPos(int[] pos, PlayerInfo[] arr, int count) {
+    private PlayerInfo pickNearestToPos(int[] pos, PlayerInfo[] arr, int count)
+    {
         // Find the nearest PlayerInfo to the given position
         PlayerInfo best = null;
         int bestDist = Integer.MAX_VALUE;
 
         // Evaluate each PlayerInfo
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < count; i++)
+        {
             PlayerInfo r = arr[i];
             if (r == null) continue;
             int d = distance(pos, r.getPosition());
-            if (d < bestDist) {
+            if (d < bestDist)
+            {
                 bestDist = d;
                 best = r;
             }
@@ -252,7 +257,8 @@ public class LiBot extends BaseBot {
      */
     private void doProtect(PlayerInfo vip, PlayerInfo threatChaser,
                            PlayerInfo[] vips, int vipCount,
-                           PlayerInfo[] chasers, int chaserCount) {
+                           PlayerInfo[] chasers, int chaserCount)
+    {
         // Positions
         int[] vipPos = vip.getPosition();
         int[] chPos = threatChaser.getPosition();
