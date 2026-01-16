@@ -13,7 +13,7 @@ import java.util.ArrayList;
 public class XiongBot extends BaseBot {
     private int[] guardPos = {0, 0};
     // changed to support multiple chasers
-    private int[][] chaserPos = new int[0][0];
+    private int[][] chaserPos = new int[3][3];
     private int movesPerTurn = 1;
     // track chaser speeds: stores the speed (manhattan distance) observed last round for each chaser
     private double[] chaserSpeeds = new double[0];
@@ -22,13 +22,16 @@ public class XiongBot extends BaseBot {
     // random generator for tie-breaking and probabilistic decisions
     private final Random rnd = new Random();
 
-    // track last position to avoid immediate back-and-forth movement
-    private int[] lastPos = null;
-    // cooldown (in steps) during which returning to lastPos is disallowed
-    private int lastPosCooldown = 0;
+    // (removed cross-turn backtracking guard - using grid-based move planning externally)
 
     // how many future turns the bot wants to be sure chasers can't reach it in
-    private int safetyTurns = 1;
+    private int safetyTurns = 3;
+
+    // Fixed world bounds (matches App.setupPlayground walls): avenues [1..24], streets [1..13]
+    private static final int WORLD_MIN_X = 1;  // avenue
+    private static final int WORLD_MAX_X = 24;
+    private static final int WORLD_MIN_Y = 1;  // street
+    private static final int WORLD_MAX_Y = 13;
 
     /**
      * Constructor for BaseBot
@@ -232,24 +235,52 @@ public class XiongBot extends BaseBot {
         int myX = this.getMyPosition()[0];
         int myY = this.getMyPosition()[1];
 
-        // decrement lastPos cooldown once per turn (was previously per-step)
-        if (this.lastPosCooldown > 0) {
-            this.lastPosCooldown = this.lastPosCooldown - 1;
-            if (this.lastPosCooldown == 0) {
-                this.lastPos = null;
-            }
-        }
-
         if (this.chaserPos == null || this.chaserPos.length == 0) {
             return; // nothing to plan against
         }
 
-        // Build set of reachable coordinates within Manhattan radius = movesAllowed (ignore obstacles for planning)
-        int bestX = myX;
-        int bestY = myY;
-        int bestArea = Integer.MAX_VALUE;
-        int bestThreat = Integer.MAX_VALUE;
-        int bestMinDist = Integer.MIN_VALUE;
+        // Compute conservative bounding box from known positions to avoid evaluating tiles outside walls/map ---
+        int minX = myX, maxX = myX, minY = myY, maxY = myY;
+        // include chasers
+        for (int i = 0; i < this.chaserPos.length; i++) {
+            int[] c = this.chaserPos[i];
+            if (c == null) continue;
+            if (c[0] < minX) minX = c[0];
+            if (c[0] > maxX) maxX = c[0];
+            if (c[1] < minY) minY = c[1];
+            if (c[1] > maxY) maxY = c[1];
+        }
+        // include guard if available
+        if (this.guardPos != null) {
+            if (this.guardPos[0] < minX) minX = this.guardPos[0];
+            if (this.guardPos[0] > maxX) maxX = this.guardPos[0];
+            if (this.guardPos[1] < minY) minY = this.guardPos[1];
+            if (this.guardPos[1] > maxY) maxY = this.guardPos[1];
+        }
+        // add a small margin so nearby edge tiles are still considered
+        final int MARGIN = 2;
+        minX -= MARGIN;
+        minY -= MARGIN;
+        maxX += MARGIN;
+        maxY += MARGIN;
+        // -----------------------------------------------------------------------------------------------
+
+        // Clamp bounding box to the fixed playground interior defined in App.setupPlayground:
+        // Vertical walls at avenue 0 and 25, horizontal walls at street 0 and 14, so playable
+        // interior is avenues 1..24 and streets 1..13. This ensures we never evaluate tiles outside walls.
+        final int WORLD_MIN_X = 1;  // avenue
+        final int WORLD_MAX_X = 24;
+        final int WORLD_MIN_Y = 1;  // street
+        final int WORLD_MAX_Y = 13;
+        if (minX < WORLD_MIN_X) minX = WORLD_MIN_X;
+        if (maxX > WORLD_MAX_X) maxX = WORLD_MAX_X;
+        if (minY < WORLD_MIN_Y) minY = WORLD_MIN_Y;
+        if (maxY > WORLD_MAX_Y) maxY = WORLD_MAX_Y;
+
+        // Build candidate list (only candidates that pass feasibility checks get added)
+        ArrayList<int[]> candidates = new ArrayList<>(); // each entry: {cx, cy, threat, area, minDist}
+        int currentThreat = computeThreatForSquare(myX, myY);
+        int currentArea = computeAreaThreat(myX, myY, computeMaxChaserReach(this.safetyTurns));
 
         for (int dx = -movesAllowed; dx <= movesAllowed; dx++) {
             for (int dy = -movesAllowed; dy <= movesAllowed; dy++) {
@@ -258,15 +289,44 @@ public class XiongBot extends BaseBot {
                 int cx = myX + dx;
                 int cy = myY + dy;
 
-                // avoid moving back to immediate last position if cooldown active (prevents back-and-forth across turns)
-                if (this.lastPos != null && this.lastPosCooldown > 0) {
-                    if (cx == this.lastPos[0] && cy == this.lastPos[1]) continue;
+                // skip candidate if outside computed bounding box (likely outside walls/map)
+                if (cx < minX || cx > maxX || cy < minY || cy > maxY) continue;
+
+                // first-step feasibility check (same as before)
+                int dxToTarget = cx - myX;
+                int dyToTarget = cy - myY;
+                boolean reachableFirstStep = false;
+                int curMan = Math.abs(dxToTarget) + Math.abs(dyToTarget);
+                if (curMan > 0) {
+                    if (Math.abs(dxToTarget) >= Math.abs(dyToTarget) && dxToTarget != 0) {
+                        Direction pref = dxToTarget > 0 ? Direction.EAST : Direction.WEST;
+                        Direction alt = dyToTarget > 0 ? Direction.SOUTH : Direction.NORTH;
+                        if (!isBlockedDir(pref)) reachableFirstStep = true;
+                        else if (dyToTarget != 0 && !isBlockedDir(alt)) reachableFirstStep = true;
+                    } else if (dyToTarget != 0) {
+                        Direction pref = dyToTarget > 0 ? Direction.SOUTH : Direction.NORTH;
+                        Direction alt = dxToTarget > 0 ? Direction.EAST : Direction.WEST;
+                        if (!isBlockedDir(pref)) reachableFirstStep = true;
+                        else if (dxToTarget != 0 && !isBlockedDir(alt)) reachableFirstStep = true;
+                    }
+                    if (!reachableFirstStep) {
+                        for (Direction d : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
+                            int[] np = nextPos(new int[]{myX, myY}, d);
+                            int newMan = Math.abs(cx - np[0]) + Math.abs(cy - np[1]);
+                            if (newMan < curMan && !isBlockedDir(d)) {
+                                reachableFirstStep = true;
+                                break;
+                            }
+                        }
+                    }
                 }
+                if (!reachableFirstStep) continue;
 
                 // avoid candidate squares occupied by chasers
                 int minDist = Integer.MAX_VALUE;
                 for (int j = 0; j < this.chaserPos.length; j++) {
                     int[] c = this.chaserPos[j];
+                    if (c == null) continue;
                     int dist = Math.abs(cx - c[0]) + Math.abs(cy - c[1]);
                     if (dist < minDist) minDist = dist;
                 }
@@ -274,40 +334,81 @@ public class XiongBot extends BaseBot {
 
                 int threat = computeThreatForSquare(cx, cy);
                 int area = computeAreaThreat(cx, cy, computeMaxChaserReach(this.safetyTurns));
-
-                // choose by lowest area, then lowest immediate threat, then highest minDist
-                if (area < bestArea || (area == bestArea && (threat < bestThreat || (threat == bestThreat && minDist > bestMinDist)))) {
-                    bestArea = area;
-                    bestThreat = threat;
-                    bestMinDist = minDist;
-                    bestX = cx;
-                    bestY = cy;
-                }
+                // Only consider candidates that are not worse than current
+                if (threat > currentThreat) continue;
+                // add candidate
+                candidates.add(new int[]{cx, cy, threat, area, minDist});
             }
         }
 
-        // If best is current position (no better found), stay
-        if (bestX == myX && bestY == myY) {
-            return;
+        if (candidates.size() == 0) {
+            return; // no viable candidate
         }
 
-        // Attempt to move directly to the planned best position (may traverse multiple steps)
-        int prevXForLastPos = myX;
-        int prevYForLastPos = myY;
-        // Use XiongBot's own stepwise mover (avoids using BaseBot.moveToPos which can drive through walls)
-        this.moveTowards(bestX, bestY, movesAllowed);
-        // record last pos to avoid immediate backtracking
-        this.lastPos = new int[]{prevXForLastPos, prevYForLastPos};
-        this.lastPosCooldown = 1;
+        // Enforce policy: only consider candidates at the maximum Manhattan distance
+        // from the current position (i.e., always go for the farthest reachable tile).
+        int maxMan = 0;
+        for (int[] cand : candidates) {
+            int man = Math.abs(cand[0] - myX) + Math.abs(cand[1] - myY);
+            if (man > maxMan) maxMan = man;
+        }
+        // Filter to only keep candidates at maxMan
+        ArrayList<int[]> farCandidates = new ArrayList<>();
+        for (int[] cand : candidates) {
+            int man = Math.abs(cand[0] - myX) + Math.abs(cand[1] - myY);
+            if (man == maxMan) farCandidates.add(cand);
+        }
+        // Replace candidates list with farthest-only list
+        if (farCandidates.size() > 0) {
+            candidates = farCandidates;
+        }
+
+        // Sort candidates by threat asc, area asc, minDist desc (selection sort for simplicity)
+        for (int i = 0; i < candidates.size() - 1; i++) {
+            int bestIdx = i;
+            for (int j = i + 1; j < candidates.size(); j++) {
+                int[] a = candidates.get(j);
+                int[] b = candidates.get(bestIdx);
+                if (a[2] < b[2] || (a[2] == b[2] && (a[3] < b[3] || (a[3] == b[3] && a[4] > b[4])))) {
+                    bestIdx = j;
+                }
+            }
+            if (bestIdx != i) {
+                int[] tmp = candidates.get(i);
+                candidates.set(i, candidates.get(bestIdx));
+                candidates.set(bestIdx, tmp);
+            }
+        }
+
+        // Try candidates in order until one produces movement using BaseBot.moveToPos
+        for (int[] cand : candidates) {
+            int cx = cand[0];
+            int cy = cand[1];
+            int[] before = this.getMyPosition();
+            this.moveToPos(new int[]{cx, cy});
+            int[] after = this.getMyPosition();
+            if (before[0] != after[0] || before[1] != after[1]) {
+                // we moved at least one step
+                return;
+            }
+            // otherwise try next candidate
+        }
+        // none produced movement; stay
     }
 
     /**
      * Compute a simple threat score for a square: how many chasers can reach (Manhattan) that square within safetyTurns
      * Uses tracked chaserSpeeds but assumes minimum 1 step/turn when speed is not observed.
+     * Each chaser that can reach the square within `safetyTurns` contributes
+     * (safetyTurns - turnsNeeded) to the threat (higher means more urgent). If no chaser
+     * can reach within safetyTurns the result is 0.
      */
     private int computeThreatForSquare(int x, int y) {
+        // Immediate bounds check: if the coordinate is outside the known walled playground,
+        // treat it as safe (threat 0) and avoid accessing chaser arrays or doing further work.
+        if (x < WORLD_MIN_X || x > WORLD_MAX_X || y < WORLD_MIN_Y || y > WORLD_MAX_Y) return 0;
         if (this.chaserPos == null || this.chaserPos.length == 0) return 0;
-        int count = 0;
+        int threat = 0;
         for (int i = 0; i < this.chaserPos.length; i++) {
             int[] c = this.chaserPos[i];
             int dist = Math.abs(x - c[0]) + Math.abs(y - c[1]);
@@ -317,9 +418,14 @@ public class XiongBot extends BaseBot {
             }
             if (s < 1.0) s = 1.0; // conservative minimum
             int turnsNeeded = (int) Math.ceil((double) dist / s);
-            if (turnsNeeded <= this.safetyTurns) count++;
+            if (turnsNeeded <= this.safetyTurns) {
+                // contribution: make arrivals exactly at safetyTurns count as 1 unit of threat
+                // and closer arrivals contribute proportionally more. This avoids treating
+                // borderline arrivals as '0' threat which led to unsafe candidate selection.
+                threat += (this.safetyTurns - turnsNeeded + 1);
+            }
         }
-        return count;
+        return threat;
     }
 
     /**
@@ -334,6 +440,8 @@ public class XiongBot extends BaseBot {
             for (int dy = -rem; dy <= rem; dy++) {
                 int nx = x + dx;
                 int ny = y + dy;
+                // Skip cells outside the walled playground
+                if (nx < WORLD_MIN_X || nx > WORLD_MAX_X || ny < WORLD_MIN_Y || ny > WORLD_MAX_Y) continue;
                 sum += computeThreatForSquare(nx, ny);
             }
         }
@@ -482,18 +590,6 @@ public class XiongBot extends BaseBot {
         return this.chaserSpeeds[chaserIndex];
     }
 
-    /**
-     * Set how many turns the bot uses to evaluate whether a chaser could reach it.
-     * A value < 1 will be clamped to 1.
-     * @param turns number of turns to be "safe" for
-     */
-    public void setSafetyTurns(int turns) {
-        if (turns < 1) {
-            this.safetyTurns = 1;
-        } else {
-            this.safetyTurns = turns;
-        }
-    }
 
     /**
      * Compute the maximum Manhattan distance any chaser could cover in `turns` turns
@@ -526,21 +622,6 @@ public class XiongBot extends BaseBot {
         return maxReach;
     }
 
-    // Helper: get the direction to the left
-    private Direction leftOf(Direction d) {
-        if (d == Direction.NORTH) return Direction.WEST;
-        if (d == Direction.WEST) return Direction.SOUTH;
-        if (d == Direction.SOUTH) return Direction.EAST;
-        return Direction.NORTH; // EAST -> NORTH
-    }
-
-    // Helper: get the direction to the right
-    private Direction rightOf(Direction d) {
-        if (d == Direction.NORTH) return Direction.EAST;
-        if (d == Direction.EAST) return Direction.SOUTH;
-        if (d == Direction.SOUTH) return Direction.WEST;
-        return Direction.NORTH; // WEST -> NORTH
-    }
 
     // Test whether the adjacent cell in direction 'd' from current position is blocked (wall or obstacle)
     // Note: this checks frontIsClear after turning to `d` from the robot's current facing.
@@ -554,12 +635,10 @@ public class XiongBot extends BaseBot {
      * Uses greedy dominant-axis preference and avoids revisiting cells during this movement
      * to prevent up/down oscillation near walls. Does not recompute threat while moving.
      */
-    private void moveTowards(int tx, int ty, int maxSteps) {
-        ArrayList<int[]> visited = new ArrayList<>();
+    private int moveTowards(int tx, int ty, int maxSteps) {
         int curX = this.getX();
         int curY = this.getY();
-        visited.add(new int[]{curX, curY});
-
+        int stepsMoved = 0;
         for (int step = 0; step < maxSteps; step++) {
             curX = this.getX();
             curY = this.getY();
@@ -572,64 +651,53 @@ public class XiongBot extends BaseBot {
             // Prefer dominant axis
             if (Math.abs(dx) >= Math.abs(dy) && dx != 0) {
                 Direction d = dx > 0 ? Direction.EAST : Direction.WEST;
-                int[] np = nextPos(new int[]{curX, curY}, d);
-                if (!isVisited(visited, np) && attemptMove(d)) {
-                    visited.add(np);
+                if (attemptMove(d)) {
                     moved = true;
+                    stepsMoved++;
                 }
                 // fallback to other axis
                 if (!moved && dy != 0) {
                     d = dy > 0 ? Direction.SOUTH : Direction.NORTH;
-                    np = nextPos(new int[]{curX, curY}, d);
-                    if (!isVisited(visited, np) && attemptMove(d)) {
-                        visited.add(np);
+                    if (attemptMove(d)) {
                         moved = true;
+                        stepsMoved++;
                     }
                 }
             } else if (dy != 0) {
                 Direction d = dy > 0 ? Direction.SOUTH : Direction.NORTH;
-                int[] np = nextPos(new int[]{curX, curY}, d);
-                if (!isVisited(visited, np) && attemptMove(d)) {
-                    visited.add(np);
+                if (attemptMove(d)) {
                     moved = true;
+                    stepsMoved++;
                 }
                 if (!moved && dx != 0) {
                     d = dx > 0 ? Direction.EAST : Direction.WEST;
-                    np = nextPos(new int[]{curX, curY}, d);
-                    if (!isVisited(visited, np) && attemptMove(d)) {
-                        visited.add(np);
+                    if (attemptMove(d)) {
                         moved = true;
+                        stepsMoved++;
                     }
                 }
             }
 
-            // Try any other direction (N,S,E,W) if still stuck, avoiding visited
+            // Try any other direction (N,S,E,W) if still stuck
             if (!moved) {
                 Direction[] dirs = new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
                 for (Direction d : dirs) {
-                    int[] np = nextPos(new int[]{curX, curY}, d);
-                    if (isVisited(visited, np)) continue;
                     if (attemptMove(d)) {
-                        visited.add(np);
                         moved = true;
+                        stepsMoved++;
                         break;
                     }
                 }
             }
 
             if (!moved) {
-                // No legal move possible without revisiting; stop to avoid oscillation
+                // No legal move possible; stop moving further
                 break;
             }
         }
+        return stepsMoved;
     }
 
-    private boolean isVisited(ArrayList<int[]> visited, int[] pos) {
-        for (int[] v : visited) {
-            if (v[0] == pos[0] && v[1] == pos[1]) return true;
-        }
-        return false;
-    }
 
     private int[] nextPos(int[] cur, Direction d) {
         int x = cur[0], y = cur[1];

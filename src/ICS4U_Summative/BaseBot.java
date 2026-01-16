@@ -121,7 +121,13 @@ public abstract class BaseBot extends RobotSE {
         }
         // Move while Y value not equal
         while(this.getY()!=loc){
-            this.move();
+            // Only move if the front is clear; otherwise stop to avoid driving into walls
+            if (this.frontIsClear()) {
+                this.move();
+            } else {
+                // Blocked by a wall or obstacle in the current facing direction: abort movement
+                break;
+            }
         }
     }
 
@@ -139,7 +145,13 @@ public abstract class BaseBot extends RobotSE {
         }
         // Move while X value not equal
         while(this.getX() != loc){
-            this.move();
+            // Only move if the front is clear; otherwise stop to avoid driving into walls
+            if (this.frontIsClear()) {
+                this.move();
+            } else {
+                // Blocked by a wall or obstacle in the current facing direction: abort movement
+                break;
+            }
         }
     }
 
