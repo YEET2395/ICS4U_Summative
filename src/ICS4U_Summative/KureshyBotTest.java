@@ -203,9 +203,9 @@ public class KureshyBotTest {
         PlayerInfo[] infos = new PlayerInfo[6];
 
         /*Test Case #1.1
-        //Chaser will automatically assign the robot closest to it with the highest priorityScore,
-        //even if multiple are within range of the current turn (just using distance and the default
-        //values for the other factors)
+        Chaser will automatically assign the robot closest to it with the highest priorityScore,
+        even if multiple are within range of the current turn (just using distance and the default
+        values for the other factors)
         // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
         for (int i=0; i<4; i++) {
             int movesPerTurn = rand.nextInt(3) + 1;
@@ -267,10 +267,10 @@ public class KureshyBotTest {
         */
 
         /*Test Case #1.2 (Boundary)
-        //Chaser will automatically assign the robot closest to it with the highest priorityScore,
-        //even if multiple are within range of the current turn (just using distance and the default
-        //values for the other factors). Targets are equal distance apart and at the edge of possible
-        //movement so it should just go for the lowest ID.
+        Chaser will automatically assign the robot closest to it with the highest priorityScore,
+        even if multiple are within range of the current turn (just using distance and the default
+        values for the other factors). Targets are equal distance apart and at the edge of possible
+        movement so it should just go for the lowest ID.
         // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
         for (int i=0; i<4; i++) {
             int movesPerTurn = rand.nextInt(3) + 1;
@@ -332,8 +332,8 @@ public class KureshyBotTest {
         */
 
         /*Test Case #2.1
-        //Chaser will go after the nearest target even if they are out of range (just using default
-        //values for the other factors)
+        Chaser will go after the nearest target even if they are out of range (just using default
+        values for the other factors)
         // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
         for (int i=0; i<4; i++) {
             int movesPerTurn = rand.nextInt(3) + 1;
@@ -457,9 +457,10 @@ public class KureshyBotTest {
         infos[5] = new PlayerInfo(6, 3, 3, chDodgeDiff, chPos, false);
         */
 
-        /*
-        Test Case #3: Chaser will go after the robot with the lower dodge estimation (distance and other
-        factors are the same/default)
+        /* Test Case #3: Chaser will go after the robot with the lowest dodge estimation/health (distance and other
+        //factors are the same/default). These values are intertwined as a catch also updates the hp and is used
+        //to determine who to target. Since dodgeEst and hpEst have default values, boundary cases are
+        //inherently handled since they all have the same in the beginning, it'll just go to the first ID.
         VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
         for (int i=0; i<4; i++) {
             int movesPerTurn = rand.nextInt(3) + 1;
@@ -521,9 +522,11 @@ public class KureshyBotTest {
         */
 
         /*Test Case #4
-        Chaser should be slightly disincentivized from going after the same target if another chaser
-        is already close to it (distance and other factors are the same/default)
-        VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
+        //Chaser should be slightly disincentivized from going after the same target if another chaser
+        //is already close to it (distance and other factors are the same/default). Should go after
+        //the VIPs 1-3 rather than. Similar to dodgeEst, chaser pressure usually starts at 0 given the
+        //arena size, so if two values are the same, it'll just go for th first ID.
+        //VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
         for (int i=0; i<3; i++) {
             int movesPerTurn = rand.nextInt(3) + 1;
             double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
@@ -564,7 +567,7 @@ public class KureshyBotTest {
         infos[3] = new PlayerInfo(4, 1, 2, dodgeDiff, pos, false);
 
         // Chasers: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
-        int chMovesPerTurn = rand.nextInt(3) + 3;
+        int chMovesPerTurn = 4;
         double chDodgeDiff = 0.7 + rand.nextDouble() * 0.2;
         int chRow = 6;
         int chCol = 11;
@@ -602,10 +605,11 @@ public class KureshyBotTest {
         infos[5] = new PlayerInfo(6, 3, 3, chDodgeDiff2, chPos2, false);
         */
 
-        /* Test Case #5
-        Chaser will automatically avoid confirmed guards (in this case confirmed using number of catches
-        by manipulating their dodgeDifficulty) if low on health (set to 1), even if they have the best
-        priorityScore
+        /*Test Case #5
+        //Chaser will automatically avoid confirmed guards (in this case confirmed using number of catches)
+        //and if low on health (set to 1), even if they have the best priorityScore. It'll keep on going
+        //down the priorityScore list until it finds a bot that is not confirmed to be a guard (must be one
+        otherwise the Chasers have won).
         // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
         for (int i=0; i<4; i++) {
             int movesPerTurn = rand.nextInt(3) + 1;
@@ -666,8 +670,10 @@ public class KureshyBotTest {
         infos[5] = new PlayerInfo(6, 3, 3, chDodgeDiff, chPos, false);
         */
 
-        /*Test Case #6
-        Chaser can calculate the speed of targets and use that to deprioritize them if is  matches a guard's
+        /*Test Case #6.1 (Boundary)
+        //Chaser can calculate the speed of targets and use that to deprioritize them if it matches a
+        //guards max speed using the rolePrediction value. However, it doesn't ignore them like it does
+        //when it is low on health.
         // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
         for (int i=0; i<4; i++) {
             int movesPerTurn = rand.nextInt(3) + 1;
@@ -728,10 +734,76 @@ public class KureshyBotTest {
         infos[5] = new PlayerInfo(6, 3, 3, chDodgeDiff, chPos, false);
         */
 
-        /*Test Case #7
-        Chaser will cut-off targets under certain conditions, whether it be a vertical cutoff or a
-        horizontal cutoff, pressuring it diagonally and only chasing if the VIP moves out of two
-        turns of the chaser's movement or if they are directly in range
+        /*Test Case #6.2
+        //Chaser can calculate the speed of targets and use that to deprioritize them if it matches a
+        //guards max speed using the rolePrediction value (distances and default values are same).
+        //However, it doesn't ignore them like it does when it is low on health. If it is still the
+        //closest it will go after it.
+        // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
+        for (int i=0; i<4; i++) {
+            int movesPerTurn = rand.nextInt(3) + 1;
+            double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
+            int row = 4;
+            int col = 1;
+            int[] pos = {col, row};
+            robots[i] = new XiongBot(
+                    playground,
+                    row,
+                    col,
+                    Direction.SOUTH, // str, ave, dir
+                    i+1, // id
+                    1, // role
+                    2, // hp
+                    movesPerTurn,
+                    dodgeDiff
+            );
+            infos[i] = new PlayerInfo(i+1, 1, 2, dodgeDiff, pos, false);
+        }
+
+        //ACTUAL TEST VIP
+        int movesPerTurn = rand.nextInt(3)+1;
+        double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
+        int row = 4;
+        int col = 16;
+        int[] pos = {col, row};
+        robots[4] = new XiongBot(
+                playground,
+                row,
+                col,
+                Direction.SOUTH, // str, ave, dir
+                5, // id
+                1, // role
+                2, // hp
+                movesPerTurn,
+                dodgeDiff
+        );
+        infos[4] = new PlayerInfo(5, 1, 2, dodgeDiff, pos, false);
+
+        // Chasers: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
+        int chMovesPerTurn = rand.nextInt(3) + 3;
+        double chDodgeDiff = 0.7 + rand.nextDouble() * 0.2;
+        int chRow = 4;
+        int chCol = 12;
+        int[] chPos = {chCol, chRow};
+        robots[5] = new KureshyBot(
+                    playground,
+                    chRow,
+                    chCol,
+                    Direction.NORTH, // str, ave, dir
+                    6, // id
+                    3, // role
+                    3, // hp
+                    chMovesPerTurn,
+                    chDodgeDiff
+            );
+        infos[5] = new PlayerInfo(6, 3, 3, chDodgeDiff, chPos, false);
+        */
+
+        /*Test Case #7.1 (Horizontal Cut Off)
+        //Chaser will cut off targets under certain conditions, pressuring it diagonally so that even
+        //if it tries to escape, it will have to move towards the chaser and lead to a catch. It will
+        //only chase directly if the VIP moves out of two turns of the chaser's movement or
+        //if it is directly in range.
         // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
         for (int i=0; i<4; i++) {
             int movesPerTurn = rand.nextInt(3) + 1;
@@ -777,6 +849,71 @@ public class KureshyBotTest {
         double chDodgeDiff = 0.7 + rand.nextDouble() * 0.2;
         int chRow = 6; //for vertical cutoff set: 7
         int chCol = 17; //for vertical cutoff set: 19
+        int[] chPos = {chCol, chRow};
+        robots[5] = new KureshyBot(
+                    playground,
+                    chRow,
+                    chCol,
+                    Direction.NORTH, // str, ave, dir
+                    5, // id
+                    3, // role
+                    3, // hp
+                    chMovesPerTurn,
+                    chDodgeDiff
+            );
+        infos[5] = new PlayerInfo(5, 3, 3, chDodgeDiff, chPos, false);
+        */
+
+        /*Test Case #7.2 (Vertical Cut Off)
+        //Chaser will cut off targets under certain conditions, pressuring it diagonally so that even
+        //if it tries to escape, it will have to move towards the chaser and lead to a catch. It will
+        //only chase directly if the VIP moves out of two turns of the chaser's movement or
+        //if it is directly in range.
+        // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
+        for (int i=0; i<4; i++) {
+            int movesPerTurn = rand.nextInt(3) + 1;
+            double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
+            int row = 13;
+            int col = 1;
+            int[] pos = {col, row};
+            robots[i] = new XiongBot(
+                    playground,
+                    row,
+                    col,
+                    Direction.SOUTH, // str, ave, dir
+                    i, // id
+                    1, // role
+                    2, // hp
+                    movesPerTurn,
+                    dodgeDiff
+            );
+            infos[i] = new PlayerInfo(i, 1, 2, dodgeDiff, pos, false);
+        }
+
+        //ACTUAL TEST VIP
+        int movesPerTurn = rand.nextInt(3)+1;
+        double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
+        int row = 3; //for vertical cutoff set: 4
+        int col = 20; //for vertical cutoff set: 22
+        int[] pos = {col, row};
+        robots[4] = new XiongBot(
+                playground,
+                row,
+                col,
+                Direction.SOUTH, // str, ave, dir
+                4, // id
+                1, // role
+                2, // hp
+                movesPerTurn,
+                dodgeDiff
+        );
+        infos[4] = new PlayerInfo(4, 1, 2, dodgeDiff, pos, false);
+
+        // Chasers: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
+        int chMovesPerTurn = 4;
+        double chDodgeDiff = 0.7 + rand.nextDouble() * 0.2;
+        int chRow = 7;
+        int chCol = 19;
         int[] chPos = {chCol, chRow};
         robots[5] = new KureshyBot(
                     playground,
@@ -872,7 +1009,6 @@ public class KureshyBotTest {
         );
         infos[5] = new PlayerInfo(6, 3, 3, chDodgeDiff2, chPos2, false);
         */
-        
 
         //init records
         for (BaseBot bot : robots) {
@@ -891,14 +1027,20 @@ public class KureshyBotTest {
 
                 robots[i].updateOtherRecords(infos);
 
-                //for Test Case 6
+                //for Test Case 6.1
                 //if (!robots[i].myRecords.getState() && robots[i].myRecords.getID() == 5) {
                 //    int[] newPos = {14,6};
                 //    robots[i].moveToPos(newPos);
                 //}
 
-                if (!robots[i].myRecords.getState() && (robots[i].myRecords.getRole()==3 /*|| bot.myRecords.getID() == 4*/)) {
-                    //second and third (only for Test Case 7) condition for testing purposes
+                //for Test Case 6.1
+                //if (!robots[i].myRecords.getState() && robots[i].myRecords.getID() == 5) {
+                //    int[] newPos = {14,6};
+                //    robots[i].moveToPos(newPos);
+                //}
+
+                if (!robots[i].myRecords.getState() && (robots[i].myRecords.getRole()==3 || robots[i].myRecords.getID() == 4)) {
+                    //second condition for testing purposes and third only for Test Case 7
 
                     //for Test Case 3
                     //checkDodge((KureshyBot) robots[i], robots[i-1], rand);
