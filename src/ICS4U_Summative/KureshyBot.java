@@ -182,14 +182,14 @@ public class KureshyBot extends BaseBot{
         int index = 0;
         //checks if the target is a confirmed guard
         while (((ChaserPlayerInfo) this.otherRecords[targetIndex]).getRolePrediction() == 1 && this.myRecords.getHP()==1) {
-            System.out.format("Avoiding robot %d since they're a Guard and I'm low \n", this.targetID); //debug
+            //System.out.format("Avoiding robot %d since they're a Guard and I'm low \n", this.targetID); //debug
             index++;
             //set target to the next safest target
             this.targetID = this.otherRecords[index].getID();
             this.targetX = this.otherRecords[index].getPosition()[0];
             this.targetY = this.otherRecords[index].getPosition()[1];
             targetIndex = super.findRecordByID(this.targetID);
-            System.out.format("My new target is robot %d\n", this.targetID); //debug
+            //System.out.format("My new target is robot %d\n", this.targetID); //debug
         }
 
         return targetIndex;
@@ -388,7 +388,7 @@ public class KureshyBot extends BaseBot{
 
         //checks if the target can be caught within this turn
         if (turns <= 1) {
-            System.out.println("IN RANGE: " + this.targetX + "," + this.targetY); //debug
+            //System.out.println("IN RANGE: " + this.targetX + "," + this.targetY); //debug
             super.moveToPos(this.otherRecords[targetIndex].getPosition());
             //this.attemptTag();
 
@@ -396,12 +396,12 @@ public class KureshyBot extends BaseBot{
         } else if (checkCutOff(turns)) {
             int[] nextPos = this.calcCutOffPath(); //for debugging statement
             super.moveToPos(nextPos);
-            System.out.println("CUTTING OFF AT: " + Arrays.toString(nextPos)); //debug
+            //System.out.println("CUTTING OFF AT: " + Arrays.toString(nextPos)); //debug
 
         } else { //otherwise just chase in an open area
             int[] nextPos = this.calcChasePath(); //also for debugging statement
             super.moveToPos(nextPos);
-            System.out.println("CHASING AT" + Arrays.toString(nextPos)); //debug
+            //System.out.println("CHASING AT" + Arrays.toString(nextPos)); //debug
         }
     }
 
@@ -414,8 +414,8 @@ public class KureshyBot extends BaseBot{
         this.targetID = this.otherRecords[0].getID();
         this.targetX = this.otherRecords[0].getPosition()[0];
         this.targetY = this.otherRecords[0].getPosition()[1];
-        System.out.println("=============================================="); //debug organisation
-        System.out.format("My target is %d who has a priority score of %.2f and is located at %s, which is %d turns away from me " +
+        //System.out.println("=============================================="); //debug organisation
+        /*System.out.format("My target is %d who has a priority score of %.2f and is located at %s, which is %d turns away from me " +
                         "while I am located at %s\n",
                 this.targetID, ((ChaserPlayerInfo) this.otherRecords[0]).getPriorityScore(),
                 Arrays.toString((this.otherRecords[0]).getPosition()),
@@ -428,8 +428,8 @@ public class KureshyBot extends BaseBot{
                     Arrays.toString((this.otherRecords[i]).getPosition()),
                     (int) Math.ceil(((ChaserPlayerInfo) this.otherRecords[i]).getTurnDistance()),
                     Arrays.toString(this.getMyPosition())); //debug
-        }
-        System.out.println("=============================================="); //debug organisation
+        }*/
+        //System.out.println("=============================================="); //debug organisation
         //the above debug statements are inaccurate if the chaser decides to change its target because of low health
         //and a confirmed guard as a target
         this.executeStrat();

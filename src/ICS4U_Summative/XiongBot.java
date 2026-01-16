@@ -86,7 +86,6 @@ public class XiongBot extends BaseBot {
     }
 
     public void initRecords(PlayerInfo[] records) {
-        System.out.println("Initializing records");
         // On initialization, populate chaser positions so takeTurn() can operate immediately
         ArrayList<int[]> chasers = new ArrayList<>();
         for (int i = 0; i < records.length; i++) {
