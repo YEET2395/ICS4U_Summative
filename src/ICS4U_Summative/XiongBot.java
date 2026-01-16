@@ -291,28 +291,40 @@ public class XiongBot extends BaseBot {
                 // skip candidate if outside computed bounding box (likely outside walls/map)
                 if (cx < minX || cx > maxX || cy < minY || cy > maxY) continue;
 
-                // first-step feasibility check (same as before)
+                // first-step feasibility check (non-rotating): ensure at least one adjacent
+                // neighbor from current position reduces Manhattan distance and lies inside world bounds.
                 int dxToTarget = cx - myX;
                 int dyToTarget = cy - myY;
                 boolean reachableFirstStep = false;
                 int curMan = Math.abs(dxToTarget) + Math.abs(dyToTarget);
                 if (curMan > 0) {
+                    // preferred axis first (check coordinate only, do NOT rotate the robot)
                     if (Math.abs(dxToTarget) >= Math.abs(dyToTarget) && dxToTarget != 0) {
                         Direction pref = dxToTarget > 0 ? Direction.EAST : Direction.WEST;
-                        Direction alt = dyToTarget > 0 ? Direction.SOUTH : Direction.NORTH;
-                        if (!isBlockedDir(pref)) reachableFirstStep = true;
-                        else if (dyToTarget != 0 && !isBlockedDir(alt)) reachableFirstStep = true;
+                        int[] np = nextPos(new int[]{myX, myY}, pref);
+                        if (np[0] >= WORLD_MIN_X && np[0] <= WORLD_MAX_X && np[1] >= WORLD_MIN_Y && np[1] <= WORLD_MAX_Y) reachableFirstStep = true;
+                        else if (dyToTarget != 0) {
+                            Direction alt = dyToTarget > 0 ? Direction.SOUTH : Direction.NORTH;
+                            np = nextPos(new int[]{myX, myY}, alt);
+                            if (np[0] >= WORLD_MIN_X && np[0] <= WORLD_MAX_X && np[1] >= WORLD_MIN_Y && np[1] <= WORLD_MAX_Y) reachableFirstStep = true;
+                        }
                     } else if (dyToTarget != 0) {
                         Direction pref = dyToTarget > 0 ? Direction.SOUTH : Direction.NORTH;
-                        Direction alt = dxToTarget > 0 ? Direction.EAST : Direction.WEST;
-                        if (!isBlockedDir(pref)) reachableFirstStep = true;
-                        else if (dxToTarget != 0 && !isBlockedDir(alt)) reachableFirstStep = true;
+                        int[] np = nextPos(new int[]{myX, myY}, pref);
+                        if (np[0] >= WORLD_MIN_X && np[0] <= WORLD_MAX_X && np[1] >= WORLD_MIN_Y && np[1] <= WORLD_MAX_Y) reachableFirstStep = true;
+                        else if (dxToTarget != 0) {
+                            Direction alt = dxToTarget > 0 ? Direction.EAST : Direction.WEST;
+                            np = nextPos(new int[]{myX, myY}, alt);
+                            if (np[0] >= WORLD_MIN_X && np[0] <= WORLD_MAX_X && np[1] >= WORLD_MIN_Y && np[1] <= WORLD_MAX_Y) reachableFirstStep = true;
+                        }
                     }
+
+                    // fallback: any adjacent coordinate that reduces Manhattan distance and is inside bounds
                     if (!reachableFirstStep) {
                         for (Direction d : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
                             int[] np = nextPos(new int[]{myX, myY}, d);
                             int newMan = Math.abs(cx - np[0]) + Math.abs(cy - np[1]);
-                            if (newMan < curMan && !isBlockedDir(d)) {
+                            if (newMan < curMan && np[0] >= WORLD_MIN_X && np[0] <= WORLD_MAX_X && np[1] >= WORLD_MIN_Y && np[1] <= WORLD_MAX_Y) {
                                 reachableFirstStep = true;
                                 break;
                             }
