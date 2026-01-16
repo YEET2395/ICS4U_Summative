@@ -1,7 +1,6 @@
 package ICS4U_Summative;
 
 import becker.robots.*;
-import becker.util.Test;
 
 import java.awt.*;
 import java.util.*;

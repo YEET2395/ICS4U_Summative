@@ -2,7 +2,7 @@ package ICS4U_Summative;
 
 /**
  * Application controlled records tracking each robot
- * @author Aadil Kureshy, Austin Xiong,  Xinran Li
+ * @author Aadil Kureshy,  Xinran Li
  * @version 2026 1 5
  */
 public class PlayerInfo {

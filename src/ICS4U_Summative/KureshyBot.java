@@ -2,18 +2,16 @@ package ICS4U_Summative;
 
 import becker.robots.*;
 import java.awt.*;
-import java.util.*;
 
 /**
  * The robot which chases after the VIP
  * @author Aadil Kureshy
- * @version Janurary 15, 2025
+ * @version January 15, 2025
  */
 public class KureshyBot extends BaseBot{
     private final int WIDTH = 24;
     private final int HEIGHT = 13;
     private int targetID; //the current target
-    //private boolean isCatching; //to be used by application to know when to check dodge
     private int targetX;
     private int targetY;
 
@@ -34,7 +32,6 @@ public class KureshyBot extends BaseBot{
         //for debugging
         super.setColor(Color.RED);
         super.setLabel("Chaser " + id);
-        this.otherRecords = new PlayerInfo[5]; //changed length since chasers need to keep track of each other
     }
 
     /**

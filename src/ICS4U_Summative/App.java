@@ -8,7 +8,7 @@ import java.util.Random;
 /**
  * Application class for the summative project
  * @author Aadil Kureshy, Austin Xiong,  Xinran Li
- * @version 2025 12 30
+ * @version 2026 1 15
  */
 public class App {
     private static final int ROLE_VIP = 1;
@@ -368,7 +368,7 @@ public class App {
             infos[i] = new PlayerInfo(i+1, 1, 2, dodgeDiff, robots[i].getMyPosition(), false);
         }
 
-        // Guards: movesPerTurn [2,4], dodgeDiff [0.45, 0.55]
+        // Guards: movesPerTurn [2,4], dodgeDiff [0.6, 0.7]
         for (int i=2; i<4; i++)
         {
             int movesPerTurn = rand.nextInt(3) + 2;

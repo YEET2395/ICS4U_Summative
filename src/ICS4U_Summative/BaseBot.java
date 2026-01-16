@@ -2,6 +2,11 @@ package ICS4U_Summative;
 
 import becker.robots.*;
 
+/**
+ * Abstract class for the robots to extend from
+ * @author Xinran Li, Austion Xiong, Aadil Kureshy
+ * @version January 15, 2026
+ */
 public abstract class BaseBot extends RobotSE {
     // Records of other players
     public PlayerInfo[] otherRecords = new PlayerInfo[5];
