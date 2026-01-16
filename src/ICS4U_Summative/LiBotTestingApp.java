@@ -1,301 +1,427 @@
 package ICS4U_Summative;
 
 import becker.robots.*;
-import java.awt.Color;
-import java.util.Random;
+import java.awt.*;
+import java.util.Arrays;
 
+/**
+ * Deterministic test harness for LiBot (Guard).
+ * - No randomness: fixed positions, HP, moves, dodge.
+ * - Only calls guard.takeTurn(); other bots are "static targets".
+ * - Prints PASS/FAIL for each boundary test.
+ */
 public class LiBotTestingApp {
 
-    private static void setupPlayground(City playground)
-    {
-        playground.setSize(1500, 900);
-        for(int i = 1; i <= 13; i++)
-        {
-            new Wall(playground, i, 0, Direction.EAST);
-            new Wall(playground, i, 25, Direction.WEST);
-        }
-        for(int i = 1; i <= 24; i++)
-        {
-            new Wall(playground, 0, i, Direction.SOUTH);
-            new Wall(playground, 14, i, Direction.NORTH);
-        }
-    }
 
-    static class SimpleVIPBot extends BaseBot {
-        private final Random rnd = new Random();
+    private static final int ROLE_VIP = 1;
+    private static final int ROLE_GUARD = 2;
+    private static final int ROLE_CHASER = 3;
 
-        public SimpleVIPBot(City city, int str, int ave, Direction dir,
-                            int id, int role, int hp, int movesPerTurn, double dodgeDiff) {
-            super(city, str, ave, dir, id, role, hp, movesPerTurn, dodgeDiff);
-            setColor(Color.GREEN);
-            setLabel("VIP " + myRecords.getID());
-        }
+    private static final int IDX_VIP1 = 0;
+    private static final int IDX_VIP2 = 1;
+    private static final int IDX_GUARD = 2;
+    private static final int IDX_GUARD2 = 3;
+    private static final int IDX_CHASER1 = 4;
+    private static final int IDX_CHASER2 = 5;
 
-        @Override
-        public void updateOtherRecords(PlayerInfo[] records) {
-            this.otherRecords = records;
-        }
+    private static final int MIN_X = 1;   // avenue
+    private static final int MAX_X = 24;  // avenue
+    private static final int MIN_Y = 1;   // street
+    private static final int MAX_Y = 13;  // street
 
-        public void initRecords(PlayerInfo[] records) {
-            System.out.println("Initializing records");
-        }
+    private static final int PAUSE_MS = 0;
 
-        @Override
-        public void takeTurn() {
-            if (otherRecords == null || otherRecords.length == 0) return;
-
-            PlayerInfo nearestChaser = null;
-            int bestDist = Integer.MAX_VALUE;
-
-            int[] myPos = getMyPosition();
-
-            for (PlayerInfo r : otherRecords) {
-                if (r == null || r.getState()) continue;
-                if (r.getRole() != 3) continue;
-                int d = manhattan(myPos, r.getPosition());
-                if (d < bestDist) {
-                    bestDist = d;
-                    nearestChaser = r;
-                }
-            }
-
-            int moves = getMOVES_PER_TURN();
-
-            if (nearestChaser == null) {
-                for (int step = 0; step < moves; step++) {
-                    Direction d = randomDir();
-                    tryMove(d);
-                }
-                return;
-            }
-
-            for (int step = 0; step < moves; step++) {
-                int[] cur = getMyPosition();
-                int[] cpos = nearestChaser.getPosition();
-
-                Direction bestDir = null;
-                int best = manhattan(cur, cpos);
-
-                for (Direction d : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
-                    if (!canMove(d)) continue;
-                    int[] next = nextPos(cur, d);
-                    int dist = manhattan(next, cpos);
-                    if (dist > best) {
-                        best = dist;
-                        bestDir = d;
-                    }
-                }
-
-                if (bestDir == null) {
-                    Direction d = randomDir();
-                    tryMove(d);
-                } else {
-                    tryMove(bestDir);
-                }
-            }
-        }
-
-        private Direction randomDir() {
-            int r = rnd.nextInt(4);
-            if (r == 0) return Direction.NORTH;
-            if (r == 1) return Direction.SOUTH;
-            if (r == 2) return Direction.EAST;
-            return Direction.WEST;
-        }
-
-        private boolean canMove(Direction d) {
-            turnDirection(d);
-            return frontIsClear();
-        }
-
-        private boolean tryMove(Direction d) {
-            turnDirection(d);
-            if (frontIsClear()) {
-                move();
-                return true;
-            }
-            return false;
-        }
-
-        private int[] nextPos(int[] cur, Direction d) {
-            int x = cur[0], y = cur[1];
-            if (d == Direction.EAST)  x++;
-            if (d == Direction.WEST)  x--;
-            if (d == Direction.SOUTH) y++;
-            if (d == Direction.NORTH) y--;
-            return new int[]{x, y};
-        }
-
-        private int manhattan(int[] a, int[] b) {
-            return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
-        }
-    }
-
-    static class SimpleChaserBot extends BaseBot {
-
-        public SimpleChaserBot(City city, int str, int ave, Direction dir,
-                               int id, int role, int hp, int movesPerTurn, double dodgeDiff) {
-            super(city, str, ave, dir, id, role, hp, movesPerTurn, dodgeDiff);
-            setColor(Color.RED);
-            setLabel("Chaser " + myRecords.getID());
-        }
-
-        @Override
-        public void updateOtherRecords(PlayerInfo[] records) {
-            this.otherRecords = records;
-        }
-
-        public void initRecords(PlayerInfo[] records) {
-            System.out.println("Initializing records");
-        }
-
-        @Override
-        public void takeTurn() {
-            if (otherRecords == null || otherRecords.length == 0) return;
-
-            PlayerInfo target = null;
-            int bestDist = Integer.MAX_VALUE;
-
-            int[] myPos = getMyPosition();
-
-            for (PlayerInfo r : otherRecords) {
-                if (r == null || r.getState()) continue;
-                if (r.getID() == myRecords.getID()) continue;
-                if (r.getRole() == 3) continue;
-
-                int d = manhattan(myPos, r.getPosition());
-                if (d < bestDist) {
-                    bestDist = d;
-                    target = r;
-                }
-            }
-
-            if (target == null) return;
-
-            int moves = getMOVES_PER_TURN();
-            for (int step = 0; step < moves; step++) {
-                int[] cur = getMyPosition();
-                int[] tp = target.getPosition();
-
-                int dx = tp[0] - cur[0];
-                int dy = tp[1] - cur[1];
-                if (dx == 0 && dy == 0) break;
-
-                boolean moved = false;
-
-                if (Math.abs(dx) >= Math.abs(dy) && dx != 0) {
-                    moved = tryMove(dx > 0 ? Direction.EAST : Direction.WEST);
-                    if (!moved && dy != 0) moved = tryMove(dy > 0 ? Direction.SOUTH : Direction.NORTH);
-                } else if (dy != 0) {
-                    moved = tryMove(dy > 0 ? Direction.SOUTH : Direction.NORTH);
-                    if (!moved && dx != 0) moved = tryMove(dx > 0 ? Direction.EAST : Direction.WEST);
-                }
-
-                if (!moved) break;
-            }
-        }
-
-        private boolean tryMove(Direction d) {
-            turnDirection(d);
-            if (frontIsClear()) {
-                move();
-                return true;
-            }
-            return false;
-        }
-
-        private int manhattan(int[] a, int[] b) {
-            return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
-        }
-    }
-
-    private static void refreshAllRecords(BaseBot[] bots, PlayerInfo[] records) {
-        for (BaseBot b : bots) {
-            int id = b.myRecords.getID();
-            records[id].updateRecords(
-                    b.myRecords.getHP(),
-                    b.getMyPosition(),
-                    b.myRecords.getState()
-            );
-        }
-    }
+    private static int testsRun = 0;
+    private static int testsPassed = 0;
 
     public static void main(String[] args) {
 
-        City playground = new City();
-        setupPlayground(playground);
+        TestWorld w = new TestWorld();
+        w.setup();
 
-        Random rand = new Random();
+        System.out.println("===== LiBot Deterministic Tests =====");
 
-        SimpleVIPBot[] VIPs = new SimpleVIPBot[2];
-        SimpleChaserBot[] chasers = new SimpleChaserBot[2];
-        LiBot[] guards = new LiBot[2];
+        testA_ProtectMovesCloserWhenFar(w);
+        testB_EscortDistanceMaintained(w);
+        testC_BlockWhenChaserAdjacentToVIP(w);
+        testD_AttackLeashForcesProtect(w);
+        testF_RunWhenLowHP(w);
+        testG_RunWhenChaserAdjacent(w);
+        testH_VIPThreatTieBreakLowerHP(w);
+        testI_CornerRunDoesNotCrash(w);
 
-        VIPs[0] = new SimpleVIPBot(playground, rand.nextInt(13)+1, rand.nextInt(24)+1, Direction.SOUTH,
-                0, 1, 2, rand.nextInt(3)+1, 0.3 + rand.nextDouble()*0.1);
-        VIPs[1] = new SimpleVIPBot(playground, rand.nextInt(13)+1, rand.nextInt(24)+1, Direction.SOUTH,
-                1, 1, 2, rand.nextInt(3)+1, 0.3 + rand.nextDouble()*0.1);
+        testJ_EtaFasterChaserChosen(w);
 
-        chasers[0] = new SimpleChaserBot(playground, rand.nextInt(13)+1, rand.nextInt(24)+1, Direction.NORTH,
-                2, 3, 3, rand.nextInt(3)+3, 0.7 + rand.nextDouble()*0.2);
-        chasers[1] = new SimpleChaserBot(playground, rand.nextInt(13)+1, rand.nextInt(24)+1, Direction.NORTH,
-                3, 3, 3, rand.nextInt(3)+3, 0.7 + rand.nextDouble()*0.2);
+        System.out.println("=====================================");
+        System.out.printf("RESULT: %d/%d tests passed.%n", testsPassed, testsRun);
+    }
 
-        guards[0] = new LiBot(playground, rand.nextInt(13)+1, rand.nextInt(24)+1, Direction.NORTH,
-                4, 2, 5, rand.nextInt(3)+2, 0.45 + rand.nextDouble()*0.1);
-        guards[1] = new LiBot(playground, rand.nextInt(13)+1, rand.nextInt(24)+1, Direction.NORTH,
-                5, 2, 5, rand.nextInt(3)+2, 0.45 + rand.nextDouble()*0.1);
+    private static void testA_ProtectMovesCloserWhenFar(TestWorld w) {
+        String name = "Test A - Protect moves closer when Guard is far";
 
-        BaseBot[] allBots = new BaseBot[] {
-                VIPs[0], VIPs[1],
-                chasers[0], chasers[1],
-                guards[0], guards[1]
-        };
 
-        PlayerInfo[] allRecords = new PlayerInfo[6];
-        for (BaseBot b : allBots) {
-            int id = b.myRecords.getID();
-            allRecords[id] = new PlayerInfo(
-                    id,
-                    b.myRecords.getRole(),
-                    b.myRecords.getHP(),
-                    b.myRecords.getDodgeDifficulty(),
-                    b.getMyPosition(),
-                    b.myRecords.getState()
-            );
+        w.setAllCaught();
+        w.setBot(IDX_VIP1, 12, 7, 2, false);
+        w.setBot(IDX_GUARD, 24, 13, 5, false);
+        w.setBot(IDX_CHASER1, 2, 13, 3, false);
+
+        w.syncAll();
+        w.broadcastToGuard();
+
+        int before = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_VIP1).getMyPosition());
+
+        w.guard().takeTurn();
+        pause(PAUSE_MS);
+
+        w.syncAll();
+        int after = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_VIP1).getMyPosition());
+
+        assertTrue(name, after < before,
+                "dist(G,VIP) should decrease. before=" + before + " after=" + after);
+    }
+
+
+    private static void testB_EscortDistanceMaintained(TestWorld w) {
+        String name = "Test B - Escort distance maintained (<=3)";
+
+        w.setAllCaught();
+        w.setBot(IDX_VIP1, 12, 7, 2, false);
+        w.setBot(IDX_GUARD, 13, 7, 5, false); // dist=1
+        w.setBot(IDX_CHASER1, 20, 7, 3, false);
+
+        w.syncAll();
+        w.broadcastToGuard();
+
+        w.guard().takeTurn();
+        pause(PAUSE_MS);
+
+        w.syncAll();
+        int dist = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_VIP1).getMyPosition());
+
+
+        assertTrue(name, dist <= 3,
+                "dist(G,VIP) should stay <= 3. dist=" + dist);
+    }
+
+
+    private static void testC_BlockWhenChaserAdjacentToVIP(TestWorld w) {
+        String name = "Test C - Block when chaser adjacent to VIP";
+
+        w.setAllCaught();
+        w.setBot(IDX_VIP1, 2, 2, 2, false);
+        w.setBot(IDX_GUARD, 3, 2, 5, false);     // near VIP
+        w.setBot(IDX_CHASER1, 2, 3, 3, false);   // distCV=1
+
+        w.syncAll();
+        w.broadcastToGuard();
+
+        w.guard().takeTurn();
+        pause(PAUSE_MS);
+
+        w.syncAll();
+        int distGV = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_VIP1).getMyPosition());
+
+        assertTrue(name, distGV <= 3,
+                "After blocking, Guard should remain within escort range. dist(G,VIP)=" + distGV);
+    }
+
+
+    private static void testD_AttackLeashForcesProtect(TestWorld w) {
+        String name = "Test D - Attack leash forces Protect when dist(G,VIP)>4";
+
+
+        w.setAllCaught();
+        w.setBot(IDX_VIP1, 1, 1, 2, false);
+        w.setBot(IDX_GUARD, 6, 1, 5, false);      // distGV=5
+        w.setBot(IDX_CHASER1, 8, 1, 3, false);    // distGC=2 (attack tempting)
+
+        w.syncAll();
+        w.broadcastToGuard();
+
+        int beforeGV = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_VIP1).getMyPosition());
+
+        w.guard().takeTurn();
+        pause(PAUSE_MS);
+
+        w.syncAll();
+        int afterGV = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_VIP1).getMyPosition());
+
+        assertTrue(name, afterGV < beforeGV,
+                "Leash should force Protect -> dist(G,VIP) decreases. before=" + beforeGV + " after=" + afterGV);
+    }
+
+
+    private static void testF_RunWhenLowHP(TestWorld w) {
+        String name = "Test F - Run when low HP (hp<=2)";
+
+        w.setAllCaught();
+        w.setBot(IDX_VIP1, 12, 7, 2, false);
+        w.setBot(IDX_GUARD, 20, 7, 2, false);    // low HP
+        w.setBot(IDX_CHASER1, 19, 7, 3, false);  // adjacent
+
+        w.syncAll();
+        w.broadcastToGuard();
+
+        int beforeGC = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_CHASER1).getMyPosition());
+
+        w.guard().takeTurn();
+        pause(PAUSE_MS);
+
+        w.syncAll();
+        int afterGC = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_CHASER1).getMyPosition());
+
+        assertTrue(name, afterGC >= beforeGC,
+                "With low HP, Guard should not move closer to chaser. before=" + beforeGC + " after=" + afterGC);
+    }
+
+
+    private static void testG_RunWhenChaserAdjacent(TestWorld w) {
+        String name = "Test G - Run when chaser adjacent (distGC<=1)";
+
+        w.setAllCaught();
+        w.setBot(IDX_VIP1, 1, 13, 2, false);
+        w.setBot(IDX_GUARD, 10, 7, 5, false);
+        w.setBot(IDX_CHASER1, 10, 8, 3, false); // distGC=1
+
+        w.syncAll();
+        w.broadcastToGuard();
+
+        int beforeGC = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_CHASER1).getMyPosition());
+
+        w.guard().takeTurn();
+        pause(PAUSE_MS);
+
+        w.syncAll();
+        int afterGC = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_CHASER1).getMyPosition());
+
+        assertTrue(name, afterGC >= beforeGC,
+                "When adjacent, Guard should not reduce dist(G,C). before=" + beforeGC + " after=" + afterGC);
+    }
+
+
+    private static void testH_VIPThreatTieBreakLowerHP(TestWorld w) {
+        String name = "Test H - VIP tie-break chooses lower HP VIP";
+
+
+        w.setAllCaught();
+        w.setBot(IDX_VIP1, 5, 5, 2, false);     // hp=2
+        w.setBot(IDX_VIP2, 20, 5, 1, false);    // hp=1 (should be chosen)
+        w.setBot(IDX_GUARD, 12, 5, 5, false);
+
+
+        w.setBot(IDX_CHASER1, 5, 7, 3, false);   // dist to VIP1 = 2
+        w.setBot(IDX_CHASER2, 20, 7, 3, false);  // dist to VIP2 = 2
+
+        w.syncAll();
+        w.broadcastToGuard();
+
+        int beforeToVIP1 = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_VIP1).getMyPosition());
+        int beforeToVIP2 = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_VIP2).getMyPosition());
+
+        w.guard().takeTurn();
+        pause(PAUSE_MS);
+
+        w.syncAll();
+        int afterToVIP1 = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_VIP1).getMyPosition());
+        int afterToVIP2 = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_VIP2).getMyPosition());
+
+        int delta1 = beforeToVIP1 - afterToVIP1; // positive = moved closer
+        int delta2 = beforeToVIP2 - afterToVIP2;
+
+        assertTrue(name, delta2 > delta1,
+                "Guard should move more toward VIP2 (hp=1). " +
+                        "deltaVIP1=" + delta1 + " deltaVIP2=" + delta2 +
+                        " | beforeVIP2=" + beforeToVIP2 + " afterVIP2=" + afterToVIP2);
+    }
+
+
+    private static void testI_CornerRunDoesNotCrash(TestWorld w) {
+        String name = "Test I - Corner run does not crash / out of bounds";
+
+        w.setAllCaught();
+        w.setBot(IDX_VIP1, 3, 3, 2, false);
+        w.setBot(IDX_GUARD, 1, 1, 5, false);       // corner
+        w.setBot(IDX_CHASER1, 1, 2, 3, false);     // adjacent
+
+        w.syncAll();
+        w.broadcastToGuard();
+
+        w.guard().takeTurn();
+        pause(PAUSE_MS);
+
+        w.syncAll();
+        int[] g = w.bot(IDX_GUARD).getMyPosition();
+
+        boolean inBounds = (g[0] >= MIN_X && g[0] <= MAX_X && g[1] >= MIN_Y && g[1] <= MAX_Y);
+        assertTrue(name, inBounds, "Guard must stay within bounds. pos=" + Arrays.toString(g));
+    }
+
+
+    private static void testJ_EtaFasterChaserChosen(TestWorld w) {
+        String name = "Test J - ETA chooses faster chaser (speed factor)";
+
+
+        w.setAllCaught();
+        w.setBot(IDX_VIP1, 1, 1, 2, false);
+
+
+        w.setBot(IDX_GUARD, 5, 1, 5, false);
+
+
+        w.setBot(IDX_CHASER1, 7, 1, 3, false);
+        w.setBot(IDX_CHASER2, 5, 3, 3, false);
+
+
+        w.syncAll();
+        w.broadcastToGuard();
+
+
+
+        w.bot(IDX_CHASER1).moveToPos(new int[]{7, 2});
+
+        w.bot(IDX_CHASER2).moveToPos(new int[]{9, 3});
+
+
+        w.syncAll();
+        w.broadcastToGuard();
+
+        int beforeToSlow = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_CHASER1).getMyPosition());
+        int beforeToFast = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_CHASER2).getMyPosition());
+
+        w.guard().takeTurn();
+        pause(PAUSE_MS);
+
+        w.syncAll();
+        int afterToSlow = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_CHASER1).getMyPosition());
+        int afterToFast = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_CHASER2).getMyPosition());
+
+
+        boolean ok = (afterToFast < beforeToFast) && (afterToFast <= afterToSlow);
+
+        assertTrue(name, ok,
+                "Expected Guard to prioritize faster chaser (smaller ETA). " +
+                        "distToFast " + beforeToFast + "->" + afterToFast +
+                        " | distToSlow " + beforeToSlow + "->" + afterToSlow);
+    }
+
+
+    private static int manhattan(int[] a, int[] b) {
+        return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
+    }
+
+    private static void assertTrue(String testName, boolean cond, String detail) {
+        testsRun++;
+        if (cond) {
+            testsPassed++;
+            System.out.println("[PASS] " + testName);
+        } else {
+            System.out.println("[FAIL] " + testName + " :: " + detail);
+        }
+    }
+
+    private static void pause(int ms) {
+        if (ms <= 0) return;
+        try {
+            Thread.sleep(ms);
+        } catch (InterruptedException ignored) {}
+    }
+
+
+    private static class TestWorld {
+        private City city;
+        private BaseBot[] bots = new BaseBot[6];
+        private PlayerInfo[] infos = new PlayerInfo[6];
+
+        public void setup() {
+            city = new City();
+            setupPlayground(city);
+
+
+
+            bots[IDX_VIP1]   = new XiongBot(city, 1, 1, Direction.SOUTH, 1, ROLE_VIP, 2, 2, 0.50);
+            bots[IDX_VIP2]   = new XiongBot(city, 1, 2, Direction.SOUTH, 2, ROLE_VIP, 2, 2, 0.50);
+
+            bots[IDX_GUARD]  = new LiBot(city, 2, 1, Direction.NORTH, 3, ROLE_GUARD, 5, 3, 0.50);
+            bots[IDX_GUARD2] = new LiBot(city, 2, 2, Direction.NORTH, 4, ROLE_GUARD, 5, 3, 0.50);
+
+            bots[IDX_CHASER1]= new KureshyBot(city, 3, 1, Direction.NORTH, 5, ROLE_CHASER, 3, 4, 0.50);
+            bots[IDX_CHASER2]= new KureshyBot(city, 3, 2, Direction.NORTH, 6, ROLE_CHASER, 3, 4, 0.50);
+
+
+            for (int i = 0; i < bots.length; i++) {
+                BaseBot b = bots[i];
+                infos[i] = new PlayerInfo(
+                        b.myRecords.getID(),
+                        b.myRecords.getRole(),
+                        b.myRecords.getHP(),
+                        b.myRecords.getDodgeDifficulty(),
+                        b.getMyPosition(),
+                        b.myRecords.getState()
+                );
+            }
+
+
+            setAllCaught();
+            syncAll();
         }
 
-        for (int turn = 1; turn <= 30; turn++) {
+        public BaseBot bot(int idx) {
+            return bots[idx];
+        }
 
-            refreshAllRecords(allBots, allRecords);
+        public LiBot guard() {
+            return (LiBot) bots[IDX_GUARD];
+        }
 
-            for (SimpleVIPBot vip : VIPs) vip.updateOtherRecords(allRecords);
-            for (SimpleVIPBot vip : VIPs) vip.takeTurn();
+        public void setAllCaught() {
+            for (int i = 0; i < bots.length; i++) {
+                setCaught(i, true);
+            }
+        }
 
-            refreshAllRecords(allBots, allRecords);
+        public void setCaught(int idx, boolean caught) {
+            BaseBot b = bots[idx];
 
-            for (SimpleChaserBot c : chasers) c.updateOtherRecords(allRecords);
-            for (SimpleChaserBot c : chasers) c.takeTurn();
+            int hp = b.myRecords.getHP();
+            b.myRecords.updateRecords(hp, b.getMyPosition(), caught);
+        }
 
-            refreshAllRecords(allBots, allRecords);
 
-            for (LiBot g : guards) g.otherRecords = allRecords;
-            for (LiBot g : guards) g.takeTurn();
+        public void setBot(int idx, int x, int y, int hp, boolean caught) {
+            BaseBot b = bots[idx];
+            b.moveToPos(new int[]{x, y});
+            b.myRecords.updateRecords(hp, b.getMyPosition(), caught);
+        }
 
-            refreshAllRecords(allBots, allRecords);
 
-            int[] v0 = VIPs[0].getMyPosition();
-            int[] c0 = chasers[0].getMyPosition();
-            int[] g0 = guards[0].getMyPosition();
-            System.out.println("Turn " + turn +
-                    " | VIP0=(" + v0[0] + "," + v0[1] + ")" +
-                    " | Chaser0=(" + c0[0] + "," + c0[1] + ")" +
-                    " | Guard0=(" + g0[0] + "," + g0[1] + ")");
+        public void syncAll() {
+            for (int i = 0; i < bots.length; i++) {
+                BaseBot b = bots[i];
 
-            try {
-                Thread.sleep(300);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                int hp = b.myRecords.getHP();
+                boolean caught = b.myRecords.getState();
+                b.myRecords.updateRecords(hp, b.getMyPosition(), caught);
+
+                infos[i].updateRecords(hp, b.getMyPosition(), caught);
+            }
+        }
+
+
+        public void broadcastToGuard() {
+            guard().updateOtherRecords(infos);
+        }
+
+
+        private void setupPlayground(City playground) {
+            playground.setSize(1500, 900);
+
+            for (int i = 1; i <= 13; i++) {
+                new Wall(playground, i, 0, Direction.EAST);
+                new Wall(playground, i, 25, Direction.WEST);
+            }
+            for (int i = 1; i <= 24; i++) {
+                new Wall(playground, 0, i, Direction.SOUTH);
+                new Wall(playground, 14, i, Direction.NORTH);
             }
         }
     }

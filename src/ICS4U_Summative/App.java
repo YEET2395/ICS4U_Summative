@@ -141,7 +141,7 @@ public class App {
                     bestTarget = j;
                 }
             }
-            // If a valid target is found, resolve the dodge/tag interaction
+            // If a valid target is found, check who dodges/tags
             if (bestTarget != -1)
             {
                 if (DEBUG) {
@@ -163,7 +163,7 @@ public class App {
 
     /**
      * Performs a single "dodge vs. tag" interaction between a Chaser and a target robot.
-     * A random roll in the range [0.0, 1.0) is generated. Each participant "dodges" if their
+     * A random roll in the range [0.0, 1.0) is generated. Each robot "dodges" if their
      * dodge difficulty is greater than or equal to the roll. Based on the outcomes, this
      * method applies damage and notifies the chaser of the tag result.
      * @param chaser initiating the tag attempt
@@ -284,28 +284,44 @@ public class App {
         // End game if all VIPs or all Chasers are caught, or max turns reached
         boolean endedNow = false;
         String reason = null;
+        String result = null;
 
+        //Chasers win
         if (numVIPsCaught==numVIPs)
         {
             endedNow = true;
             reason = "All VIPs have been caught";
+            result = "CHASERS WIN!\n";
         }
+
+        //VIPS/Guards win
         if (numChasersCaught==numChasers)
         {
             endedNow = true;
             reason = "All Chasers have been caught";
+            result = "VIPS AND GUARDS WIN!\n";
         }
+
+        //VIP/Guards win
         if (turn >= maxTurns)
         {
             endedNow = true;
             reason = "Max turns reached";
+            result = "VIPS AND GUARDS WIN!\n";
+        }
+
+        //Tie
+        if (numChasersCaught==numChasers && numVIPsCaught==numVIPs) {
+            endedNow = true;
+            reason = "All of the Chasers and VIPs have been caught";
+            result = "IT'S A TIE\n";
         }
 
         if (endedNow && !gameEnded && DEBUG)
         {
             System.out.format(
-                    "GAME ENDED at turn %d: %s (VIPs caught %d/%d, Chasers caught %d/%d)%n",
-                    turn, reason, numVIPsCaught, numVIPs, numChasersCaught, numChasers
+                    "GAME ENDED at turn %d: %s (VIPs caught %d/%d, Chasers caught %d/%d)%n%s",
+                    turn, reason, numVIPsCaught, numVIPs, numChasersCaught, numChasers, result
             );
         }
 
@@ -318,7 +334,7 @@ public class App {
     /**
      * Main entry point for the application.
      * Initializes the playground, robots, and runs the game loop.
-     * @param args command-line arguments (not used)
+     * @param args not used
      */
     public static void main(String[] args)
     {
@@ -395,13 +411,13 @@ public class App {
         }
 
         int maxTurns = 20;
-        // Initialize chaser bots with player info
+        // Initialize chaser bots with robot info
         for (int i = 4; i < 6; i++)
         {
             robots[i].initRecords(infos);
         }
 
-        // Initial roster printout for quick verification
+        // Initial roster info for debugging
         if (DEBUG)
         {
             System.out.println("===== INITIAL ROBOT ROSTER =====");
@@ -431,14 +447,14 @@ public class App {
 
             App.updateRecords(robots, infos);
 
-            // Broadcast the latest records to every bot at the start of the turn
+            // Hands out the latest records to every bot at the start of the turn
             for(int i = 0; i < robots.length; i++)
             {
                 BaseBot b = robots[i];
                 b.updateOtherRecords(infos);
             }
 
-            // Interleaved turn order to reduce same-role symmetry:
+            // Order is arranged so that the same type don't go after one another
             // VIP0 -> Guard0 -> Chaser0 -> VIP1 -> Guard1 -> Chaser1
             for (int k = 0; k < 2; k++)
             {
@@ -551,7 +567,7 @@ public class App {
                 if (gameEnded) break;
             }
 
-            // End-of-turn snapshot (compact status line for all robots)
+            // Gives a summary of the turn
             if (DEBUG)
             {
                 String summary = "TURN " + turn + " SUMMARY: ";
@@ -573,6 +589,11 @@ public class App {
         }
     }
 
+    /**
+     * Returns the name of the role assigned to each bot using its role int
+     * @param role which role the bot has
+     * @return the String telling which role the bot has
+     */
     private static String roleName(int role)
     {
         if (role == ROLE_VIP)
