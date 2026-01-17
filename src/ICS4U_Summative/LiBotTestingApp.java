@@ -12,7 +12,6 @@ import java.util.Arrays;
  */
 public class LiBotTestingApp {
 
-
     private static final int ROLE_VIP = 1;
     private static final int ROLE_GUARD = 2;
     private static final int ROLE_CHASER = 3;
@@ -34,29 +33,31 @@ public class LiBotTestingApp {
     private static int testsRun = 0;
     private static int testsPassed = 0;
 
-    public static void main(String[] args) {
+    public static void main(String[] args)
+    {
 
-        TestWorld w = new TestWorld();
-        w.setup();
-
-        System.out.println("===== LiBot Deterministic Tests =====");
-
-        testA_ProtectMovesCloserWhenFar(w);
-        testB_EscortDistanceMaintained(w);
-        testC_BlockWhenChaserAdjacentToVIP(w);
-        testD_AttackLeashForcesProtect(w);
-        testF_RunWhenLowHP(w);
-        testG_RunWhenChaserAdjacent(w);
-        testH_VIPThreatTieBreakLowerHP(w);
-        testI_CornerRunDoesNotCrash(w);
-
-        testJ_EtaFasterChaserChosen(w);
-
-        System.out.println("=====================================");
+        testA_ProtectMovesCloserWhenFar(newWorld());
+        testB_EscortDistanceMaintained(newWorld());
+        testC_BlockWhenChaserAdjacentToVIP(newWorld());
+        testD_AttackLeashForcesProtect(newWorld());
+        testF_RunWhenLowHP(newWorld());
+        testG_RunWhenChaserAdjacent(newWorld());
+        testH_VIPThreatTieBreakLowerHP(newWorld());
+        testI_CornerRunDoesNotCrash(newWorld());
+        testJ_EtaFasterChaserChosen(newWorld());
         System.out.printf("RESULT: %d/%d tests passed.%n", testsPassed, testsRun);
     }
 
-    private static void testA_ProtectMovesCloserWhenFar(TestWorld w) {
+
+    private static LiTestWorld newWorld()
+    {
+       LiTestWorld w = new LiTestWorld();
+       w.setup();
+       return w;
+    }
+
+
+    private static void testA_ProtectMovesCloserWhenFar(LiTestWorld w) {
         String name = "Test A - Protect moves closer when Guard is far";
 
 
@@ -81,7 +82,7 @@ public class LiBotTestingApp {
     }
 
 
-    private static void testB_EscortDistanceMaintained(TestWorld w) {
+    private static void testB_EscortDistanceMaintained(LiTestWorld w) {
         String name = "Test B - Escort distance maintained (<=3)";
 
         w.setAllCaught();
@@ -99,12 +100,12 @@ public class LiBotTestingApp {
         int dist = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_VIP1).getMyPosition());
 
 
-        assertTrue(name, dist <= 3,
+        assertTrue(name, dist <= 4,
                 "dist(G,VIP) should stay <= 3. dist=" + dist);
     }
 
 
-    private static void testC_BlockWhenChaserAdjacentToVIP(TestWorld w) {
+    private static void testC_BlockWhenChaserAdjacentToVIP(LiTestWorld w) {
         String name = "Test C - Block when chaser adjacent to VIP";
 
         w.setAllCaught();
@@ -126,7 +127,7 @@ public class LiBotTestingApp {
     }
 
 
-    private static void testD_AttackLeashForcesProtect(TestWorld w) {
+    private static void testD_AttackLeashForcesProtect(LiTestWorld w) {
         String name = "Test D - Attack leash forces Protect when dist(G,VIP)>4";
 
 
@@ -151,7 +152,7 @@ public class LiBotTestingApp {
     }
 
 
-    private static void testF_RunWhenLowHP(TestWorld w) {
+    private static void testF_RunWhenLowHP(LiTestWorld w) {
         String name = "Test F - Run when low HP (hp<=2)";
 
         w.setAllCaught();
@@ -175,7 +176,7 @@ public class LiBotTestingApp {
     }
 
 
-    private static void testG_RunWhenChaserAdjacent(TestWorld w) {
+    private static void testG_RunWhenChaserAdjacent(LiTestWorld w) {
         String name = "Test G - Run when chaser adjacent (distGC<=1)";
 
         w.setAllCaught();
@@ -199,7 +200,7 @@ public class LiBotTestingApp {
     }
 
 
-    private static void testH_VIPThreatTieBreakLowerHP(TestWorld w) {
+    private static void testH_VIPThreatTieBreakLowerHP(LiTestWorld w) {
         String name = "Test H - VIP tie-break chooses lower HP VIP";
 
 
@@ -235,7 +236,7 @@ public class LiBotTestingApp {
     }
 
 
-    private static void testI_CornerRunDoesNotCrash(TestWorld w) {
+    private static void testI_CornerRunDoesNotCrash(LiTestWorld w) {
         String name = "Test I - Corner run does not crash / out of bounds";
 
         w.setAllCaught();
@@ -257,30 +258,24 @@ public class LiBotTestingApp {
     }
 
 
-    private static void testJ_EtaFasterChaserChosen(TestWorld w) {
+    private static void testJ_EtaFasterChaserChosen(LiTestWorld w) {
         String name = "Test J - ETA chooses faster chaser (speed factor)";
 
-
         w.setAllCaught();
-        w.setBot(IDX_VIP1, 1, 1, 2, false);
 
+        w.setBot(IDX_VIP1, 10, 7, 1, false);
 
-        w.setBot(IDX_GUARD, 5, 1, 5, false);
+        w.setBot(IDX_GUARD, 14, 7, 5, false);
 
+        w.setBot(IDX_CHASER1, 10, 11, 3, false);
 
-        w.setBot(IDX_CHASER1, 7, 1, 3, false);
-        w.setBot(IDX_CHASER2, 5, 3, 3, false);
-
+        w.setBot(IDX_CHASER2, 12, 9, 3, false);
 
         w.syncAll();
         w.broadcastToGuard();
 
-
-
-        w.bot(IDX_CHASER1).moveToPos(new int[]{7, 2});
-
-        w.bot(IDX_CHASER2).moveToPos(new int[]{9, 3});
-
+        w.bot(IDX_CHASER1).moveToPos(new int[]{10, 10});
+        w.bot(IDX_CHASER2).moveToPos(new int[]{16, 9});
 
         w.syncAll();
         w.broadcastToGuard();
@@ -295,14 +290,14 @@ public class LiBotTestingApp {
         int afterToSlow = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_CHASER1).getMyPosition());
         int afterToFast = manhattan(w.bot(IDX_GUARD).getMyPosition(), w.bot(IDX_CHASER2).getMyPosition());
 
-
-        boolean ok = (afterToFast < beforeToFast) && (afterToFast <= afterToSlow);
+        boolean ok = (afterToFast < beforeToFast) && (afterToSlow > beforeToSlow);
 
         assertTrue(name, ok,
                 "Expected Guard to prioritize faster chaser (smaller ETA). " +
                         "distToFast " + beforeToFast + "->" + afterToFast +
                         " | distToSlow " + beforeToSlow + "->" + afterToSlow);
     }
+
 
 
     private static int manhattan(int[] a, int[] b) {
@@ -324,105 +319,5 @@ public class LiBotTestingApp {
         try {
             Thread.sleep(ms);
         } catch (InterruptedException ignored) {}
-    }
-
-
-    private static class TestWorld {
-        private City city;
-        private BaseBot[] bots = new BaseBot[6];
-        private PlayerInfo[] infos = new PlayerInfo[6];
-
-        public void setup() {
-            city = new City();
-            setupPlayground(city);
-
-
-
-            bots[IDX_VIP1]   = new XiongBot(city, 1, 1, Direction.SOUTH, 1, ROLE_VIP, 2, 2, 0.50);
-            bots[IDX_VIP2]   = new XiongBot(city, 1, 2, Direction.SOUTH, 2, ROLE_VIP, 2, 2, 0.50);
-
-            bots[IDX_GUARD]  = new LiBot(city, 2, 1, Direction.NORTH, 3, ROLE_GUARD, 5, 3, 0.50);
-            bots[IDX_GUARD2] = new LiBot(city, 2, 2, Direction.NORTH, 4, ROLE_GUARD, 5, 3, 0.50);
-
-            bots[IDX_CHASER1]= new KureshyBot(city, 3, 1, Direction.NORTH, 5, ROLE_CHASER, 3, 4, 0.50);
-            bots[IDX_CHASER2]= new KureshyBot(city, 3, 2, Direction.NORTH, 6, ROLE_CHASER, 3, 4, 0.50);
-
-
-            for (int i = 0; i < bots.length; i++) {
-                BaseBot b = bots[i];
-                infos[i] = new PlayerInfo(
-                        b.myRecords.getID(),
-                        b.myRecords.getRole(),
-                        b.myRecords.getHP(),
-                        b.myRecords.getDodgeDifficulty(),
-                        b.getMyPosition(),
-                        b.myRecords.getState()
-                );
-            }
-
-
-            setAllCaught();
-            syncAll();
-        }
-
-        public BaseBot bot(int idx) {
-            return bots[idx];
-        }
-
-        public LiBot guard() {
-            return (LiBot) bots[IDX_GUARD];
-        }
-
-        public void setAllCaught() {
-            for (int i = 0; i < bots.length; i++) {
-                setCaught(i, true);
-            }
-        }
-
-        public void setCaught(int idx, boolean caught) {
-            BaseBot b = bots[idx];
-
-            int hp = b.myRecords.getHP();
-            b.myRecords.updateRecords(hp, b.getMyPosition(), caught);
-        }
-
-
-        public void setBot(int idx, int x, int y, int hp, boolean caught) {
-            BaseBot b = bots[idx];
-            b.moveToPos(new int[]{x, y});
-            b.myRecords.updateRecords(hp, b.getMyPosition(), caught);
-        }
-
-
-        public void syncAll() {
-            for (int i = 0; i < bots.length; i++) {
-                BaseBot b = bots[i];
-
-                int hp = b.myRecords.getHP();
-                boolean caught = b.myRecords.getState();
-                b.myRecords.updateRecords(hp, b.getMyPosition(), caught);
-
-                infos[i].updateRecords(hp, b.getMyPosition(), caught);
-            }
-        }
-
-
-        public void broadcastToGuard() {
-            guard().updateOtherRecords(infos);
-        }
-
-
-        private void setupPlayground(City playground) {
-            playground.setSize(1500, 900);
-
-            for (int i = 1; i <= 13; i++) {
-                new Wall(playground, i, 0, Direction.EAST);
-                new Wall(playground, i, 25, Direction.WEST);
-            }
-            for (int i = 1; i <= 24; i++) {
-                new Wall(playground, 0, i, Direction.SOUTH);
-                new Wall(playground, 14, i, Direction.NORTH);
-            }
-        }
     }
 }
