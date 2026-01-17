@@ -26,8 +26,8 @@ public class XiongBot extends BaseBot {
     private final int safetyTurns = 3;
 
     // Revival safety thresholds
-    private final int REVIVE_THREAT_THRESHOLD = 10000; // maximum allowed threat value to attempt revival
-    private final int REVIVE_MIN_CHASER_DIST = 0; // minimum Manhattan distance from any chaser to target to attempt revival
+    private final int REVIVE_THREAT_THRESHOLD = 5; // maximum allowed threat value to attempt revival
+    private final int REVIVE_MIN_CHASER_DIST = 2; // minimum Manhattan distance from any chaser to target to attempt revival
 
     // Fixed world bounds (matches App.setupPlayground walls): avenues [1..24], streets [1..13]
     private static final int WORLD_MIN_X = 1;  // avenue
