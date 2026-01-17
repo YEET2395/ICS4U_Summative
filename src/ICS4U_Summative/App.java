@@ -16,6 +16,9 @@ public class App {
     private static final int ROLE_CHASER = 3;
     private static boolean gameEnded = false;
 
+    // Max HP for VIPs (used for revival)
+    private static final int VIP_MAX_HP = 2;
+
     // Debug toggle for test output
     private static final boolean DEBUG = true;
 
@@ -157,6 +160,38 @@ public class App {
 
                 checkDodge(chaser, robots[bestTarget], rand);
                 App.updateRecords(robots, infos);
+            }
+        }
+
+        // REVIVAL LOGIC: If a VIP is caught (dead) and another uncaught VIP moves onto the same tile,
+        // the uncaught VIP will revive the caught VIP. Revived VIP receives VIP_MAX_HP and is set to uncaught.
+        for (int i = 0; i < robots.length; i++) {
+            if (infos[i].getRole() != ROLE_VIP) continue;
+            if (infos[i].getState()) continue; // this VIP must be alive to revive others
+
+            // look for a caught VIP to revive
+            for (int j = 0; j < robots.length; j++) {
+                if (i == j) continue;
+                if (infos[j].getRole() != ROLE_VIP) continue;
+                if (!infos[j].getState()) continue; // only revive if caught
+
+                // If positions overlap exactly, perform revival
+                if (manhattan(infos[i].getPosition(), infos[j].getPosition()) == 0) {
+                    // Update the robot object's records so the source of truth reflects the revival
+                    robots[j].myRecords.updateRecords(1, robots[j].getMyPosition(), false);
+                    // Update the infos array immediately so subsequent logic in this turn sees the change
+                    infos[j].updateRecords(1, robots[j].getMyPosition(), false);
+
+                    // Reset visualization color for the revived robot
+                    robots[j].setColor(Color.GREEN);
+
+                    if (DEBUG) {
+                        System.out.format(
+                                "REVIVAL: VIP id=%d revived by VIP id=%d at pos=%s (HP set to %d)\n",
+                                robots[j].myRecords.getID(), robots[i].myRecords.getID(), Arrays.toString(robots[j].getMyPosition()), 1
+                        );
+                    }
+                }
             }
         }
     }

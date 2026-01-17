@@ -6,7 +6,6 @@ import java.awt.*;
 import java.util.Random;
 import java.util.ArrayList;
 
-//@TODO: make sure move dont crash into walls
 /**
  * XiongBot with selection-sorted candidate choices, chaser tracking, and fallback to avoid corner-sticking.
  */
@@ -14,18 +13,21 @@ public class XiongBot extends BaseBot {
     private int[] guardPos = {0, 0};
     // changed to support multiple chasers
     private int[][] chaserPos = new int[3][3];
-    private int movesPerTurn = 1;
+    private int movesPerTurn;
     // track chaser speeds: stores the speed (manhattan distance) observed last round for each chaser
     private double[] chaserSpeeds = new double[0];
     // store previous position (one round) to calculate speed and direction
     private int[][] chaserPrevPos = new int[0][2];
-    // random generator for tie-breaking and probabilistic decisions
-    private final Random rnd = new Random();
+
 
     // (removed cross-turn backtracking guard - using grid-based move planning externally)
 
     // how many future turns the bot wants to be sure chasers can't reach it in
-    private int safetyTurns = 3;
+    private final int safetyTurns = 3;
+
+    // Revival safety thresholds
+    private final int REVIVE_THREAT_THRESHOLD = 10000; // maximum allowed threat value to attempt revival
+    private final int REVIVE_MIN_CHASER_DIST = 0; // minimum Manhattan distance from any chaser to target to attempt revival
 
     // Fixed world bounds (matches App.setupPlayground walls): avenues [1..24], streets [1..13]
     private static final int WORLD_MIN_X = 1;  // avenue
@@ -55,6 +57,16 @@ public class XiongBot extends BaseBot {
     }
 
     public void updateOtherRecords(PlayerInfo[] records) {
+        // Populate BaseBot.otherRecords with all records except self so VIP can inspect caught allies
+        int idx = 0;
+        for (int i = 0; i < records.length; i++) {
+            if (records[i].getID() == this.myRecords.getID()) continue;
+            if (idx < this.otherRecords.length) {
+                this.otherRecords[idx] = records[i];
+                idx++;
+            }
+        }
+
         // Collect chaser positions from the global records and update internal tracking arrays
         ArrayList<int[]> chasers = new ArrayList<>();
         for (int i = 0; i < records.length; i++) {
@@ -89,7 +101,17 @@ public class XiongBot extends BaseBot {
     }
 
     public void initRecords(PlayerInfo[] records) {
-        // On initialization, populate chaser positions so takeTurn() can operate immediately
+        // On initialization, populate otherRecords so takeTurn() can operate immediately
+        int idx = 0;
+        for (int i = 0; i < records.length; i++) {
+            if (records[i].getID() == this.myRecords.getID()) continue;
+            if (idx < this.otherRecords.length) {
+                this.otherRecords[idx] = records[i];
+                idx++;
+            }
+        }
+
+        // On init, also collect chaser coords for internal tracking
         ArrayList<int[]> chasers = new ArrayList<>();
         for (int i = 0; i < records.length; i++) {
             PlayerInfo r = records[i];
@@ -228,11 +250,58 @@ public class XiongBot extends BaseBot {
         return false;
     }
 
+    // Helper: compute minimum Manhattan distance from any known chaser to the given tile
+    private int minChaserDistanceTo(int x, int y) {
+        if (this.chaserPos == null || this.chaserPos.length == 0) return Integer.MAX_VALUE;
+        int min = Integer.MAX_VALUE;
+        for (int i = 0; i < this.chaserPos.length; i++) {
+            int[] c = this.chaserPos[i];
+            if (c == null) continue;
+            int d = Math.abs(x - c[0]) + Math.abs(y - c[1]);
+            if (d < min) min = d;
+        }
+        return min;
+    }
+
     public void takeTurn() {
         int movesAllowed = this.movesPerTurn;
         // single-per-turn planning: compute the best destination reachable within `movesAllowed` steps
         int myX = this.getMyPosition()[0];
         int myY = this.getMyPosition()[1];
+
+        // PRIORITY: If there is a caught VIP (other than self), consider rushing to revive it
+        int[] reviveTarget = null;
+        if (this.otherRecords != null) {
+            for (int i = 0; i < this.otherRecords.length; i++) {
+                PlayerInfo p = this.otherRecords[i];
+                if (p == null) continue;
+                if (p.getRole() == 1 && p.getState()) {
+                    int[] pos = p.getPosition();
+                    if (pos != null) {
+                        reviveTarget = new int[]{pos[0], pos[1]};
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (reviveTarget != null) {
+            // Safety checks before committing to revival
+            int targetThreat = computeThreatForSquare(reviveTarget[0], reviveTarget[1]);
+            int currentThreat = computeThreatForSquare(myX, myY);
+            int minChaserDist = minChaserDistanceTo(reviveTarget[0], reviveTarget[1]);
+
+            boolean safeToRevive = (targetThreat <= REVIVE_THREAT_THRESHOLD)
+                    && (currentThreat <= REVIVE_THREAT_THRESHOLD)
+                    && (minChaserDist >= REVIVE_MIN_CHASER_DIST);
+
+            if (safeToRevive) {
+                // Move greedily towards the caught VIP, using up to movesAllowed steps.
+                this.moveTowards(reviveTarget[0], reviveTarget[1], movesAllowed);
+                return;
+            }
+            // otherwise do not prioritize revival this turn
+        }
 
         if (this.chaserPos == null || this.chaserPos.length == 0) {
             return; // nothing to plan against
@@ -279,7 +348,6 @@ public class XiongBot extends BaseBot {
         // Build candidate list (only candidates that pass feasibility checks get added)
         ArrayList<int[]> candidates = new ArrayList<>(); // each entry: {cx, cy, threat, area, minDist}
         int currentThreat = computeThreatForSquare(myX, myY);
-        int currentArea = computeAreaThreat(myX, myY, computeMaxChaserReach(this.safetyTurns));
 
         for (int dx = -movesAllowed; dx <= movesAllowed; dx++) {
             for (int dy = -movesAllowed; dy <= movesAllowed; dy++) {
