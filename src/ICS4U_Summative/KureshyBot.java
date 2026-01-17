@@ -2,6 +2,7 @@ package ICS4U_Summative;
 
 import becker.robots.*;
 import java.awt.*;
+import java.util.Arrays;
 
 /**
  * The robot which chases after the VIP
@@ -376,7 +377,6 @@ public class KureshyBot extends BaseBot{
      * Decides how to go after the designated target: immediate tag if in range, corner the target, or just chase
      */
     private void executeStrat() {
-        //this.isCatching = false;
         //avoids attacking confirmed guards ONLY when low on health, goes to the next best option
         int targetIndex = checkSafety();
 

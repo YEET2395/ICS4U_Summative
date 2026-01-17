@@ -1,6 +1,7 @@
 package ICS4U_Summative;
 
 import becker.robots.*;
+import becker.util.Test;
 
 import java.awt.*;
 import java.util.*;
@@ -928,6 +929,139 @@ public class KureshyBotTest {
         infos[5] = new PlayerInfo(5, 3, 3, chDodgeDiff, chPos, false);
         */
 
+        /*Test Case #7.3 (Cut Off Boundary)
+        //Chaser will cut off targets under certain conditions, pressuring it diagonally so that even
+        //if it tries to escape, it will have to move towards the chaser and lead to a catch. It will
+        //only chase directly if the VIP moves out of two turns of the chaser's movement or
+        //if it is directly in range. This tests the boundary case where the target is at the edge of 2
+        //turns and the gap to the nearest wall is the maximum possible for this chaser's movement and
+        //the same on both sides (should still cut off).
+        // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
+        for (int i=0; i<4; i++) {
+            int movesPerTurn = rand.nextInt(3) + 1;
+            double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
+            int row = 13;
+            int col = 1;
+            int[] pos = {col, row};
+            robots[i] = new XiongBot(
+                    playground,
+                    row,
+                    col,
+                    Direction.SOUTH, // str, ave, dir
+                    i, // id
+                    1, // role
+                    2, // hp
+                    movesPerTurn,
+                    dodgeDiff
+            );
+            infos[i] = new PlayerInfo(i, 1, 2, dodgeDiff, pos, false);
+        }
+
+        //ACTUAL TEST VIP
+        int movesPerTurn = rand.nextInt(3)+1;
+        double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
+        int row = 3;
+        int col = 21;
+        int[] pos = {col, row};
+        robots[4] = new XiongBot(
+                playground,
+                row,
+                col,
+                Direction.SOUTH, // str, ave, dir
+                4, // id
+                1, // role
+                2, // hp
+                movesPerTurn,
+                dodgeDiff
+        );
+        infos[4] = new PlayerInfo(4, 1, 2, dodgeDiff, pos, false);
+
+        // Chasers: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
+        int chMovesPerTurn = 4;
+        double chDodgeDiff = 0.7 + rand.nextDouble() * 0.2;
+        int chRow = 7;
+        int chCol = 17;
+        int[] chPos = {chCol, chRow};
+        robots[5] = new KureshyBot(
+                    playground,
+                    chRow,
+                    chCol,
+                    Direction.NORTH, // str, ave, dir
+                    5, // id
+                    3, // role
+                    3, // hp
+                    chMovesPerTurn,
+                    chDodgeDiff
+            );
+        infos[5] = new PlayerInfo(5, 3, 3, chDodgeDiff, chPos, false);
+        */
+
+        /*Test Case #7.4 (Cut Off Boundary)
+        //Chaser will cut off targets under certain conditions, pressuring it diagonally so that even
+        //if it tries to escape, it will have to move towards the chaser and lead to a catch. It will
+        //only chase directly if the VIP moves out of two turns of the chaser's movement or
+        //if it is directly in range. This tests the boundary case where the target is aligned on one of
+        //the axis (shouldn't cut off).
+        // VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
+        for (int i=0; i<4; i++) {
+            int movesPerTurn = rand.nextInt(3) + 1;
+            double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
+            int row = 13;
+            int col = 1;
+            int[] pos = {col, row};
+            robots[i] = new XiongBot(
+                    playground,
+                    row,
+                    col,
+                    Direction.SOUTH, // str, ave, dir
+                    i, // id
+                    1, // role
+                    2, // hp
+                    movesPerTurn,
+                    dodgeDiff
+            );
+            infos[i] = new PlayerInfo(i, 1, 2, dodgeDiff, pos, false);
+        }
+
+        //ACTUAL TEST VIP
+        int movesPerTurn = rand.nextInt(3)+1;
+        double dodgeDiff = 0.3 + rand.nextDouble() * 0.1;
+        int row = 4;
+        int col = 20;
+        int[] pos = {col, row};
+        robots[4] = new XiongBot(
+                playground,
+                row,
+                col,
+                Direction.SOUTH, // str, ave, dir
+                4, // id
+                1, // role
+                2, // hp
+                movesPerTurn,
+                dodgeDiff
+        );
+        infos[4] = new PlayerInfo(4, 1, 2, dodgeDiff, pos, false);
+
+        // Chasers: movesPerTurn [3,5], dodgeDiff [0.7, 0.9]
+        int chMovesPerTurn = 4;
+        double chDodgeDiff = 0.7 + rand.nextDouble() * 0.2;
+        int chRow = 4;
+        int chCol = 15;
+        int[] chPos = {chCol, chRow};
+        robots[5] = new KureshyBot(
+                    playground,
+                    chRow,
+                    chCol,
+                    Direction.NORTH, // str, ave, dir
+                    5, // id
+                    3, // role
+                    3, // hp
+                    chMovesPerTurn,
+                    chDodgeDiff
+            );
+        infos[5] = new PlayerInfo(5, 3, 3, chDodgeDiff, chPos, false);
+        */
+
         /*Test Case #8
         //Chaser should ignore caught targets and other chasers, even if they are the closest.
         //VIPs: movesPerTurn [1,3], dodgeDiff [0.3, 0.4]
@@ -1038,8 +1172,8 @@ public class KureshyBotTest {
                 //    robots[i].moveToPos(newPos);
                 //}
 
-                if (!robots[i].myRecords.getState() && (robots[i].myRecords.getRole()==3 || robots[i].myRecords.getID() == 4)) {
-                    //second condition for testing purposes and third only for Test Case 7
+                if (!robots[i].myRecords.getState() && (robots[i].myRecords.getRole()==3 /*|| robots[i].myRecords.getID() == 4*/)) {
+                    //second condition for testing purposes and third only for Test Case 7.1 and 7.2
 
                     //for Test Case 3
                     //checkDodge((KureshyBot) robots[i], robots[i-1], rand);
