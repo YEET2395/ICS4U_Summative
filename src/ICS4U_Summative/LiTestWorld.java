@@ -1,33 +1,37 @@
 package ICS4U_Summative;
 
-import becker.robots.*;
+import becker.robots.City;
+import becker.robots.Direction;
+import becker.robots.Wall;
 
-public class LiTestWorld {
+public class LiTestWorld
+{
+    public static final int ROLE_VIP = 1;
+    public static final int ROLE_GUARD = 2;
+    public static final int ROLE_CHASER = 3;
 
+    public static final int I_VIP1 = 0;
+    public static final int I_VIP2 = 1;
+    public static final int I_GUARD = 2;
+    public static final int I_GUARD2 = 3;
+    public static final int I_CHASER1 = 4;
+    public static final int I_CHASER2 = 5;
     private City city;
     private BaseBot[] bots = new BaseBot[6];
     private PlayerInfo[] infos = new PlayerInfo[6];
-
-    // Index mapping
-    public static final int IDX_VIP1 = 0;
-    public static final int IDX_VIP2 = 1;
-    public static final int IDX_GUARD = 2;
-    public static final int IDX_GUARD2 = 3;
-    public static final int IDX_CHASER1 = 4;
-    public static final int IDX_CHASER2 = 5;
 
     public void setup() {
         city = new City();
         setupPlayground(city);
 
-        bots[IDX_VIP1]   = new XiongBot(city, 1, 1, Direction.SOUTH, 1, 1, 2, 2, 0.50);
-        bots[IDX_VIP2]   = new XiongBot(city, 1, 2, Direction.SOUTH, 2, 1, 2, 2, 0.50);
+        bots[I_VIP1]   = new XiongBot(city, 1, 1, Direction.SOUTH, 1, ROLE_VIP, 2, 2, 0.50);
+        bots[I_VIP2]   = new XiongBot(city, 1, 2, Direction.SOUTH, 2, ROLE_VIP, 2, 2, 0.50);
 
-        bots[IDX_GUARD]  = new LiBot(city, 2, 1, Direction.NORTH, 3, 2, 5, 3, 0.50);
-        bots[IDX_GUARD2] = new LiBot(city, 2, 2, Direction.NORTH, 4, 2, 5, 3, 0.50);
+        bots[I_GUARD]  = new LiBot(city, 2, 1, Direction.NORTH, 3, ROLE_GUARD, 5, 3, 0.50);
+        bots[I_GUARD2] = new LiBot(city, 2, 2, Direction.NORTH, 4, ROLE_GUARD, 5, 3, 0.50);
 
-        bots[IDX_CHASER1]= new KureshyBot(city, 3, 1, Direction.NORTH, 5, 3, 3, 4, 0.50);
-        bots[IDX_CHASER2]= new KureshyBot(city, 3, 2, Direction.NORTH, 6, 3, 3, 4, 0.50);
+        bots[I_CHASER1]= new KureshyBot(city, 3, 1, Direction.NORTH, 5, ROLE_CHASER, 3, 4, 0.50);
+        bots[I_CHASER2]= new KureshyBot(city, 3, 2, Direction.NORTH, 6, ROLE_CHASER, 3, 4, 0.50);
 
         for (int i = 0; i < bots.length; i++) {
             BaseBot b = bots[i];
@@ -50,7 +54,7 @@ public class LiTestWorld {
     }
 
     public LiBot guard() {
-        return (LiBot) bots[IDX_GUARD];
+        return (LiBot) bots[I_GUARD];
     }
 
     public void setAllCaught() {
