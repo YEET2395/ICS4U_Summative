@@ -2,12 +2,23 @@ package ICS4U_Summative;
 
 import becker.robots.*;
 
+/**
+ * Non-random test runner for the Guard robot (LiBot).
+ * @author Xinran Li
+ * @version 2026-01-17
+ */
 public class LiBotTestingApp {
 
+    //Role code for VIP robots (must match the rest of the project)
     public static final int ROLE_VIP = 1;
+
+    // Role code for Guard robots
     public static final int ROLE_GUARD = 2;
+
+    //Role code for Chaser robots
     public static final int ROLE_CHASER = 3;
 
+    //Index mapping for the 6 robots inside LiTestWorld.bots[] and LiTestWorld.infos[]
     public static final int I_VIP1 = 0;
     public static final int I_VIP2 = 1;
     public static final int I_GUARD = 2;
@@ -15,20 +26,31 @@ public class LiBotTestingApp {
     public static final int I_CHASER1 = 4;
     public static final int I_CHASER2 = 5;
 
+    // Arena minimum X (avenue).
     public static final int MIN_X = 1;
+
+    // Arena maximum X (avenue).
     public static final int MAX_X = 24;
+
+    // Arena minimum Y (street).
     public static final int MIN_Y = 1;
+
+    // Arena maximum Y (street).
     public static final int MAX_Y = 13;
 
-    public static final int PAUSE_MS = 0;
-
+    // Total number of tests executed.
     public static int testsRun = 0;
+
+    // Total number of tests passed.
     public static int testsPassed = 0;
 
-    public static void main(String[] args) {
+
+    public static void main(String[] args)
+    {
 
         System.out.println("My Tests: Guard");
 
+        // Create a new  world per test to avoid cross-test state impact results.
         testA(newWorld());
         testB(newWorld());
         testC(newWorld());
@@ -43,13 +65,25 @@ public class LiBotTestingApp {
         System.out.printf("RESULT: %d/%d tests passed.%n", testsPassed, testsRun);
     }
 
-    private static LiTestWorld newWorld() {
+    /**
+     * Creates and initializes a fresh deterministic test world.
+     * @return a setup LiTestWorld
+     */
+    private static LiTestWorld newWorld()
+    {
         LiTestWorld w = new LiTestWorld();
         w.setup();
         return w;
     }
 
-    private static void printTestHeader(int number, String boundary, String expectedBehavior) {
+    /**
+     * Prints a standardized header before each test to describe the test case.
+     * @param number test case number
+     * @param boundary short description of boundary being tested
+     * @param expectedBehavior expected robot behavior
+     */
+    private static void printTestHeader(int number, String boundary, String expectedBehavior)
+    {
         System.out.println();
         System.out.println("---------");
         System.out.println("Test Case " + number);
@@ -58,7 +92,12 @@ public class LiBotTestingApp {
         System.out.println("---------");
     }
 
-    private static void testA(LiTestWorld w) {
+    /**
+     * Test A: Protect behavior when Guard is far from VIP.
+     * @param w  test world for this test case
+     */
+    private static void testA(LiTestWorld w)
+    {
         printTestHeader(
                 1,
                 "Protect, when Guard's far from VIP (distance should decrease)",
@@ -67,52 +106,61 @@ public class LiBotTestingApp {
 
         String name = "Test A -> Protect and moves closer when Guard is far";
 
+        // Enable only the robots needed for.
         w.setAllCaught();
         w.setBot(I_VIP1, 12, 7, 2, false);
         w.setBot(I_GUARD, 24, 13, 5, false);
         w.setBot(I_CHASER1, 2, 13, 3, false);
 
+        // Sync records and give the Guard the records list.
         w.syncAll();
         w.broadcastToGuard();
 
+        // Measure before distance, run exactly one Guard turn, then measure after distance.
         int before = manhattan(w.bot(I_GUARD).getMyPosition(), w.bot(I_VIP1).getMyPosition());
-
         w.guard().takeTurn();
-
         w.syncAll();
         int after = manhattan(w.bot(I_GUARD).getMyPosition(), w.bot(I_VIP1).getMyPosition());
 
+        // PASS if Guard got closer to VIP.
         assertTrue(name, after < before,
                 "dist(G,VIP) should decrease. before=" + before + " after=" + after);
     }
 
-    private static void testB(LiTestWorld w) {
+    /**
+     * Test B: Escort boundary when Guard is already near VIP.
+     * @param w  test world for this test case
+     */
+    private static void testB(LiTestWorld w)
+    {
         printTestHeader(
                 2,
                 "Escort distance boundary (Guard should not drift too far from VIP)",
                 "Guard should stay within leash distance of VIP (dist(G,VIP) <= 4) after its turn."
         );
-
+        // Setup test case positions.
         String name = "Test B -> Escort distance is correct (<=4 leash)";
-
         w.setAllCaught();
         w.setBot(I_VIP1, 12, 7, 2, false);
         w.setBot(I_GUARD, 13, 7, 5, false);
         w.setBot(I_CHASER1, 20, 7, 3, false);
 
+        // Sync records and give the Guard the records list.
         w.syncAll();
         w.broadcastToGuard();
-
         w.guard().takeTurn();
-
         w.syncAll();
         int dist = manhattan(w.bot(I_GUARD).getMyPosition(), w.bot(I_VIP1).getMyPosition());
-
         assertTrue(name, dist <= 4,
                 "dist(G,VIP) should stay <= 4. dist=" + dist);
     }
 
-    private static void testC(LiTestWorld w) {
+    /**
+     * Test C: Immediate threat boundary when a Chaser is very close to the VIP.
+     * @param w  test world for this test case
+     */
+    private static void testC(LiTestWorld w)
+    {
         printTestHeader(
                 3,
                 "Immediate threat boundary (Chaser very close to VIP)",
@@ -120,7 +168,7 @@ public class LiBotTestingApp {
         );
 
         String name = "Test C - Block when chaser close to VIP";
-
+        // Setup test case positions.
         w.setAllCaught();
         w.setBot(I_VIP1, 2, 2, 2, false);
         w.setBot(I_GUARD, 3, 2, 5, false);
@@ -138,7 +186,12 @@ public class LiBotTestingApp {
                 "After blocking, Guard should remain in escort range. dist(G,VIP)=" + distGV);
     }
 
-    private static void testD(LiTestWorld w) {
+    /**
+     * Test D: Attack leash boundary when Guard is too far from VIP.
+     * @param w  test world for this test case
+     */
+    private static void testD(LiTestWorld w)
+    {
         printTestHeader(
                 4,
                 "Attack leash boundary (Guard cannot chase when too far from VIP)",
@@ -146,7 +199,7 @@ public class LiBotTestingApp {
         );
 
         String name = "Test D - Attack leash forces Protect when dist(G,VIP)>4";
-
+        // Setup test case positions.
         w.setAllCaught();
         w.setBot(I_VIP1, 1, 1, 2, false);
         w.setBot(I_GUARD, 6, 1, 5, false);
@@ -166,7 +219,12 @@ public class LiBotTestingApp {
                 "Leash should force Protect, dist(G,VIP) decreases. before=" + beforeGV + " after=" + afterGV);
     }
 
-    private static void testF(LiTestWorld w) {
+    /**
+     * Test F: Low HP boundary (hp <= 2).
+     * @param w test world for this test case
+     */
+    private static void testF(LiTestWorld w)
+    {
         printTestHeader(
                 5,
                 "Low HP boundary (hp<=2)",
@@ -174,7 +232,7 @@ public class LiBotTestingApp {
         );
 
         String name = "Test F - Run when low HP (hp<=2)";
-
+        // Setup test case positions.
         w.setAllCaught();
         w.setBot(I_VIP1, 12, 7, 2, false);
         w.setBot(I_GUARD, 20, 7, 2, false);
@@ -194,7 +252,12 @@ public class LiBotTestingApp {
                 "With low HP, Guard should not move closer to chaser. before=" + beforeGC + " after=" + afterGC);
     }
 
-    private static void testG(LiTestWorld w) {
+    /**
+     * Test G: Close-quarters boundary where Chaser is adjacent to Guard (dist <= 1).
+     * @param w deterministic test world for this test case
+     */
+    private static void testG(LiTestWorld w)
+    {
         printTestHeader(
                 6,
                 "Close boundary (Chaser adjacent to Guard, dist<=1)",
@@ -222,7 +285,12 @@ public class LiBotTestingApp {
                 "When adjacent, Guard should not reduce dist(G,C). before=" + beforeGC + " after=" + afterGC);
     }
 
-    private static void testH(LiTestWorld w) {
+    /**
+     * Test H: VIP tie boundary.
+     * @param w  test world for this test case
+     */
+    private static void testH(LiTestWorld w)
+    {
         printTestHeader(
                 7,
                 "VIP tie boundary (equal threat, different VIP HP)",
@@ -231,6 +299,7 @@ public class LiBotTestingApp {
 
         String name = "Test H - VIP tie-break chooses lower HP VIP";
 
+        // Setup test case positions.
         w.setAllCaught();
         w.setBot(I_VIP1, 5, 5, 2, false);
         w.setBot(I_VIP2, 20, 5, 1, false);
@@ -242,12 +311,15 @@ public class LiBotTestingApp {
         w.syncAll();
         w.broadcastToGuard();
 
+        // Both VIPs are equally threatened (dist to chaser = 2).
         int beforeToVIP1 = manhattan(w.bot(I_GUARD).getMyPosition(), w.bot(I_VIP1).getMyPosition());
         int beforeToVIP2 = manhattan(w.bot(I_GUARD).getMyPosition(), w.bot(I_VIP2).getMyPosition());
 
         w.guard().takeTurn();
 
         w.syncAll();
+
+        // Measure distances again after Guard move.
         int afterToVIP1 = manhattan(w.bot(I_GUARD).getMyPosition(), w.bot(I_VIP1).getMyPosition());
         int afterToVIP2 = manhattan(w.bot(I_GUARD).getMyPosition(), w.bot(I_VIP2).getMyPosition());
 
@@ -260,7 +332,12 @@ public class LiBotTestingApp {
                         " / beforeVIP2=" + beforeToVIP2 + " afterVIP2=" + afterToVIP2);
     }
 
-    private static void testI(LiTestWorld w) {
+    /**
+     * Test I: Corner/wall boundary.
+     * @param w  test world for this test case
+     */
+    private static void testI(LiTestWorld w)
+    {
         printTestHeader(
                 8,
                 "Corner and wall boundary (movement near edge)",
@@ -269,6 +346,7 @@ public class LiBotTestingApp {
 
         String name = "Test I - Corner run does not crash / out of bounds";
 
+        // Setup test case positions.
         w.setAllCaught();
         w.setBot(I_VIP1, 3, 3, 2, false);
         w.setBot(I_GUARD, 1, 1, 5, false);
@@ -286,13 +364,23 @@ public class LiBotTestingApp {
         assertTrue(name, inBounds, "Guard must stay within bounds. pos=" + posToString(g));
     }
 
+    /**
+     * Converts a position array into a readable string.
+     * @param p position as {x, y}
+     * @return formatted string like "[x, y]"
+     */
     private static String posToString(int[] p)
     {
         return "[" + p[0] + ", " + p[1] + "]";
     }
 
-
-    private static void testJ(LiTestWorld w) {
+    /**
+     * Test J: Speed factor boundary (ETA concept).
+     * The two chasers move different distances between snapshots to create different observed speeds.
+     * @param w deterministic test world for this test case
+     */
+    private static void testJ(LiTestWorld w)
+    {
         printTestHeader(
                 9,
                 "Speed factor boundary (ETA = distance/speed)",
@@ -303,24 +391,30 @@ public class LiBotTestingApp {
 
         w.setAllCaught();
 
+        // Setup positions and HP deterministically (no randomness).
         w.setBot(I_VIP1, 10, 7, 1, false);
         w.setBot(I_GUARD, 14, 7, 5, false);
 
+        // Snapshot 0: initial positions for chasers.
         w.setBot(I_CHASER1, 10, 11, 3, false);
         w.setBot(I_CHASER2, 12, 9, 3, false);
 
+        // Let Guard read snapshot 0 (establish previous positions for speed tracking).
         w.syncAll();
         w.broadcastToGuard();
 
-        w.bot(I_CHASER1).moveToPos(new int[]{10, 10});
-        w.bot(I_CHASER2).moveToPos(new int[]{16, 9});
+        // Move chasers deterministically to create different observed speeds.
+        w.bot(I_CHASER1).moveToPos(new int[]{10, 10}); // slow: moved 1
+        w.bot(I_CHASER2).moveToPos(new int[]{16, 9});  // fast: moved 4
 
+        // Snapshot 1: update records and let Guard read speeds.
         w.syncAll();
         w.broadcastToGuard();
 
         int beforeToSlow = manhattan(w.bot(I_GUARD).getMyPosition(), w.bot(I_CHASER1).getMyPosition());
         int beforeToFast = manhattan(w.bot(I_GUARD).getMyPosition(), w.bot(I_CHASER2).getMyPosition());
 
+        // One Guard decision turn.
         w.guard().takeTurn();
 
         w.syncAll();
@@ -335,19 +429,34 @@ public class LiBotTestingApp {
                         " / distToSlow " + beforeToSlow + "->" + afterToSlow);
     }
 
-    private static int manhattan(int[] a, int[] b) {
+    /**
+     * Calculate Manhattan distance between two positions.
+     * @param a first position as {x, y}
+     * @param b second position as {x, y}
+     * @return Manhattan distance
+     */
+    private static int manhattan(int[] a, int[] b)
+    {
         return Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]);
     }
 
-    private static void assertTrue(String testName, boolean cond, String detail) {
+    /**
+     * Records PASS/FAIL for a test case
+     * @param testName readable test name for output
+     * @param cond condition that must be true to pass
+     * @param detail failure detail printed when cond is false
+     */
+    private static void assertTrue(String testName, boolean cond, String detail)
+    {
         testsRun++;
-        if (cond) {
+        if (cond)
+        {
             testsPassed++;
             System.out.println("[PASS] " + testName);
-        } else {
+        }
+        else
+        {
             System.out.println("[FAIL] " + testName + " :: " + detail);
         }
     }
-
-
 }
