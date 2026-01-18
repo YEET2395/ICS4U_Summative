@@ -6,6 +6,7 @@ package ICS4U_Summative;
  * @version January 13, 2025
  */
 public class ChaserPlayerInfo extends PlayerInfo {
+    private static final boolean DEBUG = false;
     private double turnDistance;
     private double dodgeEst = 0.5;
     private int hpEst = 2;
@@ -26,7 +27,6 @@ public class ChaserPlayerInfo extends PlayerInfo {
     static final int MAX_GUARD_SPEED = 4;
     static final int VIP_HP = 2;
     static final int CHASER_ROLE = 3;
-
 
 
     /**
@@ -72,7 +72,9 @@ public class ChaserPlayerInfo extends PlayerInfo {
         this.priorityScore += (PRESSURE_WEIGHT * pressureScore);
         this.priorityScore += (TURN_DIST_WEIGHT * turnDist);
         this.turnDistance = turnDist;
-        System.out.format("PRESSURE: %.2f -- TURN DISTANCE: %.2f\n", pressureScore, turnDist); //debug
+        if (DEBUG) {
+            System.out.format("PRESSURE: %.2f -- TURN DISTANCE: %.2f\n", pressureScore, turnDist); //debug
+        }
     }
 
     /**
@@ -130,13 +132,12 @@ public class ChaserPlayerInfo extends PlayerInfo {
                         (HP_EST_WEIGHT * (this.getHPEst()/MAX_HP)) +
                         (ROLE_PREDICTION_WEIGHT * this.rolePrediction);
 
-        //for debugging
+        if (DEBUG) {
         System.out.format("ID: %d -- DODGE: %.3f -- HP: %.3f -- ROLE: %.2f -- ", this.getID(),
                         (DODGE_EST_WEIGHT * this.getDodgeEst()),
                         (HP_EST_WEIGHT * (this.getHPEst()/MAX_HP)),
                         (ROLE_PREDICTION_WEIGHT * this.rolePrediction));
-        //System.out.format("The robot %d has a priority score of %.2f\n", targetIndex[i], priorityScore[i]); debug
-
+        }
         //Completely deprioritize those already caught, or other chasers
         if (this.getState() || this.getRole() == CHASER_ROLE) {
             this.priorityScore = 1000;
@@ -174,7 +175,9 @@ public class ChaserPlayerInfo extends PlayerInfo {
             this.speedObs =  newMove;
         }
 
-        //System.out.println("Moved " + this.speedObs + " blocks!"); debug
+        if (DEBUG) {
+            System.out.println("Moved " + this.speedObs + " blocks!");
+        }
     }
 
     /**
@@ -197,7 +200,10 @@ public class ChaserPlayerInfo extends PlayerInfo {
         } else {
             this.dodgeEst += delta;
             this.numDodges++;
-            //System.out.println("Increasing dodge estimate of " + this.getID()); debug
+            if (DEBUG) {
+                System.out.println("Increasing dodge estimate of " + this.getID());
+            }
+
         }
 
     }
