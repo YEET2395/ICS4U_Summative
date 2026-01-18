@@ -373,7 +373,7 @@ public class XiongBot extends BaseBot {
 
             // Revival safety thresholds
             // maximum allowed threat value to attempt revival
-            int REVIVE_THREAT_THRESHOLD = 5;
+            int REVIVE_THREAT_THRESHOLD = 3;
             // minimum Manhattan distance from any chaser to target to attempt revival
             int REVIVE_MIN_CHASER_DIST = 2;
             boolean safeToRevive = false;
