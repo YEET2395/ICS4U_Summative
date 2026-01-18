@@ -8,7 +8,7 @@ package ICS4U_Summative;
 public class ChaserPlayerInfo extends PlayerInfo {
     private double turnDistance;
     private double dodgeEst = 0.5;
-    private int hpEst = 3;
+    private int hpEst = 2;
     private int[] prevPos;
     private int speedObs = 1;
     private int numDodges = 0;
@@ -87,7 +87,7 @@ public class ChaserPlayerInfo extends PlayerInfo {
      * Gets the estimated dodge capability of the robot
      * @return the estimated dodge capability of the robot
      */
-    public double getDodgeEst() {
+    public double getDodgeEst(){
         return this.dodgeEst;
     }
 
