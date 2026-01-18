@@ -3,15 +3,15 @@ import becker.robots.*;
 import java.util.Random;
 
 /**
- * Application class for the summative project
- * @author Aadil Kureshy, Austin Xiong,  Xinran Li
+ * Initial Testing Application for XiongBot features, Deprecated
+ * @author Austin Xiong
  * @version 2025 12 30
  */
-public class XiongBotTestingApp {
+public class DeprecatedXiongBotTestingApp {
 
     /**
      * Set up the playground for the robots
-     * @author Xinran Li
+     * @author Austin Xiong
      * @version 2025 12 30
      */
     private static void setupPlayground(City playground)
@@ -29,25 +29,6 @@ public class XiongBotTestingApp {
         }
     }
 
-//    /**
-//     * Updates the robots copy of their records
-//     * @param array the array of BaseBot
-//     * @param publicRecords the records containing the info for the Guards/VIP
-//     * @param chaserRecords the records containing the info for the Chasers
-//     */
-//    public void updateBotRecords(BaseBot[] array, playerInfo[] publicRecords, playerInfo[] chaserRecords) {
-//        //iterate through the robot array
-//        for (int i=0; i<array.length; i++) {
-//
-//            //check if the robot is a VIP/Guard; otherwise give chaser records
-//            if (array[i].getMyRole() != 3) {
-//                array[i].setRecords(publicRecords);
-//            } else {
-//                array[i].setRecords(chaserRecords);
-//            }
-//
-//        }
-//    }
 
     /**
      * Updates the records used by the application

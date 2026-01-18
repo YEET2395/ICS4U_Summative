@@ -20,7 +20,7 @@ public class App {
     private static final int VIP_MAX_HP = 2;
 
     // Debug toggle for test output
-    private static final boolean DEBUG = true;
+    private static final boolean DEBUG = false;
 
     /**
      * Set up the playground for the robots
@@ -358,10 +358,10 @@ public class App {
                     "GAME ENDED at turn %d: %s (VIPs caught %d/%d, Chasers caught %d/%d)%n%s",
                     turn, reason, numVIPsCaught, numVIPs, numChasersCaught, numChasers, result
             );
+            gameEnded = true;
         }
-
-        if (endedNow)
-        {
+        else if (endedNow){
+            System.out.format("%s, %s",reason,result);
             gameEnded = true;
         }
     }
