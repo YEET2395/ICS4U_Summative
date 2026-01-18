@@ -8,6 +8,8 @@ import java.util.ArrayList;
 
 /**
  * XiongBot with selection-sorted candidate choices, chaser tracking, and fallback to avoid corner-sticking.
+ * @author Austin Xiong
+ * @version 2026 01 15
  */
 public class XiongBot extends BaseBot {
     private int[] guardPos = {0, 0};
