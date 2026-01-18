@@ -26,15 +26,15 @@ public class LiBot extends BaseBot {
 
     /**
      * Constructor for XinranBot
-     * @param city         City the robot is in
-     * @param str          Street number
-     * @param ave          Avenue number
-     * @param dir          direction the robot is facing
-     * @param id           the robot's numerical id
-     * @param role         the robot's role
-     * @param hp           health points
+     * @param city  City the robot is in
+     * @param str  Street number
+     * @param ave  Avenue number
+     * @param dir  direction the robot is facing
+     * @param id   the robot's numerical id
+     * @param role the robot's role
+     * @param hp   health points
      * @param movesPerTurn moves per turn
-     * @param dodgeDiff    dodging difficulty (double)
+     * @param dodgeDiff dodging difficulty (double)
      */
     public LiBot(City city, int str, int ave, Direction dir, int id, int role, int hp, int movesPerTurn, double dodgeDiff)
     {
@@ -47,7 +47,6 @@ public class LiBot extends BaseBot {
 
     /**
      * Updates this bot's enemy records
-     *
      * @param records the records to get information from
      */
     public void updateOtherRecords(PlayerInfo[] records)
@@ -154,7 +153,8 @@ public class LiBot extends BaseBot {
             nextAct = 0;
         }
         // Execute chosen action
-        if (nextAct == 0) {
+        if (nextAct == 0)
+        {
             doProtect(vip, chaser, vips, vipCount, chasers, chaserCount);
         }
         else if (nextAct == 1)
@@ -562,7 +562,8 @@ public class LiBot extends BaseBot {
 
             // Evaluate all directions to maximize distance from chaser
             Direction[] dirs = new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST};
-            for (int i = 0; i < dirs.length; i++) {
+            for (int i = 0; i < dirs.length; i++)
+            {
                 // Check each direction
                 Direction d = dirs[i];
                 if (!canMove(d))

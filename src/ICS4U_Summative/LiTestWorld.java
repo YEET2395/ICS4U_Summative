@@ -2,6 +2,11 @@ package ICS4U_Summative;
 
 import becker.robots.*;
 
+/**
+ * Test world setup for unit testing the LiBot Guard behavior
+ * @author Xinran Li
+ * @version 2026 1 15
+ */
 public class LiTestWorld {
 
     // Becker city
